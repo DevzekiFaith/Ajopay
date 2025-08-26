@@ -6,11 +6,11 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import DashboardShell from "@/components/dashboard/Shell";
 import { toast } from "sonner";
 
- type Row = {
+type Row = {
   id: string;
   user_id: string;
   amount_kobo: number;
-  proof_url: string | null;
+  proof_url?: string | null;
   contributed_at: string;
   status: string;
 };
@@ -33,7 +33,7 @@ export default function AgentApprovalsPage() {
       // Fetch pending contributions attributed to this agent (MVP simplification)
       const { data, error } = await supabase
         .from("contributions")
-        .select("id, user_id, amount_kobo, proof_url, contributed_at, status")
+        .select("id, user_id, amount_kobo, contributed_at, status")
         .eq("agent_id", user.id)
         .eq("status", "pending")
         .order("contributed_at", { ascending: false })
@@ -92,7 +92,7 @@ export default function AgentApprovalsPage() {
 
   return (
     <DashboardShell role="agent" title="Agent • Approvals">
-      <div className="space-y-4 max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Approvals Queue</h1>
           {loading ? (

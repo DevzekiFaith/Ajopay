@@ -5,14 +5,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 export function Nav() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [signingOut, setSigningOut] = useState(false);
-  const [dark, setDark] = useState<boolean>(false);
   const [user, setUser] = useState<any | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   const signOut = async () => {
     setSigningOut(true);
@@ -32,8 +33,6 @@ export function Nav() {
   useEffect(() => {}, [mobileOpen]);
 
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setDark(isDark);
     // Load current user and listen to changes
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -44,14 +43,11 @@ export function Nav() {
     };
   }, []);
 
+  const isDark = (theme === "system" ? resolvedTheme : theme) === "dark";
   const toggleTheme = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    try {
-      localStorage.setItem("theme", next ? "dark" : "light");
-    } catch {}
-    toast.message(next ? "Dark mode enabled" : "Light mode enabled");
+    const next = isDark ? "light" : "dark";
+    setTheme(next);
+    toast.message(next === "dark" ? "Dark mode enabled" : "Light mode enabled");
   };
 
   return (
@@ -80,13 +76,13 @@ export function Nav() {
           <button
             onClick={toggleTheme}
             className={`relative inline-flex h-8 w-16 items-center rounded-full transition border border-zinc-300 dark:border-zinc-700 ${
-              dark ? "bg-zinc-900" : "bg-white"
+              isDark ? "bg-zinc-900" : "bg-white"
             }`}
           >
-            <span className={`ml-2 text-xs ${dark ? "text-white" : "text-zinc-700"}`}>{dark ? "Dark" : "Light"}</span>
+            <span className={`ml-2 text-xs ${isDark ? "text-white" : "text-zinc-700"}`}>{isDark ? "Dark" : "Light"}</span>
             <span
               className={`absolute right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow transition-all ${
-                dark ? "translate-x-[-40px]" : "translate-x-0"
+                isDark ? "translate-x-[-40px]" : "translate-x-0"
               }`}
             >
               <span className="h-3 w-3 rounded-full bg-violet-500" />
@@ -124,13 +120,13 @@ export function Nav() {
             onClick={toggleTheme}
             aria-label="Toggle theme"
             className={`relative inline-flex h-8 w-14 items-center rounded-full transition border border-zinc-300 dark:border-zinc-700 ${
-              dark ? "bg-zinc-900" : "bg-white"
+              isDark ? "bg-zinc-900" : "bg-white"
             }`}
           >
-            <span className={`ml-2 text-[10px] ${dark ? "text-white" : "text-zinc-700"}`}>{dark ? "Dark" : "Light"}</span>
+            <span className={`ml-2 text-[10px] ${isDark ? "text-white" : "text-zinc-700"}`}>{isDark ? "Dark" : "Light"}</span>
             <span
               className={`absolute right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow transition-all ${
-                dark ? "translate-x-[-34px]" : "translate-x-0"
+                isDark ? "translate-x-[-34px]" : "translate-x-0"
               }`}
             >
               <span className="h-2.5 w-2.5 rounded-full bg-violet-500" />

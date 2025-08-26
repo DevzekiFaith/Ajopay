@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import {
   Table,
@@ -40,6 +41,9 @@ export default function AgentPage() {
   const [newName, setNewName] = useState("");
   const [newBusiness, setNewBusiness] = useState("");
   const [totals, setTotals] = useState<Record<string, number>>({});
+  const [last7Naira, setLast7Naira] = useState<number>(0);
+  const [prev7Naira, setPrev7Naira] = useState<number>(0);
+  const [sparkPoints, setSparkPoints] = useState<string>("");
 
   const loadRecent = async () => {
     const {
@@ -54,6 +58,53 @@ export default function AgentPage() {
       .order("contributed_at", { ascending: false })
       .limit(25);
     if (!error && data) setRecent(data);
+  };
+
+  const toggleAgentMode = async (checked: boolean) => {
+    setRoleLoading(true);
+    try {
+      const res = await fetch("/api/agent-mode/toggle", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to toggle");
+      if (data.role === "agent") {
+        setIsAgentOrAdmin(true);
+        setClusterId(data.cluster_id || null);
+        toast.success("Agent mode enabled");
+      } else {
+        setIsAgentOrAdmin(false);
+        // keep cluster id as returned (may be null)
+        setClusterId(data.cluster_id || null);
+        toast.success("Agent mode disabled");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to toggle agent mode");
+    } finally {
+      setRoleLoading(false);
+    }
+  };
+
+  const createCluster = async () => {
+    setRoleLoading(true);
+    try {
+      const res = await fetch("/api/clusters/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to create cluster");
+      setClusterId(data.id);
+      setIsAgentOrAdmin(true);
+      toast.success(`Cluster created: ${data.name || data.id}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create cluster");
+    } finally {
+      setRoleLoading(false);
+    }
   };
 
   // Check current user's role to gate create-customer UI and capture cluster
@@ -90,7 +141,12 @@ export default function AgentPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: newEmail, full_name: newName || undefined, business_name: newBusiness || undefined }),
+        body: JSON.stringify({
+          email: newEmail,
+          full_name: newName || undefined,
+          business_name: newBusiness || undefined,
+          cluster_id: clusterId || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -118,6 +174,64 @@ export default function AgentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const loadKpis = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const today = new Date();
+    const toIso = (d: Date) => d.toISOString().slice(0, 10);
+    const end = new Date(toIso(today));
+    const start14 = new Date(end);
+    start14.setDate(end.getDate() - 13);
+    const { data: rows } = await supabase
+      .from("contributions")
+      .select("amount_kobo, contributed_at")
+      .eq("agent_id", user.id)
+      .eq("method", "cash")
+      .gte("contributed_at", toIso(start14))
+      .lte("contributed_at", toIso(end));
+    const list = (rows as any[]) ?? [];
+    const last7Start = new Date(end);
+    last7Start.setDate(end.getDate() - 6);
+    const prev7Start = new Date(end);
+    prev7Start.setDate(end.getDate() - 13);
+    const prev7End = new Date(end);
+    prev7End.setDate(end.getDate() - 7);
+    let last7 = 0,
+      prev7 = 0;
+    for (const r of list) {
+      const d = (r.contributed_at || "").slice(0, 10);
+      if (!d) continue;
+      if (d >= toIso(last7Start) && d <= toIso(end)) last7 += r.amount_kobo ?? 0;
+      else if (d >= toIso(prev7Start) && d <= toIso(prev7End)) prev7 += r.amount_kobo ?? 0;
+    }
+    setLast7Naira(Math.round(last7 / 100));
+    setPrev7Naira(Math.round(prev7 / 100));
+
+    // Build sparkline points over 14 days (₦ per day)
+    const days = Array.from({ length: 14 }).map((_, i) => {
+      const d = new Date(end);
+      d.setDate(end.getDate() - (13 - i));
+      return toIso(d);
+    });
+    const daySums: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
+    for (const r of list) {
+      const d = (r.contributed_at || "").slice(0, 10);
+      if (d && d in daySums) daySums[d] += Math.round(((r.amount_kobo ?? 0) as number) / 100);
+    }
+    const series = days.map((d) => daySums[d] ?? 0);
+    const maxVal = Math.max(1, ...series);
+    const pts = series
+      .map((v, i) => {
+        const x = (i / (series.length - 1)) * 100;
+        const y = 26 - (v / maxVal) * 26;
+        return `${x},${y}`;
+      })
+      .join(" ");
+    setSparkPoints(pts);
+  };
+
   // Realtime: refresh recent and totals on contributions changes for this agent
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -133,6 +247,7 @@ export default function AgentPage() {
           { event: "*", schema: "public", table: "contributions", filter: `agent_id=eq.${user.id}` },
           async () => {
             await loadRecent();
+            await loadKpis();
             if (results.length) {
               const ids = results.map((d) => d.id);
               const { data: sums } = await supabase
@@ -197,6 +312,11 @@ export default function AgentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
+  useEffect(() => {
+    loadKpis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const recordCash = async () => {
     setLoading(true);
     setMessage(null);
@@ -232,12 +352,34 @@ export default function AgentPage() {
 
   return (
     <DashboardShell role="agent" title="Agent Dashboard">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
+        {/* Insights */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="text-sm opacity-70">My last 7 days (cash)</div>
+            <div className="mt-1 text-2xl font-semibold">₦{last7Naira.toLocaleString()}</div>
+            {(() => {
+              const up = prev7Naira === 0 ? last7Naira > 0 : last7Naira >= prev7Naira;
+              const pct = prev7Naira === 0 ? (last7Naira > 0 ? 100 : 0) : Math.round(((last7Naira - prev7Naira) / prev7Naira) * 100);
+              return (
+                <div className={`mt-1 inline-flex items-center gap-1 text-xs ${up ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                  <span>{up ? "▲" : "▼"}</span>
+                  <span>{isFinite(pct) ? pct : 0}% WoW</span>
+                </div>
+              );
+            })()}
+            {sparkPoints && (
+              <svg viewBox="0 0 100 26" className="mt-2 w-full h-7 opacity-80">
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.5" points={sparkPoints} />
+              </svg>
+            )}
+          </div>
+        </div>
         {/* Status header */}
         <div className="flex items-center justify-between border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           <div className="flex items-center gap-3">
             <div className="relative h-6 w-6 sm:h-7 sm:w-7">
-              <Image src="/aj2.png" alt="Ajopay" fill className="object-contain" />
+              <Image src="/aj2.png" alt="Ajopay" fill sizes="(max-width: 640px) 24px, 28px" className="object-contain" />
             </div>
             <span className="text-sm opacity-80">Status</span>
             <span className={`flex items-center gap-2 text-sm ${!roleLoading && isAgentOrAdmin && clusterId ? "text-green-500" : "text-yellow-500"}`}>
@@ -245,9 +387,24 @@ export default function AgentPage() {
               {!roleLoading && isAgentOrAdmin && clusterId ? "Active" : !roleLoading && isAgentOrAdmin ? "Awaiting cluster" : "Unauthorized"}
             </span>
           </div>
-          {!roleLoading && isAgentOrAdmin && !clusterId && (
-            <span className="text-xs opacity-80">Ask an admin to assign you to a cluster</span>
-          )}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="opacity-80">Agent mode</span>
+              <Switch
+                checked={!roleLoading && isAgentOrAdmin && !!clusterId}
+                onCheckedChange={toggleAgentMode}
+                disabled={roleLoading}
+              />
+            </div>
+            {!roleLoading && (!isAgentOrAdmin || !clusterId) && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs opacity-80 hidden sm:inline">{isAgentOrAdmin ? "No cluster yet" : "You can self-create a cluster"}</span>
+                <Button size="sm" variant="secondary" onClick={createCluster} disabled={roleLoading}>
+                  {roleLoading ? "Working…" : "Create my cluster"}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
         <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">

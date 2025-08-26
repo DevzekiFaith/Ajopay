@@ -4,7 +4,7 @@ export default function Preview() {
       <h1 className="text-2xl font-semibold mb-4">UI Preview</h1>
       <p className="text-sm opacity-80 mb-6">Use the toggle in the nav to switch Light/Dark.</p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 px-0 sm:px-0">
         {/* Customer Dashboard Mock */}
         <section className="border rounded-md p-4 bg-white/60 dark:bg-white/5">
           <h2 className="text-lg font-medium mb-3">Customer</h2>

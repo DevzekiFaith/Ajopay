@@ -26,7 +26,7 @@ export default function DashboardLanding({ defaultRole = "customer" as Role }) {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="relative h-8 w-8 sm:h-10 sm:w-10">
-            <Image src="/aj2.png" alt="Ajopay" fill className="object-contain" />
+            <Image src="/aj2.png" alt="Ajopay" fill sizes="(max-width: 640px) 32px, 40px" className="object-contain" />
           </div>
           <h1 className="text-2xl font-semibold bg-gradient-to-r from-purple-700 to-violet-500 bg-clip-text text-transparent">
             Choose your workspace

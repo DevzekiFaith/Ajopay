@@ -63,7 +63,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
 
   return (
     <DashboardShell role="admin" title={`Agent • ${agent?.full_name ?? agent?.email ?? agentId}`}>
-      <div className="space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
         <div className="flex items-center justify-between border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 backdrop-blur-xl rounded-2xl p-3">
           <div>
             <h1 className="text-2xl font-semibold">{agent?.full_name ?? agent?.email ?? agentId}</h1>

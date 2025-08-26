@@ -44,6 +44,9 @@ export default function CustomerPage() {
   const [walletPulse, setWalletPulse] = useState<boolean>(false);
   const [history, setHistory] = useState<Array<{ id: string; amount_kobo: number; contributed_at: string }>>([]);
   const [streak, setStreak] = useState<number>(0);
+  const [last7Naira, setLast7Naira] = useState<number>(0);
+  const [prev7Naira, setPrev7Naira] = useState<number>(0);
+  const [sparkPoints, setSparkPoints] = useState<string>("");
   const [autoMark, setAutoMark] = useState<boolean>(false);
   const [joinCode, setJoinCode] = useState("");
   const [joining, setJoining] = useState(false);
@@ -54,7 +57,9 @@ export default function CustomerPage() {
   const [confirmAmount, setConfirmAmount] = useState<number>(200);
   const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [profileSettings, setProfileSettings] = useState<Record<string, any> | null>(null);
+  const [autoBusy, setAutoBusy] = useState<boolean>(false);
 
+  // Use schema INPUT type to align with zodResolver typing (coerce.number input is unknown)
   type ContributionFormValues = z.input<typeof ContributionSchema>;
   const form = useForm<ContributionFormValues>({
     resolver: zodResolver(ContributionSchema),
@@ -88,6 +93,59 @@ export default function CustomerPage() {
       .limit(60);
     if (!histErr && hist) setHistory(hist);
 
+    // KPI: last 7 days vs previous 7 days (sum in ₦)
+    try {
+      const today = new Date();
+      const toIso = (d: Date) => d.toISOString().slice(0, 10);
+      const end = new Date(toIso(today)); // strip time
+      const start14 = new Date(end);
+      start14.setDate(end.getDate() - 13); // inclusive 14 days
+      const { data: krows } = await supabase
+        .from("contributions")
+        .select("amount_kobo, contributed_at")
+        .eq("user_id", user.id)
+        .gte("contributed_at", toIso(start14))
+        .lte("contributed_at", toIso(end));
+      const rows14 = (krows as any[]) ?? [];
+      const last7Start = new Date(end);
+      last7Start.setDate(end.getDate() - 6);
+      const prev7Start = new Date(end);
+      prev7Start.setDate(end.getDate() - 13);
+      const prev7End = new Date(end);
+      prev7End.setDate(end.getDate() - 7);
+      let last7 = 0, prev7 = 0;
+      for (const r of rows14) {
+        const d = (r.contributed_at || "").slice(0,10);
+        if (!d) continue;
+        if (d >= toIso(last7Start) && d <= toIso(end)) last7 += (r.amount_kobo ?? 0);
+        else if (d >= toIso(prev7Start) && d <= toIso(prev7End)) prev7 += (r.amount_kobo ?? 0);
+      }
+      setLast7Naira(Math.round(last7 / 100));
+      setPrev7Naira(Math.round(prev7 / 100));
+
+      // Build 14-day sparkline points (₦ per day)
+      const days = Array.from({ length: 14 }).map((_, i) => {
+        const d = new Date(end);
+        d.setDate(end.getDate() - (13 - i));
+        return toIso(d);
+      });
+      const daySums: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
+      for (const r of rows14) {
+        const d = (r.contributed_at || "").slice(0, 10);
+        if (d && d in daySums) daySums[d] += Math.round(((r.amount_kobo ?? 0) as number) / 100);
+      }
+      const series = days.map((d) => daySums[d] ?? 0);
+      const maxVal = Math.max(1, ...series);
+      const pts = series
+        .map((v, i) => {
+          const x = (i / (series.length - 1)) * 100;
+          const y = 26 - (v / maxVal) * 26;
+          return `${x},${y}`;
+        })
+        .join(" ");
+      setSparkPoints(pts);
+    } catch {}
+
     // Streak: compute consecutive days including today if contributed
     const dates = new Set((hist ?? []).map((h) => h.contributed_at));
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -118,6 +176,34 @@ export default function CustomerPage() {
       if (typeof settings.customer_skip_confirm === "boolean") {
         setSkipConfirm(settings.customer_skip_confirm);
       }
+      if (typeof settings.customer_auto_mark === "boolean") {
+        setAutoMark(settings.customer_auto_mark);
+      }
+    }
+  };
+
+  // Initialize PSP checkout to fund wallet
+  const fund = async () => {
+    try {
+      const amt = amount;
+      if (amt < 200) throw new Error("Minimum is ₦200");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Please sign in");
+      const email = (user as any)?.email || undefined;
+      const res = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount_kobo: amt * 100, user_id: user.id, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to start payment");
+      const url = data?.authorization_url as string | undefined;
+      if (!url) throw new Error("No authorization URL");
+      window.location.href = url;
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to fund wallet");
     }
   };
 
@@ -165,6 +251,44 @@ export default function CustomerPage() {
       if (channel) supabase.removeChannel(channel);
     };
   }, [supabase]);
+
+  // Persist auto-mark preference when toggled
+  const toggleAutoMark = async (val: boolean) => {
+    setAutoMark(val);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const nextSettings = { ...(profileSettings || {}), customer_auto_mark: val };
+      await supabase.from("profiles").update({ settings: nextSettings }).eq("id", user.id);
+      setProfileSettings(nextSettings);
+      toast.message(val ? "Auto-mark enabled" : "Auto-mark disabled");
+    } catch {}
+  };
+
+  // Auto-mark today's contribution once when enabled and not yet contributed
+  useEffect(() => {
+    if (!autoMark) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const hasToday = history.some((h) => h.contributed_at === today);
+    if (hasToday) return;
+    try {
+      const last = localStorage.getItem("cust_auto_mark_last");
+      if (last === today) return;
+    } catch {}
+    if (autoBusy) return;
+    setAutoBusy(true);
+    (async () => {
+      try {
+        await submit();
+        try { localStorage.setItem("cust_auto_mark_last", today); } catch {}
+      } finally {
+        setAutoBusy(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoMark, history]);
 
   useEffect(() => {
     try {
@@ -256,11 +380,38 @@ export default function CustomerPage() {
 
   return (
     <DashboardShell role="customer" title="Customer Dashboard">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
+        {/* Insights */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="text-sm opacity-70">Last 7 days</div>
+            <div className="mt-1 text-2xl font-semibold">₦{last7Naira.toLocaleString()}</div>
+            {(() => {
+              const up = prev7Naira === 0 ? last7Naira > 0 : last7Naira >= prev7Naira;
+              const pct = prev7Naira === 0 ? (last7Naira > 0 ? 100 : 0) : Math.round(((last7Naira - prev7Naira) / prev7Naira) * 100);
+              return (
+                <div className={`mt-1 inline-flex items-center gap-1 text-xs ${up ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                  <span>{up ? "▲" : "▼"}</span>
+                  <span>{isFinite(pct) ? pct : 0}% WoW</span>
+                </div>
+              );
+            })()}
+            {sparkPoints && (
+              <svg viewBox="0 0 100 26" className="mt-2 w-full h-7 opacity-80">
+                <polyline fill="none" stroke="currentColor" strokeWidth="1.5" points={sparkPoints} />
+              </svg>
+            )}
+          </div>
+          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="text-sm opacity-70">Total contributions</div>
+            <div className={`mt-1 text-2xl font-semibold ${walletPulse ? "animate-pulse" : ""}`}>₦{walletNaira.toLocaleString()}</div>
+            <div className="mt-1 text-xs opacity-70">All time</div>
+          </div>
+        </div>
         <div className="flex items-center justify-between border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           <div className="flex items-center gap-3">
             <div className="relative h-7 w-7">
-              <Image src="/aj2.png" alt="Ajopay" fill className="object-contain" />
+              <Image src="/aj2.png" alt="Ajopay" fill sizes="28px" className="object-contain" />
             </div>
             <h1 className="text-xl font-semibold">Customer Dashboard</h1>
           </div>
@@ -296,13 +447,13 @@ export default function CustomerPage() {
         <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
         <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <CardTitle>Quick Contribution</CardTitle>
               <span className="text-xs opacity-70">Minimum ₦200</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Label htmlFor="amount" className="text-sm">Amount</Label>
                 <Input
@@ -311,22 +462,23 @@ export default function CustomerPage() {
                   min={200}
                   value={amount}
                   onChange={(e) => setAmount(parseInt(e.target.value || "0", 10))}
-                  className="w-32"
+                  className="w-28 sm:w-32"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Switch id="auto" checked={autoMark} onCheckedChange={setAutoMark} />
+                <Switch id="auto" checked={autoMark} onCheckedChange={toggleAutoMark} />
                 <Label htmlFor="auto" className="text-sm">Auto-mark</Label>
               </div>
             </div>
 
-            <ToggleGroup type="single" value={String(amount)} aria-label="Quick amounts">
+            <ToggleGroup type="single" value={String(amount)} aria-label="Quick amounts" className="justify-center sm:justify-start gap-2">
               {quick.map((q) => (
                 <ToggleGroupItem
                   key={q}
                   value={String(q)}
                   aria-label={`₦${q}`}
                   onClick={() => setAmount(q)}
+                  className="h-11 sm:h-9 px-3 min-w-[4.5rem]"
                 >
                   ₦{q}
                 </ToggleGroupItem>
@@ -334,13 +486,16 @@ export default function CustomerPage() {
             </ToggleGroup>
 
             <div className="flex gap-3">
-              <Button onClick={() => void submit()} disabled={loading}>
+              <Button onClick={() => void submit()} disabled={loading} className="h-11 sm:h-10">
                 {loading ? "Submitting..." : "Submit"}
+              </Button>
+              <Button variant="outline" onClick={() => void fund()} className="h-11 sm:h-10">
+                Fund Wallet
               </Button>
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="secondary">Contribute now…</Button>
+                  <Button variant="secondary" className="h-11 sm:h-10">Contribute now…</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -349,7 +504,8 @@ export default function CustomerPage() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      const v = form.getValues();
+                      const raw = form.getValues();
+                      const v = ContributionSchema.parse(raw); // ensures amount is number
                       setAmount(v.amount);
                       submit(v.amount);
                     }}
@@ -369,7 +525,7 @@ export default function CustomerPage() {
                       <Input id="proof" type="url" placeholder="https://..." {...form.register("proofUrl")} />
                     </div>
                     <DialogFooter>
-                      <Button type="submit" disabled={loading}>{loading ? "Submitting..." : "Submit"}</Button>
+                      <Button type="submit" disabled={loading} className="h-11 sm:h-10">{loading ? "Submitting..." : "Submit"}</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -381,9 +537,9 @@ export default function CustomerPage() {
         </motion.div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
-          <TabsList>
-            <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="calendar">Card Grid</TabsTrigger>
+          <TabsList className="flex flex-wrap gap-2 w-full">
+            <TabsTrigger value="history" className="flex-1 sm:flex-none">History</TabsTrigger>
+            <TabsTrigger value="calendar" className="flex-1 sm:flex-none">Card Grid</TabsTrigger>
           </TabsList>
           <TabsContent value="history">
             <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>

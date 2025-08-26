@@ -43,7 +43,7 @@ export default function AgentCommissionsPage() {
 
   return (
     <DashboardShell role="agent" title="Agent • Commissions">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">My Commissions</h1>
           <div className="flex items-center gap-4 text-sm opacity-80">

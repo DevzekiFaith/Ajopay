@@ -120,6 +120,12 @@ export default async function AdminPage({
     })
     .join(" ");
 
+  // Derive last 7 vs previous 7 from series
+  const prev7Naira = series.slice(0, 7).reduce((a, b) => a + b, 0);
+  const last7Naira = series.slice(7).reduce((a, b) => a + b, 0);
+  const wowPct = prev7Naira === 0 ? (last7Naira > 0 ? 100 : 0) : Math.round(((last7Naira - prev7Naira) / prev7Naira) * 100);
+  const isUp = prev7Naira === 0 ? last7Naira > 0 : last7Naira >= prev7Naira;
+
   // Sorting & pagination for Customers
   const params = await searchParams;
   const sortKey = (Array.isArray(params?.sort) ? params?.sort[0] : params?.sort) || "deposited";
@@ -161,7 +167,7 @@ export default async function AdminPage({
   return (
     <DashboardShell role="admin" title="Admin Dashboard">
       <AdminRealtimeRefresher />
-      <div className="space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
         <div className="relative flex items-center justify-between border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           {/* sheen */}
           <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">
@@ -169,7 +175,7 @@ export default async function AdminPage({
           </div>
           <div className="flex items-center gap-3">
             <div className="relative h-8 w-8">
-              <Image src="/aj2.png" alt="Ajopay" fill className="object-contain" />
+              <Image src="/aj2.png" alt="Ajopay" fill sizes="32px" className="object-contain" />
             </div>
             <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
           </div>
@@ -183,7 +189,7 @@ export default async function AdminPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <AdminTotalCard
             title="Total Collected"
             totalNaira={Math.round(totalKobo / 100)}
@@ -195,6 +201,22 @@ export default async function AdminPage({
             totalNaira={Math.round(todayKobo / 100)}
             subtitle={today}
           />
+          <Card className="relative border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            {/* sheen */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">
+              <div className="absolute -top-8 left-0 right-0 h-20 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
+            </div>
+            <CardHeader>
+              <CardTitle>Last 7 days</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold">₦{last7Naira.toLocaleString()}</div>
+              <div className={`mt-1 inline-flex items-center gap-1 text-xs ${isUp ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                <span>{isUp ? "▲" : "▼"}</span>
+                <span>{isFinite(wowPct) ? wowPct : 0}% WoW</span>
+              </div>
+            </CardContent>
+          </Card>
           <Card className="relative border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
             {/* sheen */}
             <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">

@@ -34,7 +34,7 @@ export default function Home() {
             <div className="absolute -top-10 left-0 right-0 h-32 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
           </div>
           <motion.h1
-            className="text-center text-3xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-violet-500 bg-clip-text text-transparent"
+            className="text-center text-3xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-purple-700 to-violet-500 dark:from-violet-200 dark:to-fuchsia-300 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05, duration: 0.5 }}
@@ -58,17 +58,17 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.18, duration: 0.5 }}
             >
-              <div className="flex flex-col xs:flex-row sm:flex-row gap-3 md:justify-start justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 md:justify-start justify-center">
                 <motion.a
                   whileTap={{ scale: 0.98 }}
-                  className="px-5 h-11 inline-flex items-center justify-center rounded-xl bg-purple-700 text-white hover:bg-purple-800 shadow-sm"
+                  className="px-5 h-12 sm:h-11 inline-flex items-center justify-center rounded-xl bg-purple-700 text-white hover:bg-purple-800 shadow-sm"
                   href="/sign-in"
                 >
                   Sign in
                 </motion.a>
                 <motion.a
                   whileTap={{ scale: 0.98 }}
-                  className="px-5 h-11 inline-flex items-center justify-center rounded-xl border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 text-purple-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+                  className="px-5 h-12 sm:h-11 inline-flex items-center justify-center rounded-xl border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 text-purple-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
                   href="/sign-in"
                 >
                   Open dashboard →
@@ -99,7 +99,7 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              className="order-1 md:order-2 relative w-full h-64 sm:h-80 md:h-full"
+              className="order-1 md:order-2 relative w-full h-72 sm:h-80 md:h-full"
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.12, duration: 0.5 }}
