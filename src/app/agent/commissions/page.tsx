@@ -10,7 +10,6 @@ type Row = { id: string; amount_kobo: number; created_at: string; contribution_i
 export default function AgentCommissionsPage() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [rows, setRows] = useState<Row[]>([]);
-  const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -29,7 +28,6 @@ export default function AgentCommissionsPage() {
         .limit(50);
       if (!error && data) {
         setRows(data as any);
-        setTotal(Math.round(((data as any[]).reduce((a, r) => a + (r.amount_kobo ?? 0), 0)) / 100));
       }
     } finally {
       setLoading(false);
@@ -69,6 +67,8 @@ export default function AgentCommissionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const totalNaira = useMemo(() => Math.round((rows.reduce((a, r) => a + (r.amount_kobo ?? 0), 0)) / 100), [rows]);
+
   return (
     <DashboardShell role="agent" title="Agent • Commissions">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
@@ -76,7 +76,7 @@ export default function AgentCommissionsPage() {
           <h1 className="text-2xl font-semibold">My Commissions</h1>
           <div className="flex items-center gap-4 text-sm opacity-80">
             <span>Rate: {COMMISSION_PERCENT}%</span>
-            <span>Total shown: ₦{total.toLocaleString()}</span>
+            <span>Total shown: ₦{totalNaira.toLocaleString()}</span>
           </div>
         </div>
 
