@@ -44,6 +44,8 @@ export default function AgentPage() {
   const [last7Naira, setLast7Naira] = useState<number>(0);
   const [prev7Naira, setPrev7Naira] = useState<number>(0);
   const [sparkPoints, setSparkPoints] = useState<string>("");
+  const [activeDays30, setActiveDays30] = useState<number>(0);
+  const [activePct30, setActivePct30] = useState<number>(0);
 
   const loadRecent = async () => {
     const {
@@ -182,14 +184,14 @@ export default function AgentPage() {
     const today = new Date();
     const toIso = (d: Date) => d.toISOString().slice(0, 10);
     const end = new Date(toIso(today));
-    const start14 = new Date(end);
-    start14.setDate(end.getDate() - 13);
+    const start30 = new Date(end);
+    start30.setDate(end.getDate() - 29);
     const { data: rows } = await supabase
       .from("contributions")
       .select("amount_kobo, contributed_at")
       .eq("agent_id", user.id)
       .eq("method", "cash")
-      .gte("contributed_at", toIso(start14))
+      .gte("contributed_at", toIso(start30))
       .lte("contributed_at", toIso(end));
     const list = (rows as any[]) ?? [];
     const last7Start = new Date(end);
@@ -230,6 +232,21 @@ export default function AgentPage() {
       })
       .join(" ");
     setSparkPoints(pts);
+
+    // Active days over the last 30 days
+    const days30 = Array.from({ length: 30 }).map((_, i) => {
+      const d = new Date(end);
+      d.setDate(end.getDate() - (29 - i));
+      return toIso(d);
+    });
+    const hit: Record<string, boolean> = Object.fromEntries(days30.map((d) => [d, false]));
+    for (const r of list) {
+      const d = (r.contributed_at || "").slice(0, 10);
+      if (d && d in hit) hit[d] = true;
+    }
+    const active = days30.reduce((acc, d) => acc + (hit[d] ? 1 : 0), 0);
+    setActiveDays30(active);
+    setActivePct30(Math.round((active / 30) * 100));
   };
 
   // Realtime: refresh recent and totals on contributions changes for this agent
@@ -244,7 +261,7 @@ export default function AgentPage() {
         .channel("agent-contributions")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "contributions", filter: `agent_id=eq.${user.id}` },
+          { event: "INSERT", schema: "public", table: "contributions", filter: `agent_id=eq.${user.id}` },
           async () => {
             await loadRecent();
             await loadKpis();
@@ -373,6 +390,16 @@ export default function AgentPage() {
                 <polyline fill="none" stroke="currentColor" strokeWidth="1.5" points={sparkPoints} />
               </svg>
             )}
+          </div>
+          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="text-sm font-medium">Active Days • 30</div>
+            <div className="mt-1 flex items-center justify-between text-xs opacity-80">
+              <span>{activeDays30}/30 days with contributions</span>
+              <span>{activePct30}%</span>
+            </div>
+            <div className="mt-2 h-2 w-full rounded-full bg-neutral-800 overflow-hidden">
+              <div className="h-full bg-emerald-600" style={{ width: `${activePct30}%` }} />
+            </div>
           </div>
         </div>
         {/* Status header */}

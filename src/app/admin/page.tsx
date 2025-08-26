@@ -22,6 +22,9 @@ import {
 type Row = { id: string; user_id: string; agent_id: string | null; amount_kobo: number; method: string; contributed_at: string };
 const COMMISSION_PERCENT = Number(process.env.NEXT_PUBLIC_AGENT_COMMISSION_PERCENT ?? "10");
 
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -74,11 +77,11 @@ export default async function AdminPage({
     .select("id, full_name, email")
     .in("id", (agentIds as any) ?? []);
 
-  const userLabel: Record<string, { name: string; email: string | null }> = {};
+  let userLabel: Record<string, { name: string; email: string | null }> = {};
   for (const p of userProfiles ?? []) {
     userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
   }
-  const agentLabel: Record<string, { name: string; email: string | null }> = {};
+  let agentLabel: Record<string, { name: string; email: string | null }> = {};
   for (const p of agentProfiles ?? []) {
     agentLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
   }
@@ -96,6 +99,26 @@ export default async function AdminPage({
     .limit(30);
   if (!isGlobal) qRecent = (qRecent as any).in("user_id", clusterMemberIds as any);
   const { data: recent } = await qRecent;
+
+  // Ensure label maps include names for any IDs present only in recent
+  {
+    const recentUserIds = Array.from(new Set((recent ?? []).map((r) => r.user_id))).filter((id) => !userLabel[id]);
+    if (recentUserIds.length) {
+      const { data: extra } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", recentUserIds as any);
+      for (const p of extra ?? []) userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
+    }
+    const recentAgentIds = Array.from(new Set((recent ?? []).map((r) => r.agent_id).filter(Boolean) as string[])).filter((id) => !agentLabel[id]);
+    if (recentAgentIds.length) {
+      const { data: extraA } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", recentAgentIds as any);
+      for (const p of extraA ?? []) agentLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
+    }
+  }
 
   // Build last 14 days totals for sparkline (₦)
   const days = Array.from({ length: 14 }).map((_, i) => {
@@ -125,6 +148,20 @@ export default async function AdminPage({
   const last7Naira = series.slice(7).reduce((a, b) => a + b, 0);
   const wowPct = prev7Naira === 0 ? (last7Naira > 0 ? 100 : 0) : Math.round(((last7Naira - prev7Naira) / prev7Naira) * 100);
   const isUp = prev7Naira === 0 ? last7Naira > 0 : last7Naira >= prev7Naira;
+
+  // Active days in last 30 within scope
+  const days30 = Array.from({ length: 30 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    return d.toISOString().slice(0, 10);
+  });
+  const dayHit: Record<string, boolean> = Object.fromEntries(days30.map((d) => [d, false]));
+  for (const r of allRows ?? []) {
+    const d = (r as any).contributed_at?.slice(0, 10);
+    if (d && d in dayHit) dayHit[d] = true;
+  }
+  const activeDays30 = days30.reduce((acc, d) => acc + (dayHit[d] ? 1 : 0), 0);
+  const activePct30 = Math.round((activeDays30 / 30) * 100);
 
   // Sorting & pagination for Customers
   const params = await searchParams;
@@ -173,6 +210,27 @@ export default async function AdminPage({
           <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">
             <div className="absolute -top-8 left-0 right-0 h-20 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
           </div>
+
+        {/* 30-day Active Days progress */}
+        <Card className="relative border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+          {/* sheen */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">
+            <div className="absolute -top-8 left-0 right-0 h-20 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
+          </div>
+          <CardHeader>
+            <CardTitle>Active Days • 30</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between text-xs opacity-80">
+              <span>{activeDays30}/30 days with contributions ({isGlobal ? "Global" : "Cluster"})</span>
+              <span>{activePct30}%</span>
+            </div>
+            <div className="mt-2 h-2 w-full rounded-full bg-neutral-800 overflow-hidden">
+              <div className="h-full bg-emerald-600" style={{ width: `${activePct30}%` }} />
+            </div>
+          </CardContent>
+        </Card>
+
           <div className="flex items-center gap-3">
             <div className="relative h-8 w-8">
               <Image src="/aj2.png" alt="Ajopay" fill sizes="32px" className="object-contain" />
@@ -382,8 +440,8 @@ export default async function AdminPage({
                   {recent.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>{r.contributed_at}</TableCell>
-                      <TableCell className="font-mono text-xs">{r.user_id}</TableCell>
-                      <TableCell className="font-mono text-xs">{r.agent_id ?? "-"}</TableCell>
+                      <TableCell className="text-sm">{userLabel[r.user_id]?.name ?? r.user_id}</TableCell>
+                      <TableCell className="text-sm">{r.agent_id ? (agentLabel[r.agent_id]?.name ?? r.agent_id) : "-"}</TableCell>
                       <TableCell>{r.method}</TableCell>
                       <TableCell className="text-right">₦{Math.round((r.amount_kobo ?? 0) / 100).toLocaleString()}</TableCell>
                     </TableRow>
