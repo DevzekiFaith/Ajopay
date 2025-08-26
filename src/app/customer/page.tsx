@@ -5,6 +5,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import DashboardShell from "@/components/dashboard/Shell";
 import Image from "next/image";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ContributionSchema } from "@/lib/validators/contribution";
@@ -58,6 +59,8 @@ export default function CustomerPage() {
   const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [profileSettings, setProfileSettings] = useState<Record<string, any> | null>(null);
   const [autoBusy, setAutoBusy] = useState<boolean>(false);
+  const [clusterId, setClusterId] = useState<string | null>(null);
+  const [clusterName, setClusterName] = useState<string | null>(null);
 
   // Use schema INPUT type to align with zodResolver typing (coerce.number input is unknown)
   type ContributionFormValues = z.input<typeof ContributionSchema>;
@@ -167,10 +170,18 @@ export default function CustomerPage() {
     // Load profile settings (for persisted preferences)
     const { data: me } = await supabase
       .from("profiles")
-      .select("settings")
+      .select("settings, cluster_id")
       .eq("id", user.id)
       .maybeSingle();
     const settings = (me as any)?.settings ?? null;
+    const cid = (me as any)?.cluster_id ?? null;
+    setClusterId(cid ?? null);
+    if (cid) {
+      const { data: c } = await supabase.from("clusters").select("name").eq("id", cid).maybeSingle();
+      setClusterName((c as any)?.name ?? null);
+    } else {
+      setClusterName(null);
+    }
     if (settings) {
       setProfileSettings(settings);
       if (typeof settings.customer_skip_confirm === "boolean") {
@@ -226,7 +237,28 @@ export default function CustomerPage() {
           "postgres_changes",
           { event: "*", schema: "public", table: "contributions", filter: `user_id=eq.${user.id}` },
           async (payload: any) => {
-            // Refresh data
+            // Optimistic UI: if today was just inserted, mark it immediately
+            try {
+              if (payload?.eventType === "INSERT") {
+                const newRow = payload?.new as { id: string; amount_kobo: number; contributed_at: string } | undefined;
+                if (newRow?.contributed_at) {
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  if (newRow.contributed_at === todayStr) {
+                    setHistory((prev) => {
+                      if (prev.some((h) => h.id === newRow.id)) return prev;
+                      return [
+                        { id: newRow.id, amount_kobo: newRow.amount_kobo ?? 0, contributed_at: newRow.contributed_at },
+                        ...prev,
+                      ];
+                    });
+                    setJustMarked(true);
+                    setTimeout(() => setJustMarked(false), 900);
+                  }
+                }
+              }
+            } catch {}
+
+            // Refresh data (wallet, KPIs, streak, settings)
             await loadData();
             // Pulse wallet subtly
             try {
@@ -243,6 +275,37 @@ export default function CustomerPage() {
                 }
               }
             } catch {}
+          }
+        )
+        .subscribe();
+    })();
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
+  // Realtime: react to profile cluster changes (join/leave cluster)
+  useEffect(() => {
+    let channel: any = null;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      channel = supabase
+        .channel("realtime:profile:self")
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+          async (payload: any) => {
+            const nextId = payload?.new?.cluster_id ?? null;
+            setClusterId(nextId);
+            if (nextId) {
+              const { data: c } = await supabase.from("clusters").select("name").eq("id", nextId).maybeSingle();
+              setClusterName((c as any)?.name ?? null);
+            } else {
+              setClusterName(null);
+            }
           }
         )
         .subscribe();
@@ -427,6 +490,12 @@ export default function CustomerPage() {
                 ₦{walletNaira.toLocaleString()}
               </div>
               <div className="text-xs opacity-70">Total contributed</div>
+              <div className="mt-3 flex items-center justify-between text-xs">
+                <span className="opacity-70">Cluster: {clusterName ?? (clusterId ? clusterId : "None")}</span>
+                {clusterId && (
+                  <Link href="/admin?scope=cluster" className="underline hover:no-underline">View my cluster</Link>
+                )}
+              </div>
             </CardContent>
           </Card>
           </motion.div>
@@ -607,34 +676,45 @@ export default function CustomerPage() {
                     const didContribute = contributedSet.has(iso);
                     return { i: i + 1, iso, isToday, didContribute };
                   });
+                  const contributedDays = days.reduce((acc, d) => acc + (d.didContribute ? 1 : 0), 0);
+                  const pct = Math.round((contributedDays / 30) * 100);
                   return (
-                    <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
-                      {days.map((d) => (
-                        <div
-                          key={d.iso}
-                          className={
-                            "relative h-10 rounded-md border text-sm grid place-items-center select-none transition-colors " +
-                            (d.didContribute
-                              ? "bg-emerald-900/40 border-emerald-700 text-emerald-100"
-                              : "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800/50") +
-                            (d.isToday ? " ring-1 ring-violet-500 cursor-pointer" : "") +
-                            (d.isToday && justMarked ? " ring-2 ring-emerald-500" : "")
-                          }
-                          title={`${d.iso}${d.didContribute ? " • contributed" : ""}`}
-                          role={d.isToday ? "button" : undefined}
-                          aria-pressed={d.isToday && d.didContribute ? true : undefined}
-                          onClick={() => {
-                            if (!d.isToday) return;
-                            if (d.didContribute) return;
-                            setConfirmOpen(true);
-                          }}
-                        >
-                          {d.i}
-                          {d.isToday && justMarked && (
-                            <span className="pointer-events-none absolute inset-0 rounded-md animate-ping ring-2 ring-emerald-500/60" />
-                          )}
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs opacity-80">
+                        <span>{contributedDays}/30 days contributed</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-neutral-800 overflow-hidden">
+                        <div className="h-full bg-emerald-600" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
+                        {days.map((d) => (
+                          <div
+                            key={d.iso}
+                            className={
+                              "relative h-10 rounded-md border text-sm grid place-items-center select-none transition-colors " +
+                              (d.didContribute
+                                ? "bg-emerald-900/40 border-emerald-700 text-emerald-100"
+                                : "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800/50") +
+                              (d.isToday ? " ring-1 ring-violet-500 cursor-pointer" : "") +
+                              (d.isToday && justMarked ? " ring-2 ring-emerald-500" : "")
+                            }
+                            title={`${d.iso}${d.didContribute ? " • contributed" : ""}`}
+                            role={d.isToday ? "button" : undefined}
+                            aria-pressed={d.isToday && d.didContribute ? true : undefined}
+                            onClick={() => {
+                              if (!d.isToday) return;
+                              if (d.didContribute) return;
+                              setConfirmOpen(true);
+                            }}
+                          >
+                            {d.i}
+                            {d.isToday && justMarked && (
+                              <span className="pointer-events-none absolute inset-0 rounded-md animate-ping ring-2 ring-emerald-500/60" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   );
                 })()}

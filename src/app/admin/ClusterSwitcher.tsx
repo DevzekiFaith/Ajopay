@@ -22,6 +22,35 @@ export default function ClusterSwitcher() {
       const { data: me } = await supabase.from("profiles").select("cluster_id").eq("id", user.id).maybeSingle();
       setCurrent(me?.cluster_id ?? null);
     })();
+    // Realtime: refresh clusters list and current selection
+    let channel: any;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      channel = supabase
+        .channel("admin:cluster-switcher")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "clusters" },
+          async () => {
+            const { data: c } = await supabase.from("clusters").select("id, name").order("name");
+            if (c) setClusters(c);
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "profiles", filter: user ? `id=eq.${user.id}` : undefined as any },
+          async (payload) => {
+            const next = (payload as any)?.new?.cluster_id ?? null;
+            setCurrent(next);
+          }
+        )
+        .subscribe();
+    })();
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [supabase]);
 
   const onSwitch = async (clusterId: string | null) => {
