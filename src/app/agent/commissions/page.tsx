@@ -41,6 +41,34 @@ export default function AgentCommissionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Realtime: keep commissions live for this agent
+  useEffect(() => {
+    const tRef = { current: null as any };
+    let channel: any = null;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      channel = supabase
+        .channel("agent:commissions")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "agent_commissions", filter: `agent_id=eq.${user.id}` },
+          () => {
+            if (tRef.current) clearTimeout(tRef.current);
+            tRef.current = setTimeout(() => load(), 250);
+          }
+        )
+        .subscribe();
+    })();
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      if (tRef.current) clearTimeout(tRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <DashboardShell role="agent" title="Agent • Commissions">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">

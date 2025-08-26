@@ -205,14 +205,14 @@ export default async function AdminPage({
     <DashboardShell role="admin" title="Admin Dashboard">
       <AdminRealtimeRefresher />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
-        <div className="relative flex items-center justify-between border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+        <div className="relative flex flex-wrap items-center justify-between gap-3 border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           {/* sheen */}
           <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">
             <div className="absolute -top-8 left-0 right-0 h-20 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
           </div>
 
         {/* 30-day Active Days progress */}
-        <Card className="relative border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+        <Card className="relative border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)] flex-1 min-w-[260px]">
           {/* sheen */}
           <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">
             <div className="absolute -top-8 left-0 right-0 h-20 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
@@ -231,23 +231,23 @@ export default async function AdminPage({
           </CardContent>
         </Card>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="relative h-8 w-8">
               <Image src="/aj2.png" alt="Ajopay" fill sizes="32px" className="object-contain" />
             </div>
-            <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+            <h1 className="text-2xl font-semibold truncate">Admin Dashboard</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto flex-wrap">
             <div className="flex items-center gap-1 text-sm border rounded-lg overflow-hidden">
               <Link href={makeUrl({ scope: "cluster" })} className={`px-3 py-1 ${!isGlobal ? "bg-white/20" : "hover:bg-white/10"}`}>Cluster</Link>
               <Link href={makeUrl({ scope: "global" })} className={`px-3 py-1 ${isGlobal ? "bg-white/20" : "hover:bg-white/10"}`}>Global</Link>
             </div>
             <ClusterSwitcher />
-            <ExportCsvButton />
+            <div className="shrink-0"><ExportCsvButton /></div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <AdminTotalCard
             title="Total Collected"
             totalNaira={Math.round(totalKobo / 100)}
@@ -290,11 +290,13 @@ export default async function AdminPage({
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 6)
                   .map(([aid, total]) => (
-                    <div key={aid} className="flex items-center justify-between text-sm">
-                      <span>
-                        <Link className="hover:underline" href={`/admin/agents/${aid}`}>{agentLabel[aid]?.name ?? aid}</Link>
+                    <div key={aid} className="flex items-center justify-between text-sm gap-2">
+                      <span className="min-w-0 flex-1 truncate">
+                        <Link className="hover:underline truncate block" href={`/admin/agents/${aid}`}>
+                          {agentLabel[aid]?.name ?? aid}
+                        </Link>
                       </span>
-                      <span className="font-medium">₦{total.toLocaleString()}</span>
+                      <span className="font-medium whitespace-nowrap">₦{total.toLocaleString()}</span>
                     </div>
                   ))}
                 {Object.keys(sumByAgent).length === 0 && (
@@ -312,18 +314,21 @@ export default async function AdminPage({
             <div className="absolute -top-8 left-0 right-0 h-20 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
           </div>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Customers
-              <Tooltip content={<span>Commission to date = {COMMISSION_PERCENT}% of confirmed cash contributions. Earned when a contribution status is confirmed.</span>}>
-                <span className="text-xs opacity-70 cursor-default">ℹ️</span>
-              </Tooltip>
-              <div className="ml-auto"><CustomersExportCsvButton rows={csvRows} /></div>
-            </CardTitle>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <CardTitle className="flex items-center gap-2 min-w-0">
+                <span className="truncate">Customers</span>
+                <Tooltip content={<span>Commission to date = {COMMISSION_PERCENT}% of confirmed cash contributions. Earned when a contribution status is confirmed.</span>}>
+                  <span className="text-xs opacity-70 cursor-default">ℹ️</span>
+                </Tooltip>
+              </CardTitle>
+              <div className="ml-auto shrink-0"><CustomersExportCsvButton rows={csvRows} /></div>
+            </div>
           </CardHeader>
           <CardContent>
             {Object.keys(sumByUser).length === 0 ? (
               <p className="opacity-70 text-sm">No customers with contributions yet.</p>
             ) : (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -341,18 +346,19 @@ export default async function AdminPage({
                 <TableBody>
                   {paged.map(({ uid, total }) => (
                     <TableRow key={uid}>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">{userLabel[uid]?.name ?? uid}</span>
-                          {userLabel[uid]?.email && <span className="text-xs opacity-70">{userLabel[uid]?.email}</span>}
+                      <TableCell className="max-w-[260px]">
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-medium truncate">{userLabel[uid]?.name ?? uid}</span>
+                          {userLabel[uid]?.email && <span className="text-xs opacity-70 truncate">{userLabel[uid]?.email}</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">₦{total.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">₦{Math.floor((total * COMMISSION_PERCENT) / 100).toLocaleString()}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">₦{total.toLocaleString()}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">₦{Math.floor((total * COMMISSION_PERCENT) / 100).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
             {/* Pagination controls */}
             {totalItems > pageSize && (
@@ -426,6 +432,7 @@ export default async function AdminPage({
             {!recent || recent.length === 0 ? (
               <p className="opacity-70 text-sm">No contributions yet.</p>
             ) : (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -439,15 +446,20 @@ export default async function AdminPage({
                 <TableBody>
                   {recent.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.contributed_at}</TableCell>
-                      <TableCell className="text-sm">{userLabel[r.user_id]?.name ?? r.user_id}</TableCell>
-                      <TableCell className="text-sm">{r.agent_id ? (agentLabel[r.agent_id]?.name ?? r.agent_id) : "-"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.contributed_at}</TableCell>
+                      <TableCell className="text-sm max-w-[220px]">
+                        <div className="truncate">{userLabel[r.user_id]?.name ?? r.user_id}</div>
+                      </TableCell>
+                      <TableCell className="text-sm max-w-[220px]">
+                        <div className="truncate">{r.agent_id ? (agentLabel[r.agent_id]?.name ?? r.agent_id) : "-"}</div>
+                      </TableCell>
                       <TableCell>{r.method}</TableCell>
-                      <TableCell className="text-right">₦{Math.round((r.amount_kobo ?? 0) / 100).toLocaleString()}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">₦{Math.round((r.amount_kobo ?? 0) / 100).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
