@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import DashboardShell from "@/components/dashboard/Shell";
@@ -87,6 +87,34 @@ export default function AgentApprovalsPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Realtime: keep approvals queue live for this agent
+  useEffect(() => {
+    const tRef = { current: null as any };
+    let channel: any = null;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      channel = supabase
+        .channel("agent:approvals")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "contributions", filter: `agent_id=eq.${user.id}` },
+          () => {
+            if (tRef.current) clearTimeout(tRef.current);
+            tRef.current = setTimeout(() => load(), 250);
+          }
+        )
+        .subscribe();
+    })();
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      if (tRef.current) clearTimeout(tRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
