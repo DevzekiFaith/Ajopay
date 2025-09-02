@@ -9,6 +9,7 @@ import { MorphModal } from "@/components/ui/morph-modal";
 import { LayoutDashboard, UserRound, BadgePercent, Shield, LogIn } from "lucide-react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Nav } from "@/components/nav";
+import { Footer } from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +43,7 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={[geistSans.variable, geistMono.variable, "antialiased"].join(" ")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Nav />
           <BackButton />
@@ -93,11 +94,7 @@ export default async function RootLayout({
             </MorphModal>
           </div>
           {user && (
-            <footer className="w-full mt-10 py-6">
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center text-sm text-gray-600 dark:text-gray-300/70">
-                © Yonan Technologies, 2025
-              </div>
-            </footer>
+            <Footer />
           )}
           <Toaster richColors position="top-right" closeButton />
         </ThemeProvider>

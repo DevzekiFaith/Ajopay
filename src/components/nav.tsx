@@ -6,6 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { NotificationSystem } from "@/components/Notifications/NotificationSystem";
 
 export function Nav() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -88,6 +89,11 @@ export function Nav() {
               <span className="h-3 w-3 rounded-full bg-violet-500" />
             </span>
           </button>
+          {user ? (
+            <NotificationSystem userId={user.id} />
+          ) : (
+            <></>
+          )}
           {user ? (
             <button
               onClick={signOut}

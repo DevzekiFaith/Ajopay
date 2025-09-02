@@ -173,29 +173,26 @@ export default function SignInPage() {
       setSending(false);
     }
   };
-
   return (
-    <div className="min-h-[60vh] w-full flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 bg-gradient-to-br from-gray-100 via-purple-50 to-white dark:from-[#181824] dark:via-[#23233a] dark:to-[#181824]">
       <div className="relative w-full max-w-2xl h-32 sm:h-40 md:h-48 mb-6">
         <Image src="/aj2.png" alt="Ajopay" fill sizes="(max-width:768px) 100vw, 720px" className="object-contain drop-shadow-xl" priority />
       </div>
-      <div className="relative w-full max-w-sm space-y-6 rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)] p-6 sm:p-8">
-        {/* subtle sheen */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_40%,transparent_60%)]">
-          <div className="absolute -top-8 left-0 right-0 h-24 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
+      <div className="relative w-full max-w-sm space-y-6 rounded-3xl border border-white/30 dark:border-white/10 bg-white/60 dark:bg-[#23233a]/80 backdrop-blur-2xl shadow-[8px_8px_24px_#e0e0e0,_-8px_-8px_24px_#ffffff] dark:shadow-[8px_8px_24px_#23233a,_-8px_-8px_24px_#181824] p-8">
+        {/* morphism highlight */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 rounded-3xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_40%,transparent_60%)]">
+          <div className="absolute -top-8 left-0 right-0 h-24 bg-gradient-to-b from-white/40 to-transparent dark:from-white/10" />
         </div>
-        <h1 className="text-2xl font-semibold">Sign in</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white drop-shadow-sm">Sign in</h1>
         {reauth && (
-          <div className="text-xs p-2 rounded border border-yellow-500/40 bg-yellow-500/10">
+          <div className="text-xs p-2 rounded-xl border border-yellow-500/40 bg-yellow-500/10 shadow-inner">
             For security, please sign in again to continue.
           </div>
         )}
-        {/* Password-only auth */}
-
-        <form onSubmit={isSignup ? signUpWithPassword : signInWithPassword} className="space-y-3">
+        <form onSubmit={isSignup ? signUpWithPassword : signInWithPassword} className="space-y-4">
           {isSignup && (
             <div className="grid gap-2">
-              <label htmlFor="full_name" className="text-sm opacity-80">Full name</label>
+              <label htmlFor="full_name" className="text-sm text-gray-700 dark:text-gray-200">Full name</label>
               <input
                 id="full_name"
                 type="text"
@@ -203,12 +200,12 @@ export default function SignInPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/5 dark:bg-white/5"
+                className="w-full border-none rounded-xl px-4 py-3 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
               />
             </div>
           )}
           <div className="grid gap-2">
-            <label htmlFor="email_pw" className="text-sm opacity-80">Email</label>
+            <label htmlFor="email_pw" className="text-sm text-gray-700 dark:text-gray-200">Email</label>
             <input
               id="email_pw"
               type="email"
@@ -216,37 +213,37 @@ export default function SignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className={`w-full border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/5 dark:bg-white/5 ${email && !isEmailValid ? "!border-red-500" : ""}`}
+              className={`w-full border-none rounded-xl px-4 py-3 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white ${email && !isEmailValid ? "!ring-red-500" : ""}`}
             />
           </div>
           <div className="grid gap-2">
-            <label htmlFor="pw" className="text-sm opacity-80">Password</label>
+            <label htmlFor="pw" className="text-sm text-gray-700 dark:text-gray-200">Password</label>
             <input
               id="pw"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/5 dark:bg-white/5"
+              placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+              className="w-full border-none rounded-xl px-4 py-3 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
             />
           </div>
           {isSignup && (
             <div className="grid gap-2">
-              <label htmlFor="pw2" className="text-sm opacity-80">Confirm password</label>
+              <label htmlFor="pw2" className="text-sm text-gray-700 dark:text-gray-200">Confirm password</label>
               <input
                 id="pw2"
                 type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/5 dark:bg-white/5"
+                placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                className="w-full border-none rounded-xl px-4 py-3 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
               />
             </div>
           )}
-          <div className="flex items-center justify-between text-xs">
-            <button type="button" onClick={() => setIsSignup((v) => !v)} className="underline">
+          <div className="flex items-center justify-between text-xs mt-2">
+            <button type="button" onClick={() => setIsSignup((v) => !v)} className="underline text-purple-700 dark:text-purple-300">
               {isSignup ? "Already have an account? Sign in" : "Create an account"}
             </button>
             {!isSignup && (
@@ -255,26 +252,25 @@ export default function SignInPage() {
                 onClick={() => {
                   window.location.href = "/reset-password";
                 }}
-                className="underline"
+                className="underline text-purple-700 dark:text-purple-300"
               >
                 Forgot password?
               </button>
             )}
           </div>
-          <button disabled={sending || !canSubmitPassword} className="w-full h-10 rounded bg-foreground text-background disabled:opacity-50 disabled:cursor-not-allowed">
-            {sending ? (isSignup ? "Creating…" : "Signing in…") : (isSignup ? "Create account" : "Sign in")}
+          <button disabled={sending || !canSubmitPassword} className="w-full h-11 rounded-2xl bg-gradient-to-r from-purple-600 to-violet-500 text-white font-semibold shadow-[4px_4px_16px_#e0e0e0,_-4px_-4px_16px_#ffffff] dark:shadow-[4px_4px_16px_#23233a,_-4px_-4px_16px_#181824] hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
+            {sending ? (isSignup ? "Creating\u2026" : "Signing in\u2026") : (isSignup ? "Create account" : "Sign in")}
           </button>
         </form>
-
         {pendingConfirm && (
-          <div className="space-y-2">
+          <div className="space-y-2 mt-4">
             <div className="text-xs opacity-80">Didn't receive the email?</div>
             <div className="grid sm:grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={resendConfirmation}
                 disabled={resendSending}
-                className="h-9 rounded bg-white/80 text-neutral-900 disabled:opacity-60"
+                className="h-10 rounded-xl bg-white/90 text-purple-900 dark:bg-white/10 dark:text-white shadow-inner disabled:opacity-60"
               >
                 {resendSending ? "Resending…" : "Resend confirmation"}
               </button>
@@ -282,16 +278,15 @@ export default function SignInPage() {
                 type="button"
                 onClick={sendMagicLink}
                 disabled={resendSending}
-                className="h-9 rounded border border-white/40"
+                className="h-10 rounded-xl border border-purple-300 dark:border-purple-700 shadow-inner"
               >
                 Send magic link
               </button>
             </div>
           </div>
         )}
-
-        {message && <p className="text-sm opacity-80">{message}</p>}
-      </div>
-    </div>
-  );
-}
+              {message && <p className="text-sm opacity-80 mt-2 text-center">{message}</p>}
+                    </div>
+                  </div>
+                );
+        }

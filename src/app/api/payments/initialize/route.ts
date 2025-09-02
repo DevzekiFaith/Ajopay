@@ -4,17 +4,46 @@ import { NextRequest, NextResponse } from "next/server";
 // body: { amount_kobo: number, user_id: string, email?: string }
 export async function POST(req: NextRequest) {
   try {
-    const { amount_kobo, user_id, email } = await req.json();
+    console.log("Payment initialization request received");
+    
+    const body = await req.json();
+    console.log("Request body:", JSON.stringify(body, null, 2));
+    
+    const { amount_kobo, user_id, email } = body;
+    
+    // Validation
     if (!amount_kobo || amount_kobo <= 0) {
+      console.error("Invalid amount_kobo:", amount_kobo);
       return NextResponse.json({ error: "amount_kobo must be > 0" }, { status: 400 });
     }
     if (!user_id) {
+      console.error("Missing user_id");
       return NextResponse.json({ error: "user_id is required" }, { status: 400 });
     }
 
+    // Environment variables check
     const secret = process.env.PAYSTACK_SECRET_KEY;
     const publicUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
-    if (!secret) return NextResponse.json({ error: "PAYSTACK_SECRET_KEY missing" }, { status: 500 });
+    
+    console.log("Environment check:");
+    console.log("- PAYSTACK_SECRET_KEY exists:", !!secret);
+    console.log("- Public URL:", publicUrl);
+    
+    if (!secret) {
+      console.error("PAYSTACK_SECRET_KEY is missing from environment variables");
+      return NextResponse.json({ error: "PAYSTACK_SECRET_KEY missing" }, { status: 500 });
+    }
+
+    // Prepare Paystack request
+    const paystackPayload = {
+      email: email || `${user_id}@noemail.local`,
+      amount: amount_kobo, // paystack expects kobo
+      currency: "NGN",
+      metadata: { user_id },
+      callback_url: publicUrl ? `${publicUrl}/customer` : undefined,
+    };
+    
+    console.log("Paystack payload:", JSON.stringify(paystackPayload, null, 2));
 
     const initRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -22,20 +51,36 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${secret}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        email: email || `${user_id}@noemail.local`,
-        amount: amount_kobo, // paystack expects kobo
-        currency: "NGN",
-        metadata: { user_id },
-        callback_url: publicUrl ? `${publicUrl}/customer` : undefined,
-      }),
+      body: JSON.stringify(paystackPayload),
     });
+    
+    console.log("Paystack response status:", initRes.status);
+    console.log("Paystack response headers:", Object.fromEntries(initRes.headers.entries()));
+    
     const data = await initRes.json();
+    console.log("Paystack response data:", JSON.stringify(data, null, 2));
+    
     if (!initRes.ok) {
-      return NextResponse.json({ error: data?.message || "Failed to init payment" }, { status: 400 });
+      console.error("Paystack API error:", data);
+      return NextResponse.json({ 
+        error: data?.message || "Failed to init payment",
+        details: data 
+      }, { status: 400 });
     }
-    return NextResponse.json({ authorization_url: data.data.authorization_url, reference: data.data.reference });
+    
+    const response = { 
+      authorization_url: data.data.authorization_url, 
+      reference: data.data.reference 
+    };
+    console.log("Successful response:", response);
+    
+    return NextResponse.json(response);
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "init error" }, { status: 500 });
+    console.error("Payment initialization error:", e);
+    console.error("Error stack:", e.stack);
+    return NextResponse.json({ 
+      error: e?.message || "init error",
+      stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
+    }, { status: 500 });
   }
 }
