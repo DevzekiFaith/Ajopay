@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
@@ -34,27 +34,162 @@ interface WalletData {
 }
 
 export default function WalletDetailPage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   
-  const walletType = params.type as string;
+  // State declarations - moved to the top to avoid TDZ issues
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const [walletView, setWalletView] = useState<'ngn' | 'crypto'>(walletType as 'ngn' | 'crypto');
+  const [walletView, setWalletView] = useState<'ngn' | 'crypto'>(params.type as 'ngn' | 'crypto');
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
+  const [cryptoBalance, setCryptoBalance] = useState(0.00234567); // BTC balance
+  const [btcPrice, setBtcPrice] = useState<number | null>(45000); // Default price in USD
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isReceiving, setIsReceiving] = useState(false);
+  
+  // Calculate crypto value in NGN
+  const cryptoValue = useMemo(() => {
+    if (!btcPrice) return 0;
+    return parseFloat((cryptoBalance * btcPrice).toFixed(2));
+  }, [cryptoBalance, btcPrice]);
 
-  // Mock crypto data for future implementation
-  const isCrypto = walletView === 'crypto';
-  const cryptoBalance = 0.00234567; // BTC example
-  const cryptoValue = cryptoBalance * 45000; // USD value
-
-  const loadWalletData = async () => {
+  const handleSend = async () => {
+    if (!amount || !walletAddress) return;
+    
+    setIsProcessing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Convert amount to kobo (smallest currency unit)
+      const amountInKobo = Math.round(parseFloat(amount) * 100);
+      
+      // Validate amount
+      if (isNaN(amountInKobo) || amountInKobo <= 0) {
+        toast.error('Please enter a valid amount');
+        return;
+      }
+
+      // Check if sender has sufficient balance
+      if (walletData && walletData.balance_kobo < amountInKobo) {
+        toast.error('Insufficient balance');
+        return;
+      }
+      
+      // Insert transfer record
+      const { data, error } = await supabase
+        .from('transfers')
+        .insert([{
+          amount_kobo: amountInKobo,
+          recipient_address: walletAddress,
+          type: 'send',
+          status: 'pending',
+          // Add any additional fields your transfers table requires
+          // e.g., sender_id, currency_type, etc.
+        }])
+        .select(); // Add this to get the inserted data back
+      
+      if (error) throw error;
+      
+      // Update local state
+      setAmount('');
+      setWalletAddress('');
+      setShowSendModal(false);
+      
+      // Update wallet data
+      if (walletData) {
+        setWalletData({
+          ...walletData,
+          balance_kobo: walletData.balance_kobo - amountInKobo,
+          last_activity_at: new Date().toISOString()
+        });
+      }
+      
+      // Refresh transactions list and wallet data
+      await loadWalletData();
+      
+      toast.success('Transfer initiated successfully!');
+    } catch (error) {
+      console.error('Error initiating transfer:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate transfer. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!amount || !walletAddress) return;
+    
+    setIsProcessing(true);
+    try {
+      // Convert amount to kobo (smallest currency unit)
+      const amountInKobo = Math.round(parseFloat(amount) * 100);
+      
+      // Validate amount
+      if (isNaN(amountInKobo) || amountInKobo <= 0) {
+        toast.error('Please enter a valid amount');
+        return;
+      }
+      
+      // Add your withdrawal API call or Supabase function here
+      // Example:
+      const { data, error } = await supabase
+        .from('withdrawals')
+        .insert([{
+          amount_kobo: amountInKobo,
+          wallet_address: walletAddress,
+          status: 'pending'
+        }]);
+      
+      if (error) throw error;
+      
+      // Reset form and close modal on success
+      setAmount('');
+      setWalletAddress('');
+      setShowWithdrawModal(false);
+      
+      // Refresh wallet data
+      if (walletData) {
+        setWalletData({
+          ...walletData,
+          balance_kobo: walletData.balance_kobo - amountInKobo,
+          total_withdrawn_kobo: (walletData.total_withdrawn_kobo || 0) + amountInKobo,
+          last_activity_at: new Date().toISOString()
+        });
+      }
+      
+      toast.success('Withdrawal request submitted successfully!');
+    } catch (error) {
+      console.error('Error processing withdrawal:', error);
+      toast.error('Failed to process withdrawal. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const isCrypto = walletView === 'crypto';
+
+  // Memoize loadWalletData to prevent unnecessary re-renders
+  const loadWalletData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast.error('Please sign in to view wallet');
+        router.push('/login');
+        return;
+      }
 
       if (isCrypto) {
         // Mock crypto wallet data for now
@@ -67,26 +202,89 @@ export default function WalletDetailPage() {
         setTransactions([]);
       } else {
         // Load NGN wallet data
-        const { data: wallet } = await supabase
+        // First try to get the wallet
+        console.log('Checking for existing wallet for user:', user.id);
+        const { data: wallet, error: walletError } = await supabase
           .from("wallets")
           .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
+          .eq("profile_id", user.id)
+          .single();
 
-        if (wallet) {
-          setWalletData(wallet);
+        if (walletError) {
+          console.log('Wallet error:', walletError);
+          // If wallet doesn't exist, create one
+          if (walletError.code === 'PGRST116' || walletError.code === 'PGRST116') {
+            console.log('Creating new wallet for user:', user.id);
+            const { data: newWallet, error: createError } = await supabase
+              .from("wallets")
+              .insert({
+                profile_id: user.id,
+                balance_kobo: 0,
+                updated_at: new Date().toISOString()
+              })
+              .select()
+              .single();
+
+            if (createError) {
+              console.error('Error creating wallet:', {
+                message: createError.message,
+                code: createError.code,
+                details: createError.details,
+                hint: createError.hint
+              });
+              toast.error(`Failed to initialize wallet: ${createError.message}`);
+              return;
+            }
+            console.log('New wallet created:', newWallet);
+
+            setWalletData({
+              balance_kobo: 0,
+              total_contributed_kobo: 0,
+              total_withdrawn_kobo: 0,
+              last_activity_at: new Date().toISOString()
+            });
+          } else {
+            console.error('Error loading wallet:', walletError);
+            toast.error('Failed to load wallet data');
+            return;
+          }
+        } else if (wallet) {
+          setWalletData({
+            balance_kobo: wallet.balance_kobo || 0,
+            total_contributed_kobo: wallet.total_contributed_kobo || 0,
+            total_withdrawn_kobo: wallet.total_withdrawn_kobo || 0,
+            last_activity_at: wallet.last_activity_at || new Date().toISOString(),
+          });
         }
 
-        // Load transactions
-        const { data: txns } = await supabase
-          .from("transactions")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(50);
+        // Load transactions with error handling
+        try {
+          console.log('Loading transactions for user:', user.id);
+          const { data: txns, error: txError, status } = await supabase
+            .from("transactions")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(50);
 
-        if (txns) {
-          setTransactions(txns);
+          console.log('Transaction query status:', status);
+          
+          if (txError) {
+            console.error('Error loading transactions:', {
+              message: txError.message,
+              details: txError.details,
+              hint: txError.hint,
+              code: txError.code
+            });
+            toast.error(`Failed to load transaction history: ${txError.message}`);
+          } else {
+            console.log('Loaded transactions:', txns);
+            setTransactions(txns || []);
+          }
+        } catch (error) {
+          console.error('Unexpected error loading transactions:', error);
+          toast.error('An unexpected error occurred while loading transactions');
+          setTransactions([]);
         }
       }
     } catch (error) {
@@ -95,35 +293,89 @@ export default function WalletDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
-
+  }, [isCrypto, router, supabase, cryptoValue]);
+  
+  // Load wallet data when component mounts or when wallet type changes
   useEffect(() => {
-    if (walletType !== 'ngn' && walletType !== 'crypto') {
-      router.push('/customer');
-      return;
-    }
-    setWalletView(walletType as 'ngn' | 'crypto');
     loadWalletData();
-  }, [walletType, supabase, router]);
+  }, [loadWalletData]);
+  
+  // Fetch real-time BTC price
+  useEffect(() => {
+    if (!isCrypto) return;
+    
+    // Initial price fetch
+    const fetchBtcPrice = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+        const data = await response.json();
+        setBtcPrice(data.bitcoin.usd);
+      } catch (error) {
+        console.error('Error fetching BTC price:', error);
+      }
+    };
+    
+    fetchBtcPrice();
+    
+    // Set up WebSocket for real-time price updates (using a mock interval for this example)
+    // In production, you would use a WebSocket connection to a crypto price API
+    const priceInterval = setInterval(fetchBtcPrice, 60000); // Update every minute
+    
+    // Subscribe to crypto transaction updates
+    const cryptoChannel = supabase
+      .channel('crypto_transactions')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crypto_transactions',
+          filter: 'user_id=eq.' + (supabase.auth.getUser() as any)?.id + '&asset=eq.btc'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newTx = payload.new as any;
+            if (newTx.type === 'receive') {
+              setCryptoBalance(prev => prev + parseFloat(newTx.amount));
+            } else if (newTx.type === 'send') {
+              setCryptoBalance(prev => prev - parseFloat(newTx.amount));
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      clearInterval(priceInterval);
+      supabase.removeChannel(cryptoChannel);
+    };
+  }, [isCrypto, supabase]);
+
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    toast.success('Copied to clipboard');
   };
 
   const formatBalance = (kobo: number) => {
-    if (isCrypto) {
-      return `${cryptoBalance.toFixed(8)} BTC`;
-    }
-    return `₦${(kobo / 100).toLocaleString()}`;
+    if (isNaN(kobo)) return '₦0.00';
+
+    const naira = kobo / 100;
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(naira);
   };
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
-      case 'deposit': return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case 'withdrawal': return <TrendingDown className="h-4 w-4 text-red-500" />;
-      case 'commission': return <Wallet className="h-4 w-4 text-blue-500" />;
-      default: return <CreditCard className="h-4 w-4" />;
+      case 'deposit':
+        return <TrendingUp className="h-4 w-4 text-green-500" />;
+      case 'withdrawal':
+        return <TrendingDown className="h-4 w-4 text-red-500" />;
+      default:
+        return <CreditCard className="h-4 w-4 text-blue-500" />;
     }
   };
 
@@ -131,6 +383,106 @@ export default function WalletDetailPage() {
     if (type === walletView) return;
     setWalletView(type);
     router.push(`/wallet/${type}`);
+  };
+
+  const handleDeposit = useCallback(async () => {
+    if (!walletData || Number(walletData.balance_kobo) < 1000) return;
+    
+    try {
+      setIsProcessing(true);
+      // TODO: Implement actual deposit logic
+      // This is where you would typically call your payment API
+      console.log('Processing deposit of:', walletData.balance_kobo);
+      
+      // Example API call (uncomment and implement as needed):
+      // const response = await fetch('/api/deposit', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     amount: Number(walletData.balance_kobo) * 100, // Convert to kobo
+      //     walletId: walletData.id,
+      //     type: 'deposit'
+      // }),
+      // });
+      // const data = await response.json();
+      // 
+      // if (!response.ok) {
+      //   throw new Error(data.message || 'Failed to process deposit');
+      // }
+      // 
+      // // Handle successful deposit
+      // setShowDepositModal(false);
+      // setAmount('');
+      // // Refresh wallet data
+      // fetchWalletData();
+      
+    } catch (error) {
+      console.error('Deposit error:', error);
+      // TODO: Show error to user
+      // setError(error.message || 'Failed to process deposit');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [walletData]);
+
+  const handleTransaction = async (type: 'deposit' | 'withdraw' | 'send') => {
+    if (!walletData || Number(walletData.balance_kobo) < 1000) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if ((type === 'withdraw' || type === 'send') && !walletAddress) {
+      toast.error(isCrypto ? 'Please enter a valid wallet address' : 'Please enter a valid account number');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const endpoint = isCrypto ? 
+        (type === 'deposit' ? '/api/crypto/deposit' : type === 'withdraw' ? '/api/crypto/withdraw' : '/api/crypto/send') 
+        : (type === 'deposit' ? '/api/deposit' : type === 'withdraw' ? '/api/withdraw' : '/api/transfer');
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: isCrypto ? Number(amount) : Math.round(Number(amount) * 100), // Convert to kobo for fiat
+          address: walletAddress,
+          currency: isCrypto ? 'BTC' : 'NGN',
+          userId: user.id,
+          ...(!isCrypto && { bankName: 'User Selected Bank' }), // Add bank name for fiat withdrawals
+          ...(type === 'send' && { recipient: walletAddress, description: 'Wallet transfer' }),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to ${type}`);
+      }
+
+      if (type === 'deposit') {
+        if (data.data?.authorization_url) {
+          window.location.href = data.data.authorization_url;
+        } else {
+          toast.success('Deposit initiated successfully');
+          setShowDepositModal(false);
+          setAmount('');
+        }
+      }
+    } catch (error: any) {
+      console.error('Transaction error:', error);
+      toast.error(error.message || `Failed to process ${type}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (loading) {
@@ -322,23 +674,354 @@ export default function WalletDetailPage() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Button className="h-12 flex-col gap-1">
+                <Button 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowDepositModal(true)}
+                >
                   <TrendingUp className="h-4 w-4" />
                   <span className="text-xs">Deposit</span>
                 </Button>
-                <Button variant="outline" className="h-12 flex-col gap-1">
+                <Button 
+                  variant="outline" 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowWithdrawModal(true)}
+                >
                   <TrendingDown className="h-4 w-4" />
                   <span className="text-xs">Withdraw</span>
                 </Button>
-                <Button variant="outline" className="h-12 flex-col gap-1">
+                <Button 
+                  variant="outline" 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowSendModal(true)}
+                >
                   <Copy className="h-4 w-4" />
                   <span className="text-xs">Send</span>
                 </Button>
-                <Button variant="outline" className="h-12 flex-col gap-1">
+                <Button 
+                  variant="outline" 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowReceiveModal(true)}
+                >
                   <CreditCard className="h-4 w-4" />
                   <span className="text-xs">Receive</span>
                 </Button>
               </CardContent>
+              
+              {/* Deposit Modal */}
+              {showDepositModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                    <h3 className="text-lg font-semibold mb-4">
+                      {isCrypto ? 'Deposit Crypto' : 'Deposit NGN'}
+                    </h3>
+                    {isCrypto ? (
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">Send only Bitcoin (BTC) to this address</p>
+                        <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+                          <p className="font-mono text-sm break-all">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="mt-2"
+                            onClick={() => {
+                              navigator.clipboard.writeText('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh');
+                              toast.success('Address copied to clipboard');
+                            }}
+                          >
+                            <Copy className="h-4 w-4 mr-2" /> Copy Address
+                          </Button>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">
+                            Minimum deposit: 0.0001 BTC
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Amount (NGN)
+                          </label>
+                          <input
+                            type="number"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            placeholder="Enter amount"
+                            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Minimum deposit: ₦1,000
+                        </p>
+                      </div>
+                    )}
+                    <div className="mt-6 flex justify-end gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowDepositModal(false);
+                          setAmount('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      {!isCrypto && (
+                        <Button 
+                          onClick={handleDeposit}
+                          disabled={isProcessing || !amount || Number(amount) < 1000}
+                        >
+                          {isProcessing ? 'Processing...' : 'Continue to Payment'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Withdraw Modal */}
+              {showWithdrawModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                    <h3 className="text-lg font-semibold mb-4">
+                      {isCrypto ? 'Withdraw Crypto' : 'Withdraw NGN'}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Amount {isCrypto ? '(BTC)' : '(NGN)'}
+                        </label>
+                        <input
+                          type="number"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          placeholder={`Enter amount ${isCrypto ? 'in BTC' : 'in NGN'}`}
+                          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          {isCrypto ? 'Wallet Address' : 'Bank Account'}
+                        </label>
+                        <input
+                          type="text"
+                          value={walletAddress}
+                          onChange={(e) => setWalletAddress(e.target.value)}
+                          placeholder={isCrypto ? 'Enter BTC address' : 'Enter account number'}
+                          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                      {!isCrypto && (
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Bank Name
+                          </label>
+                          <select className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                            <option>Select Bank</option>
+                            <option>Access Bank</option>
+                            <option>GTBank</option>
+                            <option>Zenith Bank</option>
+                            <option>First Bank</option>
+                            <option>UBA</option>
+                          </select>
+                        </div>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {isCrypto 
+                          ? 'Network fee: 0.0005 BTC' 
+                          : 'Processing time: 1-3 business days'}
+                      </p>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowWithdrawModal(false);
+                          setAmount('');
+                          setWalletAddress('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleWithdraw}
+                        disabled={isProcessing || !amount || !walletAddress}
+                      >
+                        {isProcessing ? 'Processing...' : 'Withdraw'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Send Modal */}
+              {showSendModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                    <h3 className="text-lg font-semibold mb-4">
+                      {isCrypto ? 'Send Crypto' : 'Send Money'}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Amount {isCrypto ? '(BTC)' : '(NGN)'}
+                        </label>
+                        <input
+                          type="number"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          placeholder={`Enter amount ${isCrypto ? 'in BTC' : 'in NGN'}`}
+                          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          {isCrypto ? 'Recipient Wallet Address' : 'Recipient Account'}
+                        </label>
+                        <input
+                          type="text"
+                          value={walletAddress}
+                          onChange={(e) => setWalletAddress(e.target.value)}
+                          placeholder={isCrypto ? 'Enter BTC address' : 'Enter account number or email'}
+                          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        />
+                      </div>
+                      {!isCrypto && (
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Description (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="What's it for?"
+                            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowSendModal(false);
+                          setAmount('');
+                          setWalletAddress('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleSend}
+                        disabled={isProcessing || !amount || !walletAddress}
+                      >
+                        {isProcessing ? 'Sending...' : 'Send'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Receive Modal */}
+              {showReceiveModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                    <h3 className="text-lg font-semibold mb-4">
+                      {isCrypto ? 'Receive Crypto' : 'Receive Money'}
+                    </h3>
+                    {isCrypto ? (
+                      <div className="space-y-4">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-center">
+                          <div className="w-48 h-48 bg-white p-2">
+                            {/* QR Code Placeholder - Replace with actual QR Code component */}
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                              <span className="text-xs text-gray-400">QR Code</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium mb-2">Your BTC Address</p>
+                          <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-md flex items-center justify-between">
+                            <code className="text-xs break-all">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</code>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="ml-2"
+                              onClick={() => {
+                                navigator.clipboard.writeText('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh');
+                                toast.success('Address copied to clipboard');
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Send only Bitcoin (BTC) to this address
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-center">
+                          <div className="w-48 h-48 bg-white p-2">
+                            {/* QR Code Placeholder - Replace with actual QR Code component */}
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                              <span className="text-xs text-gray-400">QR Code</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-sm font-medium">Account Number</p>
+                            <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-md">
+                              <span>0123456789</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  navigator.clipboard.writeText('0123456789');
+                                  toast.success('Account number copied');
+                                }}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Account Name</p>
+                            <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-md">
+                              <span>John Doe</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                  navigator.clipboard.writeText('John Doe');
+                                  toast.success('Account name copied');
+                                }}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Bank Name</p>
+                            <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-md">
+                              <span>Ajopay Bank</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-6 flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowReceiveModal(false)}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
 
             {walletView === 'crypto' && (

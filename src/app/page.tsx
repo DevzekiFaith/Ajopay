@@ -117,7 +117,7 @@ export default function Home() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="group px-8 py-4 inline-flex items-center justify-center rounded-2xl border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-xl text-white font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.2)] hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300"
-                  href="/sign-in"
+                  href="/dashboard"
                 >
                   Open dashboard →
                 </motion.a>

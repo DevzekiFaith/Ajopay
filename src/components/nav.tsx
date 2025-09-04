@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { NotificationSystem } from "@/components/Notifications/NotificationSystem";
@@ -166,6 +166,9 @@ export function Nav() {
       {/* Mobile Sheet menu */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="right" className="sm:hidden w-80 p-4 backdrop-blur-xl bg-white/10 dark:bg-zinc-900/30 border-l border-white/20 dark:border-white/10" ref={panelRef as any}>
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-left text-white">Menu</SheetTitle>
+          </SheetHeader>
           <div className="space-y-2">
             <Link
               href="/dashboard?hub=1"

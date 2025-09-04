@@ -136,6 +136,9 @@ create policy if not exists contributions_update_agent_approve on public.contrib
 -- Wallets RLS
 create policy if not exists wallets_select_self on public.wallets
   for select using (profile_id = public.uid() or exists (select 1 from public.profiles p where p.id = public.uid() and p.role = 'admin'));
+
+create policy if not exists wallets_insert_self on public.wallets
+  for insert with check (profile_id = public.uid());
 create policy if not exists wallet_tx_select_scope on public.wallet_transactions
   for select using (
     exists (select 1 from public.wallets w where w.id = wallet_transactions.wallet_id and (w.profile_id = public.uid() or exists (select 1 from public.profiles p where p.id = public.uid() and p.role = 'admin')))
