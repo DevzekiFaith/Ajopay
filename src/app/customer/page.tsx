@@ -463,9 +463,13 @@ export default function CustomerPage() {
   };
 
   const handleWalletToggle = (type: 'ngn' | 'crypto') => {
-    setWalletType(type);
-    // Navigate to the corresponding wallet page
-    router.push(`/wallet/${type}`);
+    if (type === walletType) {
+      // If clicking the already active tab, navigate to the wallet page
+      router.push(`/wallet/${type}`);
+    } else {
+      // If switching between NGN and Crypto, just update the UI state
+      setWalletType(type);
+    }
   };
 
   return (
@@ -811,6 +815,20 @@ export default function CustomerPage() {
 
                 <TabsContent value="overview" className="mt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <motion.div
+                      whileHover={{ y: -2, scale: 1.02 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      onClick={() => router.push('/wallet/ngn')}
+                      className="cursor-pointer"
+                    >
+                      <Card className="border border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 backdrop-blur-2xl">
+                        <CardContent className="p-4 text-center">
+                          <div className="text-3xl mb-2">💰</div>
+                          <h3 className="font-semibold text-white mb-1">My Wallet</h3>
+                          <p className="text-white/70 text-sm">Manage your digital wallet</p>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
                     <motion.div
                       whileHover={{ y: -2, scale: 1.02 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
