@@ -58,10 +58,10 @@ export function Nav() {
           <Link href="/" className="font-semibold tracking-tight bg-gradient-to-r from-purple-700 to-violet-500 bg-clip-text text-transparent">
             Ajopay
           </Link>
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="hidden sm:flex items-center">
             <Link
-              href="/dashboard?hub=1"
-              className="px-3 h-8 inline-flex items-center rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors"
+              href={user ? "/dashboard" : "/sign-in"}
+              className="px-4 h-9 inline-flex items-center rounded-lg bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-700 hover:to-violet-600 text-sm font-medium text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all"
             >
               Dashboard
             </Link>
