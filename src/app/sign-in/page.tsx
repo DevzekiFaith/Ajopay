@@ -147,7 +147,10 @@ export default function SignInPage() {
           }
         }
       } catch {}
-      window.location.href = "/dashboard";
+      // Get the redirect URL from query params or default to /dashboard
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirectTo') || '/dashboard';
+      window.location.href = redirectTo;
       try { localStorage.setItem("ajopay_last_email", email); } catch {}
     } catch (err: any) {
       setMessage(err?.message || "Failed to sign in");
