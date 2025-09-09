@@ -132,7 +132,7 @@ export default function CustomerPage() {
       prev7End.setDate(end.getDate() - 7);
       let last7 = 0, prev7 = 0;
       for (const r of rows14) {
-        const d = (r.contributed_at || "").slice(0,10);
+        const d = (r.contributed_at || "").slice(0, 10);
         if (!d) continue;
         if (d >= toIso(last7Start) && d <= toIso(end)) last7 += (r.amount_kobo ?? 0);
         else if (d >= toIso(prev7Start) && d <= toIso(prev7End)) prev7 += (r.amount_kobo ?? 0);
@@ -161,7 +161,7 @@ export default function CustomerPage() {
         })
         .join(" ");
       setSparkPoints(pts);
-    } catch {}
+    } catch { }
 
     // Streak: compute consecutive days including today if contributed
     const dates = new Set((hist ?? []).map((h) => h.contributed_at));
@@ -218,10 +218,10 @@ export default function CustomerPage() {
       if (!user) throw new Error("Please sign in");
 
       const email = (user as any)?.email || undefined;
-      
+
       // Show loading toast
       toast.loading("Initializing payment...", { id: "fund-wallet" });
-      
+
       const res = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -231,7 +231,7 @@ export default function CustomerPage() {
       if (!res.ok) throw new Error(data?.error || "Failed to start payment");
       const url = data?.authorization_url as string | undefined;
       if (!url) throw new Error("No authorization URL");
-      
+
       toast.success("Redirecting to payment...", { id: "fund-wallet" });
       window.location.href = url;
     } catch (e: any) {
@@ -277,7 +277,7 @@ export default function CustomerPage() {
                   }
                 }
               }
-            } catch {}
+            } catch { }
 
             // Refresh data (wallet, KPIs, streak, settings)
             await loadData();
@@ -285,7 +285,7 @@ export default function CustomerPage() {
             try {
               setWalletPulse(true);
               setTimeout(() => setWalletPulse(false), 600);
-            } catch {}
+            } catch { }
             // Toast if today's contribution was recorded
             try {
               if (payload?.eventType === "INSERT") {
@@ -295,7 +295,7 @@ export default function CustomerPage() {
                   toast.success("Contribution recorded");
                 }
               }
-            } catch {}
+            } catch { }
           }
         )
         .subscribe();
@@ -348,7 +348,7 @@ export default function CustomerPage() {
       await supabase.from("profiles").update({ settings: nextSettings }).eq("id", user.id);
       setProfileSettings(nextSettings);
       toast.message(val ? "Auto-mark enabled" : "Auto-mark disabled");
-    } catch {}
+    } catch { }
   };
 
   // Auto-mark today's contribution once when enabled and not yet contributed
@@ -360,13 +360,13 @@ export default function CustomerPage() {
     try {
       const last = localStorage.getItem("cust_auto_mark_last");
       if (last === today) return;
-    } catch {}
+    } catch { }
     if (autoBusy) return;
     setAutoBusy(true);
     (async () => {
       try {
         await submit();
-        try { localStorage.setItem("cust_auto_mark_last", today); } catch {}
+        try { localStorage.setItem("cust_auto_mark_last", today); } catch { }
       } finally {
         setAutoBusy(false);
       }
@@ -378,7 +378,7 @@ export default function CustomerPage() {
     try {
       const v = localStorage.getItem("cust_skip_confirm");
       setSkipConfirm(v === "1");
-    } catch {}
+    } catch { }
   }, []);
 
   const submit = async (overrideAmount?: number) => {
@@ -418,7 +418,7 @@ export default function CustomerPage() {
     try {
       const code = joinCode.trim();
       if (!code) throw new Error("Enter a join code");
-      try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(8); } catch {}
+      try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(8); } catch { }
       toast.loading("Joining cluster…", { id: "join" });
       const {
         data: { user },
@@ -515,162 +515,162 @@ export default function CustomerPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-          <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)] cursor-pointer group">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle>Digital Wallet</CardTitle>
-                <ToggleGroup 
-                  type="single" 
-                  value={walletType}
-                  onValueChange={(value: 'ngn' | 'crypto') => handleWalletToggle(value as 'ngn' | 'crypto')}
-                  className="bg-white/5 p-0.5 rounded-lg border border-white/10 h-8"
-                >
-                  <ToggleGroupItem 
-                    value="ngn" 
-                    className={`h-7 px-2 text-xs ${walletType === 'ngn' ? 'bg-white/10' : 'bg-transparent hover:bg-white/5'}`}
+            <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)] cursor-pointer group">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Digital Wallet</CardTitle>
+                  <ToggleGroup
+                    type="single"
+                    value={walletType}
+                    onValueChange={(value: 'ngn' | 'crypto') => handleWalletToggle(value as 'ngn' | 'crypto')}
+                    className="bg-white/5 p-0.5 rounded-lg border border-white/10 h-8"
                   >
-                    <Coins className="h-3 w-3 mr-1.5" />
-                    NGN
-                  </ToggleGroupItem>
-                  <ToggleGroupItem 
-                    value="crypto" 
-                    className={`h-7 px-2 text-xs ${walletType === 'crypto' ? 'bg-white/10' : 'bg-transparent hover:bg-white/5'}`}
-                  >
-                    <Bitcoin className="h-3 w-3 mr-1.5" />
-                    Crypto
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-            </CardHeader>
-            <CardContent 
-              className="group-hover:bg-white/5 transition-colors rounded-b-lg"
-              onClick={() => router.push(`/wallet/${walletType}`)}
-            >
-              <div className={`text-3xl font-semibold transition-all ${walletPulse ? "animate-pulse" : ""}`}>
-                {walletType === 'crypto' ? (
-                  <>
-                    <div>0.00000000 BTC</div>
-                    <div className="text-sm text-muted-foreground">≈ $0.00</div>
-                  </>
-                ) : (
-                  `₦${walletNaira.toLocaleString()}`
-                )}
-              </div>
-              <div className="mt-3 flex items-center justify-between text-xs">
-                <span className="opacity-70">
-                  {walletType === 'crypto' ? 'Multi-chain support' : `Cluster: ${clusterName || 'None'}`}
-                </span>
-                <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-                  View details →
+                    <ToggleGroupItem
+                      value="ngn"
+                      className={`h-7 px-2 text-xs ${walletType === 'ngn' ? 'bg-white/10' : 'bg-transparent hover:bg-white/5'}`}
+                    >
+                      <Coins className="h-3 w-3 mr-1.5" />
+                      NGN
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="crypto"
+                      className={`h-7 px-2 text-xs ${walletType === 'crypto' ? 'bg-white/10' : 'bg-transparent hover:bg-white/5'}`}
+                    >
+                      <Bitcoin className="h-3 w-3 mr-1.5" />
+                      Crypto
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent
+                className="group-hover:bg-white/5 transition-colors rounded-b-lg"
+                onClick={() => router.push(`/wallet/${walletType}`)}
+              >
+                <div className={`text-3xl font-semibold transition-all ${walletPulse ? "animate-pulse" : ""}`}>
+                  {walletType === 'crypto' ? (
+                    <>
+                      <div>0.00000000 BTC</div>
+                      <div className="text-sm text-muted-foreground">≈ $0.00</div>
+                    </>
+                  ) : (
+                    `₦${walletNaira.toLocaleString()}`
+                  )}
+                </div>
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <span className="opacity-70">
+                    {walletType === 'crypto' ? 'Multi-chain support' : `Cluster: ${clusterName || 'None'}`}
+                  </span>
+                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+                    View details →
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
           <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-          <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-            <CardHeader>
-              <CardTitle>Streak</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold">{streak} day{streak === 1 ? "" : "s"}</div>
-              <div className="text-xs opacity-70">Keep going for rewards</div>
-            </CardContent>
-          </Card>
+            <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+              <CardHeader>
+                <CardTitle>Streak</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-semibold">{streak} day{streak === 1 ? "" : "s"}</div>
+                <div className="text-xs opacity-70">Keep going for rewards</div>
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
 
         <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-        <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <CardTitle>Quick Contribution</CardTitle>
-              <span className="text-xs opacity-70">Minimum ₦200</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="amount" className="text-sm">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min={200}
-                  value={amount}
-                  onChange={(e) => setAmount(parseInt(e.target.value || "0", 10))}
-                  className="w-28 sm:w-32"
-                />
+          <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <CardTitle>Quick Contribution</CardTitle>
+                <span className="text-xs opacity-70">Minimum ₦200</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch id="auto" checked={autoMark} onCheckedChange={toggleAutoMark} />
-                <Label htmlFor="auto" className="text-sm">Auto-mark</Label>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="amount" className="text-sm">Amount</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    min={200}
+                    value={amount}
+                    onChange={(e) => setAmount(parseInt(e.target.value || "0", 10))}
+                    className="w-28 sm:w-32"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch id="auto" checked={autoMark} onCheckedChange={toggleAutoMark} />
+                  <Label htmlFor="auto" className="text-sm">Auto-mark</Label>
+                </div>
               </div>
-            </div>
 
-            <ToggleGroup type="single" value={String(amount)} aria-label="Quick amounts" className="justify-center sm:justify-start gap-2">
-              {quick.map((q) => (
-                <ToggleGroupItem
-                  key={q}
-                  value={String(q)}
-                  aria-label={`₦${q}`}
-                  onClick={() => setAmount(q)}
-                  className="h-11 sm:h-9 px-3 min-w-[4.5rem]"
-                >
-                  ₦{q}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-
-            <div className="flex gap-3">
-              <Button onClick={() => void submit()} disabled={loading} className="h-11 sm:h-10">
-                {loading ? "Submitting..." : "Submit"}
-              </Button>
-              <Button variant="outline" onClick={() => void fund()} className="h-11 sm:h-10">
-                Fund Wallet
-              </Button>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="secondary" className="h-11 sm:h-10">Contribute now…</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Contribute</DialogTitle>
-                  </DialogHeader>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const raw = form.getValues();
-                      const v = ContributionSchema.parse(raw); // ensures amount is number
-                      setAmount(v.amount);
-                      submit(v.amount);
-                    }}
-                    className="space-y-4"
+              <ToggleGroup type="single" value={String(amount)} aria-label="Quick amounts" className="justify-center sm:justify-start gap-2">
+                {quick.map((q) => (
+                  <ToggleGroupItem
+                    key={q}
+                    value={String(q)}
+                    aria-label={`₦${q}`}
+                    onClick={() => setAmount(q)}
+                    className="h-11 sm:h-9 px-3 min-w-[4.5rem]"
                   >
-                    <div className="grid gap-2">
-                      <Label htmlFor="dlg-amount">Amount</Label>
-                      <Input
-                        id="dlg-amount"
-                        type="number"
-                        min={200}
-                        {...form.register("amount", { valueAsNumber: true })}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="proof">Proof URL (optional)</Label>
-                      <Input id="proof" type="url" placeholder="https://..." {...form.register("proofUrl")} />
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" disabled={loading} className="h-11 sm:h-10">{loading ? "Submitting..." : "Submit"}</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-            {message && <p className="text-sm opacity-80">{message}</p>}
-          </CardContent>
-        </Card>
+                    ₦{q}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+
+              <div className="flex gap-3">
+                <Button onClick={() => void submit()} disabled={loading} className="h-11 sm:h-10">
+                  {loading ? "Submitting..." : "Submit"}
+                </Button>
+                <Button variant="outline" onClick={() => void fund()} className="h-11 sm:h-10">
+                  Fund Wallet
+                </Button>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="secondary" className="h-11 sm:h-10">Contribute now…</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Contribute</DialogTitle>
+                    </DialogHeader>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const raw = form.getValues();
+                        const v = ContributionSchema.parse(raw); // ensures amount is number
+                        setAmount(v.amount);
+                        submit(v.amount);
+                      }}
+                      className="space-y-4"
+                    >
+                      <div className="grid gap-2">
+                        <Label htmlFor="dlg-amount">Amount</Label>
+                        <Input
+                          id="dlg-amount"
+                          type="number"
+                          min={200}
+                          {...form.register("amount", { valueAsNumber: true })}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="proof">Proof URL (optional)</Label>
+                        <Input id="proof" type="url" placeholder="https://..." {...form.register("proofUrl")} />
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" disabled={loading} className="h-11 sm:h-10">{loading ? "Submitting..." : "Submit"}</Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              {message && <p className="text-sm opacity-80">{message}</p>}
+            </CardContent>
+          </Card>
         </motion.div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
@@ -680,284 +680,142 @@ export default function CustomerPage() {
           </TabsList>
           <TabsContent value="history">
             <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-            <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-              <CardHeader>
-                <CardTitle>History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {history.length === 0 ? (
-                  <p className="opacity-70 text-sm">No contributions yet.</p>
-                ) : (
-                  <ul className="mt-2 space-y-2 text-sm">
-                    {history.map((h) => (
-                      <li key={h.id} className="flex justify-between border-b pb-1 border-neutral-800">
-                        <span>{format(new Date(h.contributed_at), "PPP")}</span>
-                        <span>₦{Math.round((h.amount_kobo ?? 0) / 100).toLocaleString()}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
+              <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+                <CardHeader>
+                  <CardTitle>History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {history.length === 0 ? (
+                    <p className="opacity-70 text-sm">No contributions yet.</p>
+                  ) : (
+                    <ul className="mt-2 space-y-2 text-sm">
+                      {history.map((h) => (
+                        <li key={h.id} className="flex justify-between border-b pb-1 border-neutral-800">
+                          <span>{format(new Date(h.contributed_at), "PPP")}</span>
+                          <span>₦{Math.round((h.amount_kobo ?? 0) / 100).toLocaleString()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           </TabsContent>
           <TabsContent value="calendar">
             <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-            <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-              <CardHeader>
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle>Active Card • 30 days</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      className="h-8 px-2 text-xs"
-                      onClick={() => setWindowOffset((v) => v + 1)}
-                    >
-                      Prev
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      className="h-8 px-2 text-xs"
-                      onClick={() => setWindowOffset((v) => Math.max(0, v - 1))}
-                      disabled={windowOffset === 0}
-                    >
-                      Next
-                    </Button>
-                    <Button variant="ghost" className="h-8 px-2 text-xs" onClick={() => setTab("history")}>View History</Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {(() => {
-                  const today = new Date();
-                  const end = new Date();
-                  end.setDate(today.getDate() - windowOffset * 30);
-                  const start = new Date(end);
-                  start.setDate(end.getDate() - 29);
-                  const dateToIso = (d: Date) => d.toISOString().slice(0, 10);
-                  const contributedSet = new Set(history.map((h) => h.contributed_at));
-                  const days = Array.from({ length: 30 }, (_, i) => {
-                    const d = new Date(start);
-                    d.setDate(start.getDate() + i);
-                    const iso = dateToIso(d);
-                    const isToday = iso === dateToIso(today) && windowOffset === 0;
-                    const didContribute = contributedSet.has(iso);
-                    return { i: i + 1, iso, isToday, didContribute };
-                  });
-                  const contributedDays = days.reduce((acc, d) => acc + (d.didContribute ? 1 : 0), 0);
-                  const pct = Math.round((contributedDays / 30) * 100);
-                  return (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs opacity-80">
-                        <span>{contributedDays}/30 days contributed</span>
-                        <span>{pct}%</span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-neutral-800 overflow-hidden">
-                        <div className="h-full bg-emerald-600" style={{ width: `${pct}%` }} />
-                      </div>
-                      <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
-                        {days.map((d) => (
-                          <div
-                            key={d.iso}
-                            className={
-                              "relative h-10 rounded-md border text-sm grid place-items-center select-none transition-colors " +
-                              (d.didContribute
-                                ? "bg-emerald-900/40 border-emerald-700 text-emerald-100"
-                                : "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800/50") +
-                              (d.isToday ? " ring-1 ring-violet-500 cursor-pointer" : "") +
-                              (d.isToday && justMarked ? " ring-2 ring-emerald-500" : "")
-                            }
-                            title={`${d.iso}${d.didContribute ? " • contributed" : ""}`}
-                            role={d.isToday ? "button" : undefined}
-                            aria-pressed={d.isToday && d.didContribute ? true : undefined}
-                            onClick={() => {
-                              if (!d.isToday) return;
-                              if (d.didContribute) return;
-                              setConfirmOpen(true);
-                            }}
-                          >
-                            {d.i}
-                            {d.isToday && justMarked && (
-                              <span className="pointer-events-none absolute inset-0 rounded-md animate-ping ring-2 ring-emerald-500/60" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
+              <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle>Active Card • 30 days</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="secondary"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => setWindowOffset((v) => v + 1)}
+                      >
+                        Prev
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => setWindowOffset((v) => Math.max(0, v - 1))}
+                        disabled={windowOffset === 0}
+                      >
+                        Next
+                      </Button>
+                      <Button variant="ghost" className="h-8 px-2 text-xs" onClick={() => setTab("history")}>View History</Button>
                     </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const today = new Date();
+                    const end = new Date();
+                    end.setDate(today.getDate() - windowOffset * 30);
+                    const start = new Date(end);
+                    start.setDate(end.getDate() - 29);
+                    const dateToIso = (d: Date) => d.toISOString().slice(0, 10);
+                    const contributedSet = new Set(history.map((h) => h.contributed_at));
+                    const days = Array.from({ length: 30 }, (_, i) => {
+                      const d = new Date(start);
+                      d.setDate(start.getDate() + i);
+                      const iso = dateToIso(d);
+                      const isToday = iso === dateToIso(today) && windowOffset === 0;
+                      const didContribute = contributedSet.has(iso);
+                      return { i: i + 1, iso, isToday, didContribute };
+                    });
+                    const contributedDays = days.reduce((acc, d) => acc + (d.didContribute ? 1 : 0), 0);
+                    const pct = Math.round((contributedDays / 30) * 100);
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs opacity-80">
+                          <span>{contributedDays}/30 days contributed</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-neutral-800 overflow-hidden">
+                          <div className="h-full bg-emerald-600" style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
+                          {days.map((d) => (
+                            <div
+                              key={d.iso}
+                              className={
+                                "relative h-10 rounded-md border text-sm grid place-items-center select-none transition-colors " +
+                                (d.didContribute
+                                  ? "bg-emerald-900/40 border-emerald-700 text-emerald-100"
+                                  : "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800/50") +
+                                (d.isToday ? " ring-1 ring-violet-500 cursor-pointer" : "") +
+                                (d.isToday && justMarked ? " ring-2 ring-emerald-500" : "")
+                              }
+                              title={`${d.iso}${d.didContribute ? " • contributed" : ""}`}
+                              role={d.isToday ? "button" : undefined}
+                              aria-pressed={d.isToday && d.didContribute ? true : undefined}
+                              onClick={() => {
+                                if (!d.isToday) return;
+                                if (d.didContribute) return;
+                                setConfirmOpen(true);
+                              }}
+                            >
+                              {d.i}
+                              {d.isToday && justMarked && (
+                                <span className="pointer-events-none absolute inset-0 rounded-md animate-ping ring-2 ring-emerald-500/60" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
             </motion.div>
           </TabsContent>
         </Tabs>
 
-        {/* Advanced Savings Features */}
-        {/* <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-            <CardHeader>
-              <CardTitle>Advanced Savings Features</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeFeatureTab} onValueChange={(v) => setActiveFeatureTab(v as any)} className="w-full">
-                <TabsList className="grid w-full grid-cols-6 bg-white/10 backdrop-blur-2xl">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="goals">Goals</TabsTrigger>
-                  <TabsTrigger value="gamification">Rewards</TabsTrigger>
-                  <TabsTrigger value="challenges">Community</TabsTrigger>
-                  <TabsTrigger value="circles">Circles</TabsTrigger>
-                  <TabsTrigger value="commissions">Earnings</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="mt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      onClick={() => router.push('/wallet/ngn')}
-                      className="cursor-pointer"
-                    >
-                      <Card className="border border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 backdrop-blur-2xl">
-                        <CardContent className="p-4 text-center">
-                          <div className="text-3xl mb-2">💰</div>
-                          <h3 className="font-semibold text-white mb-1">My Wallet</h3>
-                          <p className="text-white/70 text-sm">Manage your digital wallet</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      onClick={() => setActiveFeatureTab("goals")}
-                      className="cursor-pointer"
-                    >
-                      <Card className="border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-2xl">
-                        <CardContent className="p-4 text-center">
-                          <div className="text-3xl mb-2">🎯</div>
-                          <h3 className="font-semibold text-white mb-1">Savings Goals</h3>
-                          <p className="text-white/70 text-sm">Set and track personal savings goals</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      onClick={() => setActiveFeatureTab("gamification")}
-                      className="cursor-pointer"
-                    >
-                      <Card className="border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-2xl">
-                        <CardContent className="p-4 text-center">
-                          <div className="text-3xl mb-2">🏆</div>
-                          <h3 className="font-semibold text-white mb-1">Rewards & Badges</h3>
-                          <p className="text-white/70 text-sm">Earn points and unlock achievements</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      onClick={() => setActiveFeatureTab("challenges")}
-                      className="cursor-pointer"
-                    >
-                      <Card className="border border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-2xl">
-                        <CardContent className="p-4 text-center">
-                          <div className="text-3xl mb-2">👥</div>
-                          <h3 className="font-semibold text-white mb-1">Peer Challenges</h3>
-                          <p className="text-white/70 text-sm">Compete with friends and community</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      onClick={() => setActiveFeatureTab("circles")}
-                      className="cursor-pointer"
-                    >
-                      <Card className="border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-red-500/10 backdrop-blur-2xl">
-                        <CardContent className="p-4 text-center">
-                          <div className="text-3xl mb-2">⭕</div>
-                          <h3 className="font-semibold text-white mb-1">Savings Circles</h3>
-                          <p className="text-white/70 text-sm">Join digital ajo/esusu groups</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      onClick={() => setActiveFeatureTab("commissions")}
-                      className="cursor-pointer"
-                    >
-                      <Card className="border border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 backdrop-blur-2xl">
-                        <CardContent className="p-4 text-center">
-                          <div className="text-3xl mb-2">💸</div>
-                          <h3 className="font-semibold text-white mb-1">Commission Earnings</h3>
-                          <p className="text-white/70 text-sm">Earn money by referring friends to Thriftly</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </div>
-                  <div className="mt-6 text-center">
-                    <p className="text-black/70 mb-4">
-                      Set personal goals, earn rewards, challenge friends, and join savings circles to make saving fun and social!
-                    </p>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="goals" className="mt-6">
-                  <SavingsGoals />
-                </TabsContent>
-
-                <TabsContent value="gamification" className="mt-6">
-                  <Gamification />
-                </TabsContent>
-
-                <TabsContent value="challenges" className="mt-6">
-                  <PeerChallenges />
-                </TabsContent>
-
-                <TabsContent value="circles" className="mt-6">
-                  <SavingsCircles />
-                </TabsContent>
-
-                <TabsContent value="commissions" className="mt-6">
-                  <CommissionTracking />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </motion.div> */}
 
         {/* Join Cluster Section */}
         <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-        <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-          <CardHeader>
-            <CardTitle>Join Cluster</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Input
-                placeholder="Enter cluster code, ID, or name"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={joinCluster} disabled={joining || !joinCode.trim()}>
-                {joining ? "Joining..." : "Join"}
-              </Button>
-            </div>
-            <p className="text-xs opacity-70">
-              Join a cluster to see how you compare with others and participate in group challenges.
-            </p>
-          </CardContent>
-        </Card>
+          <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <CardHeader>
+              <CardTitle>Join Cluster</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Input
+                  placeholder="Enter cluster code, ID, or name"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={joinCluster} disabled={joining || !joinCode.trim()}>
+                  {joining ? "Joining..." : "Join"}
+                </Button>
+              </div>
+              <p className="text-xs opacity-70">
+                Join a cluster to see how you compare with others and participate in group challenges.
+              </p>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Confirm mark dialog */}
@@ -973,7 +831,7 @@ export default function CustomerPage() {
               <Button variant="secondary" onClick={() => setConfirmOpen(false)}>Cancel</Button>
               <Button
                 onClick={async () => {
-                  try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(10); } catch {}
+                  try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(10); } catch { }
                   setConfirmOpen(false);
                   await submit();
                   setJustMarked(true);
