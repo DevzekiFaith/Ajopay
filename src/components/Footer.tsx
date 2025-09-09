@@ -2,12 +2,12 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Twitter, 
-  Linkedin, 
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Twitter,
+  Linkedin,
   Github,
   Heart,
   ArrowUp,
@@ -67,29 +67,29 @@ export function Footer() {
     <footer className="relative mt-20 overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-purple-900/50 to-transparent dark:from-[#0a0218] dark:via-[#1a0b2e]/50 dark:to-transparent" />
-      
+
       {/* Animated background orbs */}
       <motion.div
         className="absolute -top-32 -left-32 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-fuchsia-400/10 blur-3xl"
-        animate={{ 
+        animate={{
           scale: [1, 1.2, 1],
           opacity: [0.3, 0.5, 0.3]
         }}
-        transition={{ 
-          duration: 8, 
-          repeat: Infinity, 
-          ease: "easeInOut" 
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut"
         }}
       />
       <motion.div
         className="absolute -bottom-16 -right-32 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-400/15 to-cyan-400/10 blur-3xl"
-        animate={{ 
+        animate={{
           scale: [1.1, 0.9, 1.1],
           opacity: [0.2, 0.4, 0.2]
         }}
-        transition={{ 
-          duration: 10, 
-          repeat: Infinity, 
+        transition={{
+          duration: 10,
+          repeat: Infinity,
           ease: "easeInOut",
           delay: 2
         }}
@@ -107,7 +107,7 @@ export function Footer() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-12">
               {/* Company info */}
-              <motion.div 
+              <motion.div
                 className="lg:col-span-2"
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -125,24 +125,24 @@ export function Footer() {
                 <p className="text-white/70 dark:text-white/70 leading-relaxed mb-6 max-w-sm">
                   Empowering communities through smart savings and financial growth. Save small, grow big with Thriftly.
                 </p>
-                
+
                 {/* Contact info */}
                 <div className="space-y-3">
-                  <motion.div 
+                  <motion.div
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
                     <Mail className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
                     <span className="text-sm">hello@thriftly.com</span>
                   </motion.div>
-                  <motion.div 
+                  <motion.div
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
                     <Phone className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
                     <span className="text-sm">+234 (0) 123 456 7890</span>
                   </motion.div>
-                  <motion.div 
+                  <motion.div
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
@@ -209,7 +209,7 @@ export function Footer() {
                 </div>
 
                 {/* Newsletter signup */}
-                <motion.div 
+                <motion.div
                   className="flex items-center gap-3"
                   initial={{ opacity: 0, x: 20 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -252,13 +252,13 @@ export function Footer() {
                 >
                   <Heart className="w-4 h-4 text-red-400 fill-current" />
                 </motion.div>
-                <span>in Nigeria</span>
+                {/* <span>in Nigeria</span> */}
               </div>
-              
+
               <div className="flex items-center gap-4 text-white/60 text-sm">
-                <span>Powered by Supabase & Next.js</span>
+                {/* <span>Powered by Supabase & Next.js</span> */}
                 <div className="w-1 h-1 rounded-full bg-white/40" />
-                <span>v2.0.1</span>
+                {/* <span>v2.0.1</span> */}
               </div>
             </div>
           </div>
@@ -267,9 +267,8 @@ export function Footer() {
 
       {/* Scroll to top button */}
       <motion.button
-        className={`fixed bottom-6 right-6 z-50 flex items-center justify-center w-12 h-12 rounded-2xl border border-white/20 bg-white/10 dark:bg-black/20 backdrop-blur-2xl shadow-lg transition-all duration-300 ${
-          showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-        }`}
+        className={`fixed bottom-6 right-6 z-50 flex items-center justify-center w-12 h-12 rounded-2xl border border-white/20 bg-white/10 dark:bg-black/20 backdrop-blur-2xl shadow-lg transition-all duration-300 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}
         onClick={scrollToTop}
         whileHover={{ scale: 1.1, y: -2 }}
         whileTap={{ scale: 0.95 }}
