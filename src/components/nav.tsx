@@ -50,6 +50,9 @@ export function Nav() {
     setTheme(next);
     toast.message(next === "dark" ? "Dark mode enabled" : "Light mode enabled");
   };
+  
+  // Check if we're on the home page
+  const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-xl backdrop-saturate-150 bg-white/10 dark:bg-zinc-900/20 border-b border-white/20 dark:border-white/10 shadow-lg">
@@ -138,28 +141,30 @@ export function Nav() {
               <span className="h-2.5 w-2.5 rounded-full bg-violet-500" />
             </span>
           </button>
-          <button
-            aria-label="Open menu"
-            aria-expanded={mobileOpen}
-            onClick={() => {
-              try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(6); } catch {}
-              setMobileOpen((v) => !v);
-            }}
-            className="relative h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-xl transition-colors shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
-          >
-            <span className="sr-only">Menu</span>
-            <span className="block relative h-3 w-4">
-              <span
-                className={`absolute inset-x-0 top-0 h-0.5 bg-current transition-transform ${mobileOpen ? "translate-y-1.5 rotate-45" : ""}`}
-              />
-              <span
-                className={`absolute inset-x-0 top-1.5 h-0.5 bg-current transition-opacity ${mobileOpen ? "opacity-0" : "opacity-100"}`}
-              />
-              <span
-                className={`absolute inset-x-0 bottom-0 h-0.5 bg-current transition-transform ${mobileOpen ? "-translate-y-1.5 -rotate-45" : ""}`}
-              />
-            </span>
-          </button>
+          {!isHomePage || user ? (
+            <button
+              aria-label="Open menu"
+              aria-expanded={mobileOpen}
+              onClick={() => {
+                try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(6); } catch {}
+                setMobileOpen((v) => !v);
+              }}
+              className="relative h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-xl transition-colors shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+            >
+              <span className="sr-only">Menu</span>
+              <span className="block relative h-3 w-4">
+                <span
+                  className={`absolute inset-x-0 top-0 h-0.5 bg-current transition-transform ${mobileOpen ? "translate-y-1.5 rotate-45" : ""}`}
+                />
+                <span
+                  className={`absolute inset-x-0 top-1.5 h-0.5 bg-current transition-opacity ${mobileOpen ? "opacity-0" : "opacity-100"}`}
+                />
+                <span
+                  className={`absolute inset-x-0 bottom-0 h-0.5 bg-current transition-transform ${mobileOpen ? "-translate-y-1.5 -rotate-45" : ""}`}
+                />
+              </span>
+            </button>
+          ) : null}
         </div>
       </nav>
 
@@ -175,7 +180,14 @@ export function Nav() {
               onClick={() => setMobileOpen(false)}
               className="block px-3 h-10 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm leading-10 text-center text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors"
             >
-              Dashboard
+              Dashboard Hub
+            </Link>
+            <Link
+              href="/customer"
+              onClick={() => setMobileOpen(false)}
+              className="block px-3 h-10 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm leading-10 text-center text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors mt-2"
+            >
+              My Wallet
             </Link>
             {user ? (
               <button
