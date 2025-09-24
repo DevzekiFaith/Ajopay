@@ -83,7 +83,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
-              Thriftly
+              AjoPay - Thriftly
             </motion.h1>
             <motion.p
               className="text-lg sm:text-xl lg:text-2xl text-white/80 dark:text-neutral-300 font-medium"
@@ -91,7 +91,15 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
-              Save small. Grow Big.
+              Nigeria's Leading Digital Savings Platform
+            </motion.p>
+            <motion.p
+              className="text-sm sm:text-base text-white/70 dark:text-neutral-400 mt-4 max-w-2xl"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              Save small amounts daily, build financial habits, and grow your wealth with our secure thrift and savings circles. Perfect for students, professionals, and families across Nigeria.
             </motion.p>
           </motion.div>
 
@@ -124,7 +132,7 @@ export default function Home() {
               </div>
 
               <motion.div
-                className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                 initial="hidden"
                 animate="show"
                 variants={{ 
@@ -139,8 +147,10 @@ export default function Home() {
                 }}
               >
                 {[
-                  { title: "Customers", desc: "Mark daily ₦200+ contributions. Track wallet and streaks.", icon: "👥" },
-                  { title: "Agents", desc: "Create customers, record cash, and manage contributions.", icon: "🏢" }
+                  { title: "Daily Savings", desc: "Save ₦200+ daily with our secure digital wallet. Track your progress and build consistent financial habits.", icon: "💰" },
+                  { title: "Savings Circles", desc: "Join Ajo, Esusu, and Thrift groups. Save together with friends and family for mutual financial growth.", icon: "👥" },
+                  { title: "Financial Tracking", desc: "Monitor your savings health, streaks, and growth with our comprehensive analytics dashboard.", icon: "📊" },
+                  { title: "Student-Friendly", desc: "Perfect for students and young professionals. Start with small amounts and grow your wealth gradually.", icon: "🎓" }
                 ].map((item, idx) => (
                   <motion.div
                     key={item.title}
@@ -198,7 +208,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* Enhanced admin section */}
+          {/* Features section */}
           <motion.div 
             className="mt-16"
             initial={{ opacity: 0, y: 20 }}
@@ -207,12 +217,69 @@ export default function Home() {
           >
             <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/20 backdrop-blur-2xl p-8 shadow-[0_8px_24px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.1)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-all duration-300 group">
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">⚡</span>
-                <h3 className="font-semibold text-white dark:text-white text-xl">Admins</h3>
+                <span className="text-2xl">🚀</span>
+                <h2 className="font-semibold text-white dark:text-white text-xl">Why Choose AjoPay?</h2>
               </div>
-              <p className="text-white/70 dark:text-white/70 text-lg leading-relaxed">
-                System totals, CSV export, alerts. Minimal and fast.
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold text-white dark:text-white mb-2">Secure & Reliable</h3>
+                  <p className="text-white/70 dark:text-white/70 text-sm leading-relaxed">
+                    Bank-grade security with end-to-end encryption. Your savings are protected with industry-standard security measures.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white dark:text-white mb-2">Easy to Use</h3>
+                  <p className="text-white/70 dark:text-white/70 text-sm leading-relaxed">
+                    Simple, intuitive interface designed for everyone. Start saving in minutes with our user-friendly platform.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white dark:text-white mb-2">Community Focused</h3>
+                  <p className="text-white/70 dark:text-white/70 text-sm leading-relaxed">
+                    Join savings circles with friends and family. Build wealth together through traditional Ajo and Esusu practices.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white dark:text-white mb-2">Financial Growth</h3>
+                  <p className="text-white/70 dark:text-white/70 text-sm leading-relaxed">
+                    Track your progress with detailed analytics. Build consistent savings habits that lead to long-term financial success.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Call to Action */}
+          <motion.div 
+            className="mt-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
+          >
+            <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-gradient-to-r from-purple-600/20 to-violet-500/20 backdrop-blur-2xl p-8 shadow-[0_8px_24px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.1)] text-center">
+              <h2 className="font-bold text-white dark:text-white text-2xl mb-4">Start Your Savings Journey Today</h2>
+              <p className="text-white/80 dark:text-white/80 text-lg mb-6 max-w-2xl mx-auto">
+                Join thousands of Nigerians who are building wealth through consistent daily savings. 
+                Whether you're a student, professional, or family, AjoPay makes saving simple and rewarding.
               </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <motion.a
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-8 py-4 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-semibold shadow-[0_8px_24px_rgba(147,51,234,0.4)] hover:shadow-[0_12px_32px_rgba(147,51,234,0.6)] transition-all duration-300"
+                  href="/sign-up"
+                >
+                  Get Started Free
+                </motion.a>
+                <motion.a
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-8 py-4 inline-flex items-center justify-center rounded-2xl border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-xl text-white font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.2)] hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300"
+                  href="/contact"
+                >
+                  Learn More
+                </motion.a>
+              </div>
             </div>
           </motion.div>
         </motion.div>

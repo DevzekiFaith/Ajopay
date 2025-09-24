@@ -10,6 +10,8 @@ import { LayoutDashboard, UserRound, BadgePercent, Shield, LogIn } from "lucide-
 import { ThemeProvider } from "@/components/theme-provider";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/Footer";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -24,10 +26,52 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AjoPay - Thriftly",
-  description: "Save small. Grow Big. - Your trusted savings and thrift platform",
+  title: {
+    default: "AjoPay - Thriftly | Digital Savings & Thrift Platform",
+    template: "%s | AjoPay - Thriftly"
+  },
+  description: "AjoPay (Thriftly) is Nigeria's leading digital savings platform. Save small amounts daily, build financial habits, and grow your wealth with our secure thrift and savings circles. Perfect for students, professionals, and families.",
+  keywords: [
+    "digital savings",
+    "thrift platform",
+    "savings app Nigeria",
+    "ajo savings",
+    "esusu savings",
+    "daily savings",
+    "financial habits",
+    "savings circles",
+    "group savings",
+    "mobile banking",
+    "fintech Nigeria",
+    "personal finance",
+    "wealth building",
+    "student savings",
+    "micro savings"
+  ],
+  authors: [{ name: "AjoPay Team" }],
+  creator: "AjoPay",
+  publisher: "AjoPay",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://ajopay.vercel.app'),
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   manifest: "/manifest.webmanifest",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   icons: {
     icon: [
       { url: "/aj2.png", sizes: "32x32", type: "image/png" },
@@ -43,32 +87,41 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "AjoPay - Thriftly",
-    description: "Save small. Grow Big. - Your trusted savings and thrift platform",
+    type: "website",
+    locale: "en_NG",
+    url: "/",
+    title: "AjoPay - Thriftly | Digital Savings & Thrift Platform",
+    description: "Nigeria's leading digital savings platform. Save small amounts daily, build financial habits, and grow your wealth with secure thrift and savings circles.",
+    siteName: "AjoPay - Thriftly",
     images: [
       {
         url: "/aj2.png",
         width: 1200,
         height: 630,
-        alt: "AjoPay - Thriftly Logo",
+        alt: "AjoPay - Thriftly Digital Savings Platform",
       },
     ],
-    type: "website",
-    siteName: "AjoPay",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AjoPay - Thriftly",
-    description: "Save small. Grow Big. - Your trusted savings and thrift platform",
+    title: "AjoPay - Thriftly | Digital Savings & Thrift Platform",
+    description: "Nigeria's leading digital savings platform. Save small amounts daily, build financial habits, and grow your wealth.",
     images: [
       {
         url: "/aj2.png",
         width: 1200,
         height: 630,
-        alt: "AjoPay - Thriftly Logo",
+        alt: "AjoPay - Thriftly Digital Savings Platform",
       },
     ],
+    creator: "@ajopay",
   },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    yandex: process.env.YANDEX_VERIFICATION,
+    yahoo: process.env.YAHOO_VERIFICATION,
+  },
+  category: "Finance",
 };
 
 export default async function RootLayout({
@@ -87,6 +140,64 @@ export default async function RootLayout({
         <link rel="shortcut icon" href="/aj2.png" type="image/png" />
         <link rel="apple-touch-icon" href="/aj2.png" />
         <meta name="theme-color" content="#8b5cf6" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FinancialService",
+              "name": "AjoPay - Thriftly",
+              "description": "Nigeria's leading digital savings platform for daily thrift and group savings",
+              "url": process.env.NEXT_PUBLIC_APP_URL || "https://ajopay.vercel.app",
+              "logo": `${process.env.NEXT_PUBLIC_APP_URL || "https://ajopay.vercel.app"}/aj2.png`,
+              "image": `${process.env.NEXT_PUBLIC_APP_URL || "https://ajopay.vercel.app"}/aj2.png`,
+              "telephone": "+234-XXX-XXX-XXXX",
+              "email": "support@ajopay.com",
+              "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "NG",
+                "addressRegion": "Lagos"
+              },
+              "serviceType": "Digital Banking and Savings",
+              "areaServed": "Nigeria",
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Savings Services",
+                "itemListElement": [
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Daily Savings",
+                      "description": "Save small amounts daily to build financial habits"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Savings Circles",
+                      "description": "Join group savings circles (Ajo, Esusu, Thrift)"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Digital Wallet",
+                      "description": "Secure digital wallet for managing savings"
+                    }
+                  }
+                ]
+              },
+              "sameAs": [
+                "https://twitter.com/ajopay",
+                "https://facebook.com/ajopay",
+                "https://instagram.com/ajopay"
+              ]
+            })
+          }}
+        />
       </head>
       <body className={[inter.variable, jetbrainsMono.variable, "antialiased"].join(" ")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -142,6 +253,7 @@ export default async function RootLayout({
             <Footer />
           )}
           <Toaster richColors position="top-right" closeButton />
+          <SpeedInsights />
         </ThemeProvider>
         {/* Register Service Worker */}
         <Script id="sw-register" strategy="afterInteractive">{
