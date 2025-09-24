@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 interface RealtimeEvent {
   type: 'goal_completed' | 'goal_created' | 'goal_progress' | 'badge_earned' | 'challenge_joined' | 'challenge_created' | 'challenge_completed' | 'circle_updated' | 'circle_created' | 'circle_joined' | 'circle_contribution' | 'level_up' | 'streak_updated';
-  data: any;
+  data: Record<string, unknown>;
   userId: string;
   timestamp: string;
 }
@@ -257,7 +257,7 @@ export function useRealtimeUpdates(userId?: string) {
     };
   }, [userId, supabase]);
 
-  const triggerUpdate = (type: RealtimeEvent['type'], data: any) => {
+  const triggerUpdate = (type: RealtimeEvent['type'], data: Record<string, unknown>) => {
     if (!userId) return;
     
     supabase
