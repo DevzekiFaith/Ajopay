@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
 import { saveAs } from 'file-saver';
+import Image from 'next/image';
 
 interface WalletQRCodeProps {
   address: string;
@@ -82,10 +83,13 @@ export function WalletQRCode({ address, label = 'Wallet Address', isCrypto = fal
         <div className="flex flex-col items-center space-y-4 py-4">
           {qrDataUrl ? (
             <div className="p-2 bg-white rounded-lg">
-              <img 
+              <Image 
                 src={qrDataUrl} 
                 alt="Wallet QR Code" 
+                width={300}
+                height={300}
                 className="w-full max-w-xs h-auto"
+                unoptimized
               />
             </div>
           ) : (
