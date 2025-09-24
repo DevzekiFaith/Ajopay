@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { formatAmount } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ITEMS_PER_PAGE = 10;
@@ -99,7 +98,7 @@ export function TransactionHistory({ userId, isCrypto = false }: TransactionHist
           table: 'transactions',
           filter: `user_id=eq.${userId}`
         },
-        (payload) => {
+        () => {
           fetchTransactions();
         }
       )
