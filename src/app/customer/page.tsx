@@ -40,6 +40,7 @@ import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
 import { SavingsCircles } from "@/components/Circle/SavingsCircle";
 import { CommissionTracking } from "@/components/Commission/CommissionTracking";
+import { PersonalHealthDashboard } from "@/components/Monitoring/PersonalHealthDashboard";
 import { Bitcoin, Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -56,8 +57,6 @@ export default function CustomerPage() {
   const [prev7Naira, setPrev7Naira] = useState<number>(0);
   const [sparkPoints, setSparkPoints] = useState<string>("");
   const [autoMark, setAutoMark] = useState<boolean>(false);
-  const [joinCode, setJoinCode] = useState("");
-  const [joining, setJoining] = useState(false);
   const [tab, setTab] = useState<"history" | "calendar">("history");
   const [windowOffset, setWindowOffset] = useState(0); // 0 = last 30 days ending today, 1 = previous 30-day window, etc.
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -66,8 +65,6 @@ export default function CustomerPage() {
   const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [profileSettings, setProfileSettings] = useState<Record<string, any> | null>(null);
   const [autoBusy, setAutoBusy] = useState<boolean>(false);
-  const [clusterId, setClusterId] = useState<string | null>(null);
-  const [clusterName, setClusterName] = useState<string | null>(null);
   const [activeFeatureTab, setActiveFeatureTab] = useState("overview");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [walletType, setWalletType] = useState<'ngn' | 'crypto'>('ngn');
@@ -184,18 +181,10 @@ export default function CustomerPage() {
     // Load profile settings (for persisted preferences)
     const { data: me } = await supabase
       .from("profiles")
-      .select("settings, cluster_id")
+      .select("settings")
       .eq("id", user.id)
       .maybeSingle();
     const settings = (me as any)?.settings ?? null;
-    const cid = (me as any)?.cluster_id ?? null;
-    setClusterId(cid ?? null);
-    if (cid) {
-      const { data: c } = await supabase.from("clusters").select("name").eq("id", cid).maybeSingle();
-      setClusterName((c as any)?.name ?? null);
-    } else {
-      setClusterName(null);
-    }
     if (settings) {
       setProfileSettings(settings);
       if (typeof settings.customer_skip_confirm === "boolean") {
@@ -305,36 +294,6 @@ export default function CustomerPage() {
     };
   }, [supabase]);
 
-  // Realtime: react to profile cluster changes (join/leave cluster)
-  useEffect(() => {
-    let channel: any = null;
-    (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      channel = supabase
-        .channel("realtime:profile:self")
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
-          async (payload: any) => {
-            const nextId = payload?.new?.cluster_id ?? null;
-            setClusterId(nextId);
-            if (nextId) {
-              const { data: c } = await supabase.from("clusters").select("name").eq("id", nextId).maybeSingle();
-              setClusterName((c as any)?.name ?? null);
-            } else {
-              setClusterName(null);
-            }
-          }
-        )
-        .subscribe();
-    })();
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [supabase]);
 
   // Persist auto-mark preference when toggled
   const toggleAutoMark = async (val: boolean) => {
@@ -413,54 +372,6 @@ export default function CustomerPage() {
     }
   };
 
-  const joinCluster = async () => {
-    setJoining(true);
-    try {
-      const code = joinCode.trim();
-      if (!code) throw new Error("Enter a join code");
-      try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(8); } catch { }
-      toast.loading("Joining cluster…", { id: "join" });
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please sign in");
-
-      // Try flexible lookup: by join_code, then id, then name
-      let clusterId: string | null = null;
-      let errMsg = "Cluster not found";
-      {
-        const { data, error } = await supabase
-          .from("clusters")
-          .select("id")
-          .eq("join_code", code)
-          .maybeSingle();
-        if (error) errMsg = error.message;
-        if (data?.id) clusterId = data.id;
-      }
-      if (!clusterId) {
-        const { data } = await supabase.from("clusters").select("id").eq("id", code).maybeSingle();
-        if (data?.id) clusterId = data.id;
-      }
-      if (!clusterId) {
-        const { data } = await supabase
-          .from("clusters")
-          .select("id")
-          .ilike("name", code)
-          .maybeSingle();
-        if (data?.id) clusterId = data.id;
-      }
-      if (!clusterId) throw new Error(errMsg);
-
-      const { error: upErr } = await supabase.from("profiles").update({ cluster_id: clusterId }).eq("id", user.id);
-      if (upErr) throw upErr;
-      toast.success("Joined cluster", { id: "join" });
-      setJoinCode("");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to join", { id: "join" });
-    } finally {
-      setJoining(false);
-    }
-  };
 
   const handleWalletToggle = (type: 'ngn' | 'crypto') => {
     if (type === walletType) {
@@ -558,7 +469,7 @@ export default function CustomerPage() {
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs">
                   <span className="opacity-70">
-                    {walletType === 'crypto' ? 'Multi-chain support' : `Cluster: ${clusterName || 'None'}`}
+                    {walletType === 'crypto' ? 'Multi-chain support' : 'Personal savings wallet'}
                   </span>
                   <div className="text-muted-foreground group-hover:text-foreground transition-colors">
                     View details →
@@ -792,30 +703,13 @@ export default function CustomerPage() {
           </TabsContent>
         </Tabs>
 
-
-        {/* Join Cluster Section */}
-        <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-          <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-            <CardHeader>
-              <CardTitle>Join Cluster</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Input
-                  placeholder="Enter cluster code, ID, or name"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value)}
-                  className="flex-1"
-                />
-                <Button onClick={joinCluster} disabled={joining || !joinCode.trim()}>
-                  {joining ? "Joining..." : "Join"}
-                </Button>
-              </div>
-              <p className="text-xs opacity-70">
-                Join a cluster to see how you compare with others and participate in group challenges.
-              </p>
-            </CardContent>
-          </Card>
+        {/* Personal Health Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <PersonalHealthDashboard />
         </motion.div>
 
         {/* Confirm mark dialog */}

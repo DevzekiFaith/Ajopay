@@ -268,8 +268,13 @@ export function SavingsGoals() {
         <div className="relative inline-block">
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-600 rounded-3xl blur-2xl opacity-20"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity }}
+            animate={{ scale: [1, 1.1] }}
+            transition={{ 
+              duration: 4, 
+              repeat: Infinity, 
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
           />
           <div className="relative bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl px-8 py-4 rounded-3xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155]">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -375,8 +380,12 @@ export function SavingsGoals() {
             <div className="relative inline-block mb-8">
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full blur-3xl opacity-20"
-                animate={{ scale: [1, 1.3, 1], rotate: [0, 180, 360] }}
-                transition={{ duration: 6, repeat: Infinity }}
+                animate={{ scale: [1, 1.3], rotate: [0, 360] }}
+                transition={{ 
+                  duration: 6, 
+                  repeat: Infinity, 
+                  ease: "easeInOut"
+                }}
               />
               <div className="relative text-9xl filter drop-shadow-2xl">🎯</div>
             </div>
@@ -399,7 +408,13 @@ export function SavingsGoals() {
                 {/* Glow Effect */}
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700"
-                  animate={{ scale: [1, 1.05, 1] }}
+                  animate={{ scale: [1, 1.05] }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity, 
+                    repeatType: "reverse",
+                    ease: "easeInOut"
+                  }}
                   transition={{ duration: 3, repeat: Infinity }}
                 />
                 

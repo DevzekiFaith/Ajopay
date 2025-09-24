@@ -33,7 +33,6 @@ export default function AgentPage() {
   const [loading, setLoading] = useState(false);
   const [roleLoading, setRoleLoading] = useState(true);
   const [isAgentOrAdmin, setIsAgentOrAdmin] = useState(false);
-  const [clusterId, setClusterId] = useState<string | null>(null);
   const [recent, setRecent] = useState<Array<{ id: string; user_id: string; amount_kobo: number; contributed_at: string }>>([]);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Array<{ id: string; full_name: string | null; email: string | null }>>([]);
@@ -73,12 +72,9 @@ export default function AgentPage() {
       if (!res.ok) throw new Error(data?.error || "Failed to toggle");
       if (data.role === "agent") {
         setIsAgentOrAdmin(true);
-        setClusterId(data.cluster_id || null);
         toast.success("Agent mode enabled");
       } else {
         setIsAgentOrAdmin(false);
-        // keep cluster id as returned (may be null)
-        setClusterId(data.cluster_id || null);
         toast.success("Agent mode disabled");
       }
     } catch (e: any) {
@@ -88,28 +84,8 @@ export default function AgentPage() {
     }
   };
 
-  const createCluster = async () => {
-    setRoleLoading(true);
-    try {
-      const res = await fetch("/api/clusters/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to create cluster");
-      setClusterId(data.id);
-      setIsAgentOrAdmin(true);
-      toast.success(`Cluster created: ${data.name || data.id}`);
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to create cluster");
-    } finally {
-      setRoleLoading(false);
-    }
-  };
 
-  // Check current user's role to gate create-customer UI and capture cluster
+  // Check current user's role to gate create-customer UI
   useEffect(() => {
     (async () => {
       setRoleLoading(true);
@@ -119,15 +95,12 @@ export default function AgentPage() {
         } = await supabase.auth.getUser();
         if (!user) {
           setIsAgentOrAdmin(false);
-          setClusterId(null);
           return;
         }
-        const { data: me } = await supabase.from("profiles").select("role, cluster_id").eq("id", user.id).maybeSingle();
+        const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
         setIsAgentOrAdmin(!!me && (me as any).role && ["agent", "admin"].includes((me as any).role));
-        setClusterId((me as any)?.cluster_id ?? null);
       } catch {
         setIsAgentOrAdmin(false);
-        setClusterId(null);
       } finally {
         setRoleLoading(false);
       }
@@ -147,7 +120,6 @@ export default function AgentPage() {
           email: newEmail,
           full_name: newName || undefined,
           business_name: newBusiness || undefined,
-          cluster_id: clusterId || undefined,
         }),
       });
       const data = await res.json();
@@ -409,28 +381,20 @@ export default function AgentPage() {
               <Image src="/aj2.png" alt="Ajopay" fill sizes="(max-width: 640px) 24px, 28px" className="object-contain" />
             </div>
             <span className="text-sm opacity-80">Status</span>
-            <span className={`flex items-center gap-2 text-sm ${!roleLoading && isAgentOrAdmin && clusterId ? "text-green-500" : "text-yellow-500"}`}>
-              <span className={`w-2 h-2 rounded-full ${!roleLoading && isAgentOrAdmin && clusterId ? "bg-green-500" : "bg-yellow-500"}`} />
-              {!roleLoading && isAgentOrAdmin && clusterId ? "Active" : !roleLoading && isAgentOrAdmin ? "Awaiting cluster" : "Unauthorized"}
+            <span className={`flex items-center gap-2 text-sm ${!roleLoading && isAgentOrAdmin ? "text-green-500" : "text-yellow-500"}`}>
+              <span className={`w-2 h-2 rounded-full ${!roleLoading && isAgentOrAdmin ? "bg-green-500" : "bg-yellow-500"}`} />
+              {!roleLoading && isAgentOrAdmin ? "Active" : "Unauthorized"}
             </span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs">
               <span className="opacity-80">Agent mode</span>
               <Switch
-                checked={!roleLoading && isAgentOrAdmin && !!clusterId}
+                checked={!roleLoading && isAgentOrAdmin}
                 onCheckedChange={toggleAgentMode}
                 disabled={roleLoading}
               />
             </div>
-            {!roleLoading && (!isAgentOrAdmin || !clusterId) && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs opacity-80 hidden sm:inline">{isAgentOrAdmin ? "No cluster yet" : "You can self-create a cluster"}</span>
-                <Button size="sm" variant="secondary" onClick={createCluster} disabled={roleLoading}>
-                  {roleLoading ? "Working…" : "Create my cluster"}
-                </Button>
-              </div>
-            )}
           </div>
         </div>
         <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>

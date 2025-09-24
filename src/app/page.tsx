@@ -140,7 +140,7 @@ export default function Home() {
               >
                 {[
                   { title: "Customers", desc: "Mark daily ₦200+ contributions. Track wallet and streaks.", icon: "👥" },
-                  { title: "Agents", desc: "Create customers, record cash, and manage your cluster.", icon: "🏢" }
+                  { title: "Agents", desc: "Create customers, record cash, and manage contributions.", icon: "🏢" }
                 ].map((item, idx) => (
                   <motion.div
                     key={item.title}
@@ -211,7 +211,7 @@ export default function Home() {
                 <h3 className="font-semibold text-white dark:text-white text-xl">Admins</h3>
               </div>
               <p className="text-white/70 dark:text-white/70 text-lg leading-relaxed">
-                Cluster totals, CSV export, alerts. Minimal and fast.
+                System totals, CSV export, alerts. Minimal and fast.
               </p>
             </div>
           </motion.div>

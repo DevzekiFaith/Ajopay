@@ -35,10 +35,21 @@ export function Nav() {
 
   useEffect(() => {
     // Load current user and listen to changes
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (error) {
+        console.error('Nav: Error getting user:', error);
+        setUser(null);
+      } else {
+        console.log('Nav: Initial user check:', data.user);
+        setUser(data.user);
+      }
+    });
+    
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Nav: Auth state change:', _event, session?.user);
       setUser(session?.user ?? null);
     });
+    
     return () => {
       sub.subscription.unsubscribe();
     };
@@ -63,7 +74,7 @@ export function Nav() {
           </Link>
           <div className="hidden sm:flex items-center">
             <Link
-              href={user ? "/dashboard" : "/sign-in"}
+              href={user && user.id ? "/dashboard" : "/sign-in"}
               className="px-4 h-9 inline-flex items-center rounded-lg bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-700 hover:to-violet-600 text-sm font-medium text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all"
             >
               Dashboard
@@ -92,12 +103,10 @@ export function Nav() {
               <span className="h-3 w-3 rounded-full bg-violet-500" />
             </span>
           </button>
-          {user ? (
+          {user && user.id ? (
             <NotificationSystem userId={user.id} />
-          ) : (
-            <></>
-          )}
-          {user ? (
+          ) : null}
+          {user && user.id ? (
             <button
               onClick={signOut}
               className="px-3 h-8 inline-flex items-center rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm text-zinc-900 dark:text-white/90 disabled:opacity-60 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors"
@@ -141,7 +150,7 @@ export function Nav() {
               <span className="h-2.5 w-2.5 rounded-full bg-violet-500" />
             </span>
           </button>
-          {!isHomePage || user ? (
+          {user && user.id ? (
             <button
               aria-label="Open menu"
               aria-expanded={mobileOpen}
@@ -168,28 +177,28 @@ export function Nav() {
         </div>
       </nav>
 
-      {/* Mobile Sheet menu */}
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="right" className="sm:hidden w-80 p-4 backdrop-blur-xl bg-white/10 dark:bg-zinc-900/30 border-l border-white/20 dark:border-white/10" ref={panelRef as any}>
-          <SheetHeader className="mb-4">
-            <SheetTitle className="text-left text-white">Menu</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-2">
-            <Link
-              href="/dashboard?hub=1"
-              onClick={() => setMobileOpen(false)}
-              className="block px-3 h-10 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm leading-10 text-center text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors"
-            >
-              Dashboard Hub
-            </Link>
-            <Link
-              href="/customer"
-              onClick={() => setMobileOpen(false)}
-              className="block px-3 h-10 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm leading-10 text-center text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors mt-2"
-            >
-              My Wallet
-            </Link>
-            {user ? (
+      {/* Mobile Sheet menu - only show when user is signed in */}
+      {user && user.id && (
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="right" className="sm:hidden w-80 p-4 backdrop-blur-xl bg-white/10 dark:bg-zinc-900/30 border-l border-white/20 dark:border-white/10" ref={panelRef as any}>
+            <SheetHeader className="mb-4">
+              <SheetTitle className="text-left text-white">Menu</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-2">
+              <Link
+                href="/dashboard?hub=1"
+                onClick={() => setMobileOpen(false)}
+                className="block px-3 h-10 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm leading-10 text-center text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors"
+              >
+                Dashboard Hub
+              </Link>
+              <Link
+                href="/customer"
+                onClick={() => setMobileOpen(false)}
+                className="block px-3 h-10 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm leading-10 text-center text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors mt-2"
+              >
+                My Wallet
+              </Link>
               <button
                 onClick={() => {
                   setMobileOpen(false);
@@ -199,27 +208,10 @@ export function Nav() {
               >
                 {signingOut ? "Signing out…" : "Sign out"}
               </button>
-            ) : (
-              <>
-                <Link
-                  href="/sign-in"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 h-10 rounded-lg bg-purple-700 text-white hover:bg-purple-800 text-sm leading-10 text-center"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/sign-up"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 h-10 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-sm leading-10 text-center text-zinc-900 dark:text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </header>
   );
 }
