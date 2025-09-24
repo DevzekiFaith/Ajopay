@@ -24,7 +24,7 @@ class SoundManager {
     
     try {
       // Create audio context
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext || (window as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       
       // Preload sounds
       await this.loadSound('transaction', '/sounds/transaction-complete.mp3');

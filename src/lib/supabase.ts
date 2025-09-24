@@ -20,5 +20,5 @@ export interface Transaction {
   timestamp: Date;
   user_id: string;
   reference: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }

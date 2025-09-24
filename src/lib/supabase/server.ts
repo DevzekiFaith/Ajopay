@@ -13,13 +13,13 @@ export const getSupabaseServerClient = () => {
         async get(name: string) {
           return (await cookies()).get(name)?.value;
         },
-        async set(name: string, value: string, options: any) {
+        async set(name: string, value: string, options: Record<string, unknown>) {
           // In Server Components, mutating cookies throws. Make it a safe no-op.
           try {
             (await cookies()).set(name, value, options);
           } catch {}
         },
-        async remove(name: string, options: any) {
+        async remove(name: string, options: Record<string, unknown>) {
           // In Server Components, mutating cookies throws. Make it a safe no-op.
           try {
             (await cookies()).set(name, "", { ...options, maxAge: 0 });
