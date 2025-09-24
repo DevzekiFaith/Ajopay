@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Copy, QrCode, Send, Plus, Download } from 'lucide-react';
+import { Loader2, ArrowLeft, Copy, QrCode, Send, Plus, Download, RefreshCw } from 'lucide-react';
 import { TransactionHistory } from '@/components/wallet/TransactionHistory';
 import { WalletQRCode } from '@/components/wallet/WalletQRCode';
 import { soundManager, playTransactionSound } from '@/lib/sounds';
@@ -37,6 +37,7 @@ export default function WalletPage() {
   const [isSending, setIsSending] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Initialize sound manager
   useEffect(() => {
@@ -53,21 +54,108 @@ export default function WalletPage() {
         return;
       }
 
-      // In a real app, this would be an API call to your backend
-      const walletData: WalletData = {
-        balance_kobo: 500000, // 5,000 NGN in kobo
-        pending_balance_kobo: 10000, // 100 NGN pending
-        address: `0x${Math.random().toString(16).substring(2, 42)}`,
-        currency: 'NGN',
-        last_activity: new Date().toISOString()
-      };
+      console.log('Fetching wallet for user:', user.id);
 
-      setWallet(walletData);
+      // Fetch real wallet data from database
+      const { data: walletData, error: walletError } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("profile_id", user.id)
+        .single();
+
+      // Also fetch contributions to sync wallet balance
+      const { data: contributions } = await supabase
+        .from("contributions")
+        .select("amount_kobo")
+        .eq("user_id", user.id);
+      
+      const totalContributions = contributions?.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) || 0;
+
+      if (walletError) {
+        console.log('Wallet not found, creating new wallet:', walletError);
+        
+        // Create new wallet if it doesn't exist, sync with contributions
+        const { data: newWallet, error: createError } = await supabase
+          .from("wallets")
+          .insert({
+            profile_id: user.id,
+            balance_kobo: totalContributions,
+            total_contributed_kobo: totalContributions,
+            total_withdrawn_kobo: 0
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating wallet:', createError);
+          toast.error('Failed to create wallet');
+          return;
+        }
+
+        const wallet: WalletData = {
+          balance_kobo: newWallet.balance_kobo,
+          pending_balance_kobo: 0,
+          address: newWallet.id, // Use wallet ID as address
+          currency: 'NGN',
+          last_activity: newWallet.updated_at || new Date().toISOString()
+        };
+
+        setWallet(wallet);
+      } else {
+        console.log('Found existing wallet:', walletData);
+        
+        // Sync wallet balance with contributions if needed
+        if (walletData.balance_kobo !== totalContributions) {
+          console.log('Syncing wallet balance with contributions:', {
+            walletBalance: walletData.balance_kobo,
+            totalContributions: totalContributions
+          });
+          
+          // Update wallet balance to match contributions
+          const { error: updateError } = await supabase
+            .from("wallets")
+            .update({
+              balance_kobo: totalContributions,
+              total_contributed_kobo: totalContributions,
+              updated_at: new Date().toISOString()
+            })
+            .eq("profile_id", user.id);
+
+          if (updateError) {
+            console.error('Error syncing wallet balance:', updateError);
+          } else {
+            console.log('Wallet balance synced successfully');
+          }
+        }
+        
+        const wallet: WalletData = {
+          balance_kobo: totalContributions, // Use synced balance
+          pending_balance_kobo: 0, // You can add pending balance logic here
+          address: walletData.id, // Use wallet ID as address
+          currency: 'NGN',
+          last_activity: walletData.updated_at || new Date().toISOString()
+        };
+
+        setWallet(wallet);
+      }
     } catch (error) {
       console.error('Error fetching wallet:', error);
       toast.error('Failed to load wallet data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Manual refresh function
+  const refreshWallet = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchWallet();
+      toast.success('Wallet balance refreshed');
+    } catch (error) {
+      toast.error('Failed to refresh wallet');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -87,15 +175,48 @@ export default function WalletPage() {
         {
           event: '*',
           schema: 'public',
-          table: 'transactions',
-          filter: `wallet_address=eq.${wallet.address}`
+          table: 'wallets',
+          filter: `profile_id=eq.${wallet.address}`
         },
         (payload) => {
-          // Handle real-time updates
-          console.log('Wallet update:', payload);
+          // Handle real-time wallet balance updates
+          console.log('Wallet balance update:', payload);
+          fetchWallet();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallet_transactions',
+          filter: `wallet_id=eq.${wallet.address}`
+        },
+        (payload) => {
+          // Handle wallet transaction updates
+          console.log('Wallet transaction update:', payload);
           fetchWallet();
           
           // Play sound for new transactions
+          if (payload.eventType === 'INSERT') {
+            playTransactionSound('deposit');
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contributions',
+          filter: `user_id=eq.${wallet.address}`
+        },
+        (payload) => {
+          // Handle contribution updates that affect wallet balance
+          console.log('Contribution update affecting wallet:', payload);
+          fetchWallet();
+          
+          // Play sound for new contributions
           if (payload.eventType === 'INSERT') {
             playTransactionSound('deposit');
           }
@@ -244,7 +365,22 @@ export default function WalletPage() {
           {/* Balance Card */}
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
             <CardHeader>
-              <CardDescription>Available Balance</CardDescription>
+              <div className="flex items-center justify-between">
+                <CardDescription>Available Balance</CardDescription>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={refreshWallet}
+                  disabled={isRefreshing}
+                  className="h-8 w-8 p-0"
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
               <CardTitle className="text-4xl font-bold">
                 {formatAmount(wallet.balance_kobo)}
               </CardTitle>

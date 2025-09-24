@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Copy, Eye, EyeOff, CreditCard, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { ArrowLeft, Copy, Eye, EyeOff, CreditCard, TrendingUp, TrendingDown, Wallet, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import DashboardShell from "@/components/dashboard/Shell";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -58,6 +58,7 @@ export default function WalletDetailPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isReceiving, setIsReceiving] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Calculate crypto value in NGN
   const cryptoValue = useMemo(() => {
@@ -210,6 +211,14 @@ export default function WalletDetailPage() {
           .eq("profile_id", user.id)
           .single();
 
+        // Also fetch contributions to sync wallet balance
+        const { data: contributions } = await supabase
+          .from("contributions")
+          .select("amount_kobo")
+          .eq("user_id", user.id);
+        
+        const totalContributions = contributions?.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) || 0;
+
         if (walletError) {
           console.log('Wallet error:', walletError);
           // If wallet doesn't exist, create one
@@ -219,7 +228,9 @@ export default function WalletDetailPage() {
               .from("wallets")
               .insert({
                 profile_id: user.id,
-                balance_kobo: 0,
+                balance_kobo: totalContributions,
+                total_contributed_kobo: totalContributions,
+                total_withdrawn_kobo: 0,
                 updated_at: new Date().toISOString()
               })
               .select()
@@ -238,8 +249,8 @@ export default function WalletDetailPage() {
             console.log('New wallet created:', newWallet);
 
             setWalletData({
-              balance_kobo: 0,
-              total_contributed_kobo: 0,
+              balance_kobo: totalContributions,
+              total_contributed_kobo: totalContributions,
               total_withdrawn_kobo: 0,
               last_activity_at: new Date().toISOString()
             });
@@ -249,9 +260,33 @@ export default function WalletDetailPage() {
             return;
           }
         } else if (wallet) {
+          // Sync wallet balance with contributions if needed
+          if (wallet.balance_kobo !== totalContributions) {
+            console.log('Syncing wallet balance with contributions:', {
+              walletBalance: wallet.balance_kobo,
+              totalContributions: totalContributions
+            });
+            
+            // Update wallet balance to match contributions
+            const { error: updateError } = await supabase
+              .from("wallets")
+              .update({
+                balance_kobo: totalContributions,
+                total_contributed_kobo: totalContributions,
+                updated_at: new Date().toISOString()
+              })
+              .eq("profile_id", user.id);
+
+            if (updateError) {
+              console.error('Error syncing wallet balance:', updateError);
+            } else {
+              console.log('Wallet balance synced successfully');
+            }
+          }
+
           setWalletData({
-            balance_kobo: wallet.balance_kobo || 0,
-            total_contributed_kobo: wallet.total_contributed_kobo || 0,
+            balance_kobo: totalContributions, // Use synced balance
+            total_contributed_kobo: totalContributions,
             total_withdrawn_kobo: wallet.total_withdrawn_kobo || 0,
             last_activity_at: wallet.last_activity_at || new Date().toISOString(),
           });
@@ -295,6 +330,19 @@ export default function WalletDetailPage() {
     }
   }, [isCrypto, router, supabase, cryptoValue]);
   
+  // Manual refresh function
+  const refreshWallet = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadWalletData();
+      toast.success('Wallet balance refreshed');
+    } catch (error) {
+      toast.error('Failed to refresh wallet');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Load wallet data when component mounts or when wallet type changes
   useEffect(() => {
     loadWalletData();
@@ -350,6 +398,65 @@ export default function WalletDetailPage() {
     };
   }, [isCrypto, supabase]);
 
+  // Set up real-time subscriptions for NGN wallet
+  useEffect(() => {
+    if (isCrypto || !walletData) return;
+
+    // Get current user ID for filtering
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+
+      const channel = supabase
+        .channel('wallet_updates_dynamic')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'wallets',
+            filter: `profile_id=eq.${user.id}`
+          },
+          (payload) => {
+            // Handle real-time wallet balance updates
+            console.log('Dynamic wallet balance update:', payload);
+            loadWalletData(); // Refresh wallet data
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'wallet_transactions',
+            filter: `wallet_id=eq.${user.id}`
+          },
+          (payload) => {
+            // Handle wallet transaction updates
+            console.log('Dynamic wallet transaction update:', payload);
+            loadWalletData(); // Refresh wallet data
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'contributions',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            // Handle contribution updates that affect wallet balance
+            console.log('Dynamic contribution update affecting wallet:', payload);
+            loadWalletData(); // Refresh wallet data
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    });
+  }, [isCrypto, walletData, supabase, loadWalletData]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -549,9 +656,26 @@ export default function WalletDetailPage() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-6">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
-                    {walletView === 'crypto' ? 'Crypto Balance' : 'Available Balance'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      {walletView === 'crypto' ? 'Crypto Balance' : 'Available Balance'}
+                    </p>
+                    {!isCrypto && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={refreshWallet}
+                        disabled={isRefreshing}
+                        className="h-6 w-6 p-0"
+                      >
+                        {isRefreshing ? (
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     {balanceVisible ? (
                       <h2 className="text-3xl font-bold">

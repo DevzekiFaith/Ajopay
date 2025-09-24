@@ -247,8 +247,13 @@ export function Footer() {
               <div className="flex items-center gap-2 text-white/60 text-sm">
                 <span>© 2025 Yonan Technologies. Made with</span>
                 <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
+                  animate={{ scale: [1, 1.2] }}
+                  transition={{ 
+                    duration: 1, 
+                    repeat: Infinity, 
+                    repeatType: "reverse",
+                    ease: "easeInOut"
+                  }}
                 >
                   <Heart className="w-4 h-4 text-red-400 fill-current" />
                 </motion.div>

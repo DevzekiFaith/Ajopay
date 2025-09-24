@@ -32,7 +32,10 @@ export default function DashboardShell({
       );
     }
     if (role === "admin") {
-      base.push({ href: "/admin", label: "Admin Overview" });
+      base.push(
+        { href: "/admin", label: "Admin Overview" },
+        { href: "/monitoring", label: "Monitoring" }
+      );
     }
     // Add contact page for all roles
     base.push({ href: "/contact", label: "Contact Support" });

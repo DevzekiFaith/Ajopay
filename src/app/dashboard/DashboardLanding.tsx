@@ -46,6 +46,7 @@ export default function DashboardLanding({ defaultRole = "customer" as Role }) {
           <Link href="/customer" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Customer</Link>
           <Link href="/agent" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Agent</Link>
           <Link href="/admin" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Admin</Link>
+          <Link href="/monitoring" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">📊 Monitoring</Link>
         </div>
       </div>
 
@@ -398,8 +399,13 @@ function CustomerSection() {
                   <div className="opacity-80">Live</div>
                   <motion.span
                     initial={{ opacity: 0.4 }}
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1.4, repeat: Infinity }}
+                    animate={{ opacity: [0.4, 1] }}
+                    transition={{ 
+                      duration: 1.4, 
+                      repeat: Infinity, 
+                      repeatType: "reverse",
+                      ease: "easeInOut"
+                    }}
                     className="inline-flex items-center gap-1"
                   >
                     <span className="inline-block w-2 h-2 rounded-full bg-emerald-300" />

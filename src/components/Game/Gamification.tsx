@@ -398,8 +398,13 @@ export function Gamification() {
         <div className="relative inline-block">
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-600 rounded-3xl blur-2xl opacity-20"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity }}
+            animate={{ scale: [1, 1.1] }}
+            transition={{ 
+              duration: 4, 
+              repeat: Infinity, 
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
           />
           <div className="relative bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl px-8 py-4 rounded-3xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155]">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
@@ -423,7 +428,13 @@ export function Gamification() {
         >
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700"
-            animate={{ scale: [1, 1.05, 1] }}
+            animate={{ scale: [1, 1.05] }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
             transition={{ duration: 3, repeat: Infinity }}
           />
           <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl p-8 shadow-[25px_25px_50px_#d1d9e6,-25px_-25px_50px_#ffffff] dark:shadow-[25px_25px_50px_#0f172a,-25px_-25px_50px_#334155] hover:shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:hover:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] transition-all duration-700 border border-white/30 dark:border-slate-700/30">
@@ -479,7 +490,13 @@ export function Gamification() {
         >
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-indigo-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700"
-            animate={{ scale: [1, 1.05, 1] }}
+            animate={{ scale: [1, 1.05] }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
             transition={{ duration: 3, repeat: Infinity, delay: 1 }}
           />
           <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl p-8 shadow-[25px_25px_50px_#d1d9e6,-25px_-25px_50px_#ffffff] dark:shadow-[25px_25px_50px_#0f172a,-25px_-25px_50px_#334155] hover:shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:hover:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] transition-all duration-700 border border-white/30 dark:border-slate-700/30">
@@ -517,7 +534,13 @@ export function Gamification() {
         >
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700"
-            animate={{ scale: [1, 1.05, 1] }}
+            animate={{ scale: [1, 1.05] }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
             transition={{ duration: 3, repeat: Infinity, delay: 2 }}
           />
           <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl p-8 shadow-[25px_25px_50px_#d1d9e6,-25px_-25px_50px_#ffffff] dark:shadow-[25px_25px_50px_#0f172a,-25px_-25px_50px_#334155] hover:shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:hover:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] transition-all duration-700 border border-white/30 dark:border-slate-700/30">
@@ -525,8 +548,13 @@ export function Gamification() {
             <div className="text-center space-y-4">
               <motion.div
                 whileHover={{ scale: 1.2 }}
-                animate={{ rotate: [0, 5, -5, 0] }}
-                transition={{ type: "spring", stiffness: 300, repeat: Infinity, duration: 2 }}
+                animate={{ rotate: [0, 5] }}
+                transition={{ 
+                  duration: 0.5, 
+                  repeat: Infinity, 
+                  repeatType: "reverse",
+                  ease: "easeInOut"
+                }}
                 className="w-20 h-20 mx-auto bg-gradient-to-r from-orange-500 to-red-600 rounded-3xl flex items-center justify-center text-4xl shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff] dark:shadow-[15px_15px_30px_#0f172a,-15px_-15px_30px_#334155]"
               >
                 🔥
@@ -576,7 +604,13 @@ export function Gamification() {
               {badge.earned && (
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700"
-                  animate={{ scale: [1, 1.05, 1] }}
+                  animate={{ scale: [1, 1.05] }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
                   transition={{ duration: 2, repeat: Infinity }}
                 />
               )}

@@ -80,6 +80,9 @@ export function PeerChallenges() {
   const [showCreateChallenge, setShowCreateChallenge] = useState(false);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [newPost, setNewPost] = useState('');
+  const [newChallengeTitle, setNewChallengeTitle] = useState('');
+  const [newChallengeTarget, setNewChallengeTarget] = useState('');
+  const [newChallengeDuration, setNewChallengeDuration] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
@@ -89,19 +92,37 @@ export function PeerChallenges() {
   const loadData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log("No user found");
+        return;
+      }
       
       setCurrentUserId(user.id);
+      console.log("Loading challenges for user:", user.id);
 
       // Load peer challenges from database
-      const { data: challengesData } = await supabase
+      const { data: challengesData, error: challengesError } = await supabase
         .from("peer_challenges")
         .select("*")
-        .or(`participants.cs.{${user.id}},created_by.eq.${user.id}`)
         .order("created_at", { ascending: false });
 
+      if (challengesError) {
+        console.error("Error loading challenges:", challengesError);
+        return;
+      }
+
+      console.log("Raw challenges data:", challengesData);
+
       if (challengesData) {
-        const formattedChallenges = challengesData.map(challenge => ({
+        // Filter challenges to only show those the user created or is participating in
+        const userChallenges = challengesData.filter(challenge => 
+          challenge.created_by === user.id || 
+          (challenge.participants && challenge.participants.includes(user.id))
+        );
+        
+        console.log("Filtered challenges for user:", userChallenges);
+        
+        const formattedChallenges = userChallenges.map(challenge => ({
           id: challenge.id,
           title: challenge.title,
           description: challenge.description,
@@ -116,7 +137,11 @@ export function PeerChallenges() {
           isActive: new Date(challenge.end_date) > new Date(),
           progress: challenge.progress || {}
         }));
+        console.log("Formatted challenges:", formattedChallenges);
         setChallenges(formattedChallenges);
+      } else {
+        console.log("No challenges data received");
+        setChallenges([]);
       }
 
       // Load friends/connections
@@ -199,6 +224,30 @@ export function PeerChallenges() {
     loadData();
   }, []);
 
+  const handleCreateChallenge = () => {
+    if (!newChallengeTitle || !newChallengeTarget || !newChallengeDuration) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const challengeData = {
+      title: newChallengeTitle,
+      description: `Save ₦${newChallengeTarget} in ${newChallengeDuration} days`,
+      type: 'savings',
+      target: parseFloat(newChallengeTarget),
+      duration: parseInt(newChallengeDuration),
+      participants: [],
+      prize: ''
+    };
+
+    createChallenge(challengeData);
+    
+    // Reset form
+    setNewChallengeTitle('');
+    setNewChallengeTarget('');
+    setNewChallengeDuration('');
+  };
+
   const createChallenge = async (challengeData: any) => {
     if (!currentUserId) return;
 
@@ -213,7 +262,8 @@ export function PeerChallenges() {
         created_by: currentUserId,
         end_date: new Date(Date.now() + challengeData.duration * 24 * 60 * 60 * 1000).toISOString(),
         prize: challengeData.prize || '',
-        progress: {}
+        progress: {},
+        status: 'active'
       };
 
       const { data, error } = await supabase
@@ -222,7 +272,10 @@ export function PeerChallenges() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        throw error;
+      }
 
       // Trigger real-time update for challenge creation
       triggerUpdate('challenge_created', {
@@ -395,8 +448,13 @@ export function PeerChallenges() {
         <div className="relative inline-block">
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-600 rounded-3xl blur-2xl opacity-20"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity }}
+            animate={{ scale: [1, 1.1] }}
+            transition={{ 
+              duration: 4, 
+              repeat: Infinity, 
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
           />
           <div className="relative bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl px-8 py-4 rounded-3xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155]">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -481,8 +539,8 @@ export function PeerChallenges() {
                     <div className="space-y-3">
                       <Label className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Challenge Title</Label>
                       <Input
-                        value={newPost}
-                        onChange={(e) => setNewPost(e.target.value)}
+                        value={newChallengeTitle}
+                        onChange={(e) => setNewChallengeTitle(e.target.value)}
                         placeholder="e.g., 30-Day Savings Sprint"
                         className="bg-slate-100/50 dark:bg-slate-700/50 border-0 rounded-2xl shadow-[inset_8px_8px_16px_#d1d9e6,inset_-8px_-8px_16px_#ffffff] dark:shadow-[inset_8px_8px_16px_#0f172a,inset_-8px_-8px_16px_#334155] transition-all duration-300 py-4 px-6"
                       />
@@ -493,8 +551,8 @@ export function PeerChallenges() {
                         <Label className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Target (₦)</Label>
                         <Input
                           type="number"
-                          value={newPost}
-                          onChange={(e) => setNewPost(e.target.value)}
+                          value={newChallengeTarget}
+                          onChange={(e) => setNewChallengeTarget(e.target.value)}
                           placeholder="10000"
                           className="bg-slate-100/50 dark:bg-slate-700/50 border-0 rounded-2xl shadow-[inset_8px_8px_16px_#d1d9e6,inset_-8px_-8px_16px_#ffffff] dark:shadow-[inset_8px_8px_16px_#0f172a,inset_-8px_-8px_16px_#334155] transition-all duration-300 py-4 px-6"
                         />
@@ -503,8 +561,8 @@ export function PeerChallenges() {
                         <Label className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Duration (Days)</Label>
                         <Input
                           type="number"
-                          value={newPost}
-                          onChange={(e) => setNewPost(e.target.value)}
+                          value={newChallengeDuration}
+                          onChange={(e) => setNewChallengeDuration(e.target.value)}
                           placeholder="30"
                           className="bg-slate-100/50 dark:bg-slate-700/50 border-0 rounded-2xl shadow-[inset_8px_8px_16px_#d1d9e6,inset_-8px_-8px_16px_#ffffff] dark:shadow-[inset_8px_8px_16px_#0f172a,inset_-8px_-8px_16px_#334155] transition-all duration-300 py-4 px-6"
                         />
@@ -514,7 +572,7 @@ export function PeerChallenges() {
                     <motion.button
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={createChallenge}
+                      onClick={handleCreateChallenge}
                       className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-bold text-lg rounded-2xl shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff] dark:shadow-[15px_15px_30px_#0f172a,-15px_-15px_30px_#334155] hover:shadow-[20px_20px_40px_#d1d9e6,-20px_-20px_40px_#ffffff] dark:hover:shadow-[20px_20px_40px_#0f172a,-20px_-20px_40px_#334155] transition-all duration-500"
                     >
                       Create Challenge
@@ -525,8 +583,76 @@ export function PeerChallenges() {
             </motion.div>
 
             {/* Challenges Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-              {challenges.map((challenge, index) => (
+            {loading ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-20"
+              >
+                <div className="relative inline-block mb-8">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-600 rounded-full blur-3xl opacity-20"
+                    animate={{ scale: [1, 1.3], rotate: [0, 360] }}
+                    transition={{ 
+                      duration: 6, 
+                      repeat: Infinity, 
+                      ease: "easeInOut"
+                    }}
+                  />
+                  <div className="relative w-24 h-24 bg-gradient-to-r from-purple-500 to-pink-600 rounded-3xl flex items-center justify-center text-4xl shadow-[20px_20px_40px_#d1d9e6,-20px_-20px_40px_#ffffff] dark:shadow-[20px_20px_40px_#0f172a,-20px_-20px_40px_#334155]">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    >
+                      ⏳
+                    </motion.div>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-4">
+                  Loading Challenges...
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400">
+                  Fetching your peer challenges and activity
+                </p>
+              </motion.div>
+            ) : challenges.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-20"
+              >
+                <div className="relative inline-block mb-8">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-600 rounded-full blur-3xl opacity-20"
+                    animate={{ scale: [1, 1.3], rotate: [0, 360] }}
+                    transition={{ 
+                      duration: 6, 
+                      repeat: Infinity, 
+                      ease: "easeInOut"
+                    }}
+                  />
+                  <div className="relative w-24 h-24 bg-gradient-to-r from-purple-500 to-pink-600 rounded-3xl flex items-center justify-center text-4xl shadow-[20px_20px_40px_#d1d9e6,-20px_-20px_40px_#ffffff] dark:shadow-[20px_20px_40px_#0f172a,-20px_-20px_40px_#334155]">
+                    🏆
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-4">
+                  No Challenges Yet
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                  Be the first to create a savings challenge and invite your friends to join!
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCreateChallenge(true)}
+                  className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-bold rounded-2xl shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff] dark:shadow-[15px_15px_30px_#0f172a,-15px_-15px_30px_#334155] hover:shadow-[20px_20px_40px_#d1d9e6,-20px_-20px_40px_#ffffff] dark:hover:shadow-[20px_20px_40px_#0f172a,-20px_-20px_40px_#334155] transition-all duration-300"
+                >
+                  Create Your First Challenge
+                </motion.button>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {challenges.map((challenge, index) => (
                 <motion.div
                   key={challenge.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -537,8 +663,13 @@ export function PeerChallenges() {
                 >
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
+                    animate={{ scale: [1, 1.05] }}
+                    transition={{ 
+                      duration: 3, 
+                      repeat: Infinity, 
+                      repeatType: "reverse",
+                      ease: "easeInOut"
+                    }}
                   />
                   
                   <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl p-8 shadow-[25px_25px_50px_#d1d9e6,-25px_-25px_50px_#ffffff] dark:shadow-[25px_25px_50px_#0f172a,-25px_-25px_50px_#334155] hover:shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:hover:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] transition-all duration-700 border border-white/30 dark:border-slate-700/30">
@@ -589,7 +720,8 @@ export function PeerChallenges() {
                   </div>
                 </motion.div>
               ))}
-            </div>
+              </div>
+            )}
           </motion.div>
         )}
 

@@ -1,11 +1,11 @@
 {
-  "name": "AjoPay-Thriftly",
+  "name": "AjoPay - Thriftly",
   "short_name": "AjoPay",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
-  "description": "Ajopay-Thriftly savings and contributions dashboard.",
+  "theme_color": "#8b5cf6",
+  "description": "Save small. Grow Big. - Your trusted savings and thrift platform",
   "icons": [
     {
       "src": "/aj2.png",

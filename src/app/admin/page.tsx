@@ -1,5 +1,4 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import ClusterSwitcher from "./ClusterSwitcher";
 import DashboardShell from "@/components/dashboard/Shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,28 +31,13 @@ export default async function AdminPage({
 }) {
   const supabase = getSupabaseServerClient();
 
-  // Determine current user's cluster
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: me } = await supabase.from("profiles").select("cluster_id").eq("id", user.id).maybeSingle();
-  const clusterId = me?.cluster_id ?? null;
 
-  // Scope: cluster (default) or global
-  const sp0 = await searchParams;
-  const scope = (Array.isArray(sp0?.scope) ? sp0?.scope[0] : sp0?.scope) || "cluster";
-  const isGlobal = scope === "global";
-
-  // Precompute cluster member ids when needed
-  const clusterMemberIds = !isGlobal
-    ? (((await supabase.from("profiles").select("id").eq("cluster_id", clusterId as any)).data?.map((p: any) => p.id) ?? []) as any)
-    : null;
-
-  // All rows in scope (cluster-scoped or global)
-  let qAll = supabase.from("contributions").select("amount_kobo, contributed_at, user_id, agent_id");
-  if (!isGlobal) qAll = (qAll as any).in("user_id", clusterMemberIds as any);
-  const { data: allRows } = await qAll;
+  // All contributions (global scope)
+  const { data: allRows } = await supabase.from("contributions").select("amount_kobo, contributed_at, user_id, agent_id");
   const totalKobo = (allRows ?? []).reduce((acc, r: any) => acc + (r.amount_kobo ?? 0), 0);
 
   // Build per-user totals (₦) and per-agent totals (₦)
@@ -87,18 +71,14 @@ export default async function AdminPage({
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  let qToday = supabase.from("contributions").select("amount_kobo, user_id").eq("contributed_at", today);
-  if (!isGlobal) qToday = (qToday as any).in("user_id", clusterMemberIds as any);
-  const { data: todayRows } = await qToday;
+  const { data: todayRows } = await supabase.from("contributions").select("amount_kobo, user_id").eq("contributed_at", today);
   const todayKobo = (todayRows ?? []).reduce((acc, r: any) => acc + (r.amount_kobo ?? 0), 0);
 
-  let qRecent = supabase
+  const { data: recent } = await supabase
     .from("contributions")
     .select("id, user_id, agent_id, amount_kobo, method, contributed_at")
     .order("created_at", { ascending: false })
     .limit(30);
-  if (!isGlobal) qRecent = (qRecent as any).in("user_id", clusterMemberIds as any);
-  const { data: recent } = await qRecent;
 
   // Ensure label maps include names for any IDs present only in recent
   {
@@ -189,7 +169,6 @@ export default async function AdminPage({
     sp.set("dir", next.dir ?? sortDir);
     sp.set("page", next.page ?? String(currentPage));
     sp.set("pageSize", next.pageSize ?? String(pageSize));
-    sp.set("scope", next.scope ?? (isGlobal ? "global" : "cluster"));
     return `?${sp.toString()}`;
   };
 
@@ -222,7 +201,7 @@ export default async function AdminPage({
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between text-xs opacity-80">
-              <span>{activeDays30}/30 days with contributions ({isGlobal ? "Global" : "Cluster"})</span>
+              <span>{activeDays30}/30 days with contributions (Global)</span>
               <span>{activePct30}%</span>
             </div>
             <div className="mt-2 h-2 w-full rounded-full bg-neutral-800 overflow-hidden">
@@ -238,11 +217,11 @@ export default async function AdminPage({
             <h1 className="text-2xl font-semibold truncate">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-3 ml-auto flex-wrap">
-            <div className="flex items-center gap-1 text-sm border rounded-lg overflow-hidden">
-              <Link href={makeUrl({ scope: "cluster" })} className={`px-3 py-1 ${!isGlobal ? "bg-white/20" : "hover:bg-white/10"}`}>Cluster</Link>
-              <Link href={makeUrl({ scope: "global" })} className={`px-3 py-1 ${isGlobal ? "bg-white/20" : "hover:bg-white/10"}`}>Global</Link>
-            </div>
-            <ClusterSwitcher />
+            <Link href="/monitoring">
+              <Button variant="outline" size="sm" className="bg-white/10 border-white/20 hover:bg-white/20">
+                📊 Monitoring
+              </Button>
+            </Link>
             <div className="shrink-0"><ExportCsvButton /></div>
           </div>
         </div>
