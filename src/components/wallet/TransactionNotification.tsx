@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { getSupabaseBrowserClient, TransactionType, TransactionStatus } from '@/lib/supabase';
 
 interface TransactionNotificationProps {
@@ -25,8 +24,8 @@ export function TransactionNotification({
   onDismiss,
   isCrypto = false
 }: TransactionNotificationProps) {
-  // Using any for timerRef to avoid TypeScript errors with setTimeout return types
-  const timerRef = useRef<any>(null);
+  // Using NodeJS.Timeout for timerRef to properly type setTimeout return
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Play sound effect when status changes
@@ -179,8 +178,14 @@ export function TransactionNotificationContainer() {
           schema: 'public',
           table: 'transactions',
         },
-        (payload: { new: any }) => {
-          const newTransaction = payload.new as any;
+        (payload: { new: Record<string, unknown> }) => {
+          const newTransaction = payload.new as {
+            id: string;
+            type: TransactionType;
+            amount_kobo: number;
+            status: TransactionStatus;
+            created_at: string;
+          };
           setNotifications(prev => [
             ...prev,
             {
