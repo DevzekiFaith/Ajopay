@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useMemo } from "react";
 
-type Role = "customer" | "agent" | "admin";
+type Role = "customer" | "admin";
 
 export default function DashboardShell({
   role,
@@ -23,13 +23,6 @@ export default function DashboardShell({
     ];
     if (role === "customer") {
       base.push({ href: "/customer", label: "My Wallet" });
-    }
-    if (role === "agent") {
-      base.push(
-        { href: "/agent", label: "Agent Home" },
-        { href: "/agent/approvals", label: "Approvals" },
-        { href: "/agent/commissions", label: "Commissions" },
-      );
     }
     if (role === "admin") {
       base.push(

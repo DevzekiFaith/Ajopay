@@ -43,7 +43,7 @@ export default async function DashboardPage({
   // If hub is not set, redirect to role route; otherwise show hub
   if (!hub) {
     if (role === "customer") redirect("/customer");
-    if (role === "agent") redirect("/agent");
+    if (role === "agent") redirect("/customer"); // Agent system removed, redirect to customer dashboard
     if (role === "admin") redirect("/admin");
   }
 

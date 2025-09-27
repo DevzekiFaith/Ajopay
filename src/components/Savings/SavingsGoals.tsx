@@ -415,7 +415,6 @@ export function SavingsGoals() {
                     repeatType: "reverse",
                     ease: "easeInOut"
                   }}
-                  transition={{ duration: 3, repeat: Infinity }}
                 />
                 
                 {/* Main Card */}

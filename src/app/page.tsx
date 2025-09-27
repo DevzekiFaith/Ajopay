@@ -267,7 +267,7 @@ export default function Home() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="px-8 py-4 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-semibold shadow-[0_8px_24px_rgba(147,51,234,0.4)] hover:shadow-[0_12px_32px_rgba(147,51,234,0.6)] transition-all duration-300"
-                  href="/sign-up"
+                  href="/sign-in"
                 >
                   Get Started Free
                 </motion.a>
@@ -275,7 +275,7 @@ export default function Home() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="px-8 py-4 inline-flex items-center justify-center rounded-2xl border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-xl text-white font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.2)] hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300"
-                  href="/contact"
+                  href="/learn-more"
                 >
                   Learn More
                 </motion.a>

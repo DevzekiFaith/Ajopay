@@ -36,11 +36,15 @@ export async function POST(req: NextRequest) {
       console.log(`💰 Processing successful payment: ₦${amount_naira} for user ${user_id}`);
 
       // Get user profile for notifications
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("settings, email, full_name")
         .eq("id", user_id)
         .maybeSingle();
+      
+      if (profileError) {
+        console.warn('Profile query failed:', profileError);
+      }
 
       // Insert wallet topup with enhanced metadata
       const { data: topupResult, error: topupError } = await supabase
@@ -70,20 +74,23 @@ export async function POST(req: NextRequest) {
 
       console.log(`✅ Wallet topup recorded: ${topupResult.id}`);
 
-      // Create real-time notification entry
+      // Create enhanced real-time notification entry
+      const isLargeDeposit = amount_naira >= 500; // 500 NGN or more
       const { error: notificationError } = await supabase
         .from("notifications")
         .insert({
           user_id,
           type: "wallet_funded",
-          title: "Wallet Funded Successfully! 💰",
+          title: isLargeDeposit ? "Large Deposit Received! 🎉" : "Wallet Funded Successfully! 💰",
           message: `Your wallet has been credited with ₦${amount_naira.toLocaleString()}. Transaction ID: ${provider_txn_id}`,
           data: {
             amount_kobo,
             amount_naira,
             provider_txn_id,
             topup_id: topupResult.id,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            is_large_deposit: isLargeDeposit,
+            sound_type: isLargeDeposit ? 'coin' : 'deposit'
           },
           read: false,
           created_at: new Date().toISOString()
@@ -116,6 +123,32 @@ export async function POST(req: NextRequest) {
         console.error("⚠️ Failed to create contribution record:", contributionError);
       } else {
         console.log(`📊 Contribution record created for wallet topup`);
+      }
+
+      // Create wallet transaction record for real-time updates
+      const { error: walletTransactionError } = await supabase
+        .from("wallet_transactions")
+        .insert({
+          user_id,
+          amount_kobo,
+          type: "credit",
+          status: "completed",
+          reference: provider_txn_id || `topup_${topupResult.id}`,
+          description: "Wallet top-up via payment gateway",
+          metadata: {
+            source: "paystack_webhook",
+            topup_id: topupResult.id,
+            provider: "paystack",
+            customer_email,
+            is_large_deposit: isLargeDeposit
+          },
+          created_at: new Date().toISOString()
+        });
+
+      if (walletTransactionError) {
+        console.error("⚠️ Failed to create wallet transaction record:", walletTransactionError);
+      } else {
+        console.log(`💳 Wallet transaction record created for real-time updates`);
       }
 
       // Optional: Auto-mark today's contribution if enabled

@@ -11,7 +11,7 @@ import { NotificationSystem } from "@/components/Notifications/NotificationSyste
 export function Nav() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [signingOut, setSigningOut] = useState(false);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -20,7 +20,7 @@ export function Nav() {
   const signOut = async () => {
     setSigningOut(true);
     try {
-      try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(8); } catch {}
+      try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as { vibrate: (pattern: number) => void }).vibrate(8); } catch {}
       await supabase.auth.signOut();
       toast.success("Signed out");
       setTimeout(() => {
@@ -171,7 +171,7 @@ export function Nav() {
               aria-label="Open menu"
               aria-expanded={mobileOpen}
               onClick={() => {
-                try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as any).vibrate?.(6); } catch {}
+                try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as { vibrate: (pattern: number) => void }).vibrate(6); } catch {}
                 setMobileOpen((v) => !v);
               }}
               className="relative h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-xl transition-colors shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
@@ -196,7 +196,7 @@ export function Nav() {
       {/* Mobile Sheet menu - only show when user is signed in */}
       {!isLoading && user && user.id && (
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="right" className="sm:hidden w-80 p-4 backdrop-blur-xl bg-white/10 dark:bg-zinc-900/30 border-l border-white/20 dark:border-white/10" ref={panelRef as any}>
+          <SheetContent side="right" className="sm:hidden w-80 p-4 backdrop-blur-xl bg-white/10 dark:bg-zinc-900/30 border-l border-white/20 dark:border-white/10" ref={panelRef}>
             <SheetHeader className="mb-4">
               <SheetTitle className="text-left text-white">Menu</SheetTitle>
             </SheetHeader>

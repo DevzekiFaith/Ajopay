@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, Wallet, CheckCircle, AlertCircle } from "lucide-react";
+import { Bell, X, Wallet, CheckCircle, AlertCircle, Plus } from "lucide-react";
+import { playDepositNotification } from "@/lib/sounds";
 
 interface Notification {
   id: string;
@@ -12,7 +13,7 @@ interface Notification {
   type: string;
   title: string;
   message: string;
-  data: any;
+  data: Record<string, unknown>;
   read: boolean;
   created_at: string;
 }
@@ -65,24 +66,44 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
           setNotifications(prev => [newNotification, ...prev.slice(0, 19)]);
           setUnreadCount(prev => prev + 1);
 
-          // Show toast notification
+          // Show enhanced toast notification with sound
           if (newNotification.type === "wallet_funded") {
             const amount = newNotification.data?.amount_naira || 0;
+            const amountKobo = newNotification.data?.amount_kobo || 0;
+            const isLargeDeposit = newNotification.data?.is_large_deposit || false;
+            
+            // Play deposit notification sound
+            playDepositNotification(amountKobo, isLargeDeposit);
+            
             toast.success(
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20">
-                  <Wallet className="w-4 h-4 text-green-500" />
+                  <Plus className="w-4 h-4 text-green-500" />
                 </div>
                 <div>
-                  <div className="font-semibold">Wallet Funded! 💰</div>
+                  <div className="font-semibold">
+                    {isLargeDeposit ? "Large Deposit Received! 🎉" : "Wallet Funded! 💰"}
+                  </div>
                   <div className="text-sm opacity-80">₦{amount.toLocaleString()} added to your wallet</div>
                 </div>
               </div>,
               {
-                duration: 5000,
-                className: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
+                duration: isLargeDeposit ? 7000 : 5000,
+                className: isLargeDeposit 
+                  ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
+                  : "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
               }
             );
+            
+            // Show browser notification for large deposits
+            if (isLargeDeposit && 'Notification' in window && Notification.permission === 'granted') {
+              new Notification('AjoPay - Large Deposit! 🎉', {
+                body: `₦${amount.toLocaleString()} has been added to your wallet`,
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+                tag: 'large-deposit'
+              });
+            }
           } else {
             toast.success(newNotification.title, {
               description: newNotification.message,
