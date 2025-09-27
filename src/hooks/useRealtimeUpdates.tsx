@@ -83,7 +83,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">⭐</div>
             <div>
               <div className="font-bold">Level Up!</div>
-              <div className="text-sm">You reached level {event.data.newLevel}</div>
+              <div className="text-sm">You reached level {String(event.data.newLevel)}</div>
             </div>
           </div>,
           { duration: 7000 }
@@ -97,7 +97,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">🎯</div>
             <div>
               <div className="font-bold">Challenge Created!</div>
-              <div className="text-sm">{event.data.challengeTitle}</div>
+              <div className="text-sm">{String(event.data.challengeTitle)}</div>
             </div>
           </div>,
           { duration: 4000 }
@@ -111,7 +111,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">👥</div>
             <div>
               <div className="font-bold">Challenge Joined!</div>
-              <div className="text-sm">{event.data.challengeTitle}</div>
+              <div className="text-sm">{String(event.data.challengeTitle)}</div>
             </div>
           </div>,
           { duration: 4000 }
@@ -125,7 +125,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">🏆</div>
             <div>
               <div className="font-bold">Challenge Completed!</div>
-              <div className="text-sm">{event.data.challengeTitle}</div>
+              <div className="text-sm">{String(event.data.challengeTitle)}</div>
             </div>
           </div>,
           { duration: 5000 }
@@ -139,7 +139,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">⭕</div>
             <div>
               <div className="font-bold">Circle Created!</div>
-              <div className="text-sm">{event.data.circleName} - Code: {event.data.joinCode}</div>
+              <div className="text-sm">{String(event.data.circleName)} - Code: {String(event.data.joinCode)}</div>
             </div>
           </div>,
           { duration: 6000 }
@@ -153,7 +153,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">🎉</div>
             <div>
               <div className="font-bold">Joined Circle!</div>
-              <div className="text-sm">{event.data.circleName}</div>
+              <div className="text-sm">{String(event.data.circleName)}</div>
             </div>
           </div>,
           { duration: 4000 }
@@ -167,7 +167,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">💰</div>
             <div>
               <div className="font-bold">Contribution Made!</div>
-              <div className="text-sm">₦{event.data.amount?.toLocaleString()} to {event.data.circleName}</div>
+              <div className="text-sm">₦{Number(event.data.amount || 0).toLocaleString()} to {String(event.data.circleName)}</div>
             </div>
           </div>,
           { duration: 4000 }
@@ -181,7 +181,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">⭕</div>
             <div>
               <div className="font-bold">Circle Update</div>
-              <div className="text-sm">{event.data.message}</div>
+              <div className="text-sm">{String(event.data.message)}</div>
             </div>
           </div>,
           { duration: 4000 }

@@ -122,7 +122,7 @@ export function NotificationTest() {
 
         <div className="text-sm text-muted-foreground space-y-1">
           <p>Browser Notifications: {isSupported ? 'Supported' : 'Not Supported'}</p>
-          <p>Permission: {permission}</p>
+          <p>Permission: {String(permission)}</p>
           {!isSupported && (
             <p className="text-amber-600">Browser notifications are not supported on this device</p>
           )}
