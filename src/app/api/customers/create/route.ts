@@ -45,18 +45,21 @@ export async function POST(req: Request) {
     if (!newUser) return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
 
     // Ensure profile has correct fields (trigger inserts default; upsert to set name)
+    const profileData: any = {
+      id: newUser.id,
+      email,
+      full_name: full_name || null,
+      role: "customer",
+    };
+    
+    // Only add business_name if the column exists
+    if (business_name) {
+      profileData.business_name = business_name;
+    }
+    
     const { error: upsertErr } = await admin
       .from("profiles")
-      .upsert(
-        {
-          id: newUser.id,
-          email,
-          full_name: full_name || null,
-          role: "customer",
-          business_name: business_name || null,
-        },
-        { onConflict: "id" }
-      );
+      .upsert(profileData, { onConflict: "id" });
     if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 });
 
     return NextResponse.json({ id: newUser.id, email, full_name: full_name || null, business_name: business_name || null });

@@ -27,7 +27,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">🎯</div>
             <div>
               <div className="font-bold">Goal Completed!</div>
-              <div className="text-sm">{event.data.goalTitle}</div>
+              <div className="text-sm">{String(event.data.goalTitle)}</div>
             </div>
           </div>,
           { duration: 5000 }
@@ -41,7 +41,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">🎯</div>
             <div>
               <div className="font-bold">New Goal Created!</div>
-              <div className="text-sm">{event.data.goalTitle}</div>
+              <div className="text-sm">{String(event.data.goalTitle)}</div>
             </div>
           </div>,
           { duration: 4000 }
@@ -55,7 +55,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">📈</div>
             <div>
               <div className="font-bold">Goal Progress!</div>
-              <div className="text-sm">{event.data.goalTitle} - ₦{event.data.newAmount?.toLocaleString()}</div>
+              <div className="text-sm">{String(event.data.goalTitle)} - ₦{event.data.newAmount?.toLocaleString()}</div>
             </div>
           </div>,
           { duration: 3000 }
@@ -69,7 +69,7 @@ export function useRealtimeUpdates(userId?: string) {
             <div className="text-2xl">🏆</div>
             <div>
               <div className="font-bold">Badge Earned!</div>
-              <div className="text-sm">{event.data.badgeName}</div>
+              <div className="text-sm">{String(event.data.badgeName)}</div>
             </div>
           </div>,
           { duration: 6000 }

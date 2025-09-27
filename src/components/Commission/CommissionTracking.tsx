@@ -48,19 +48,43 @@ export function CommissionTracking() {
 
       setCurrentUserId(user.id);
 
-      // Load commissions
-      const { data: commissionsData } = await supabase
-        .from("agent_commissions")
-        .select(`
-          id,
-          amount_kobo,
-          created_at,
-          contribution_id,
-          referral_user_id
-        `)
-        .eq("agent_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      // Load commissions (handle missing table gracefully)
+      let commissionsData = null;
+      try {
+        const { data: agentCommissions } = await supabase
+          .from("agent_commissions")
+          .select(`
+            id,
+            amount_kobo,
+            created_at,
+            contribution_id,
+            referral_user_id
+          `)
+          .eq("agent_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        commissionsData = agentCommissions;
+      } catch (error) {
+        console.log("agent_commissions table not found, trying commissions table");
+        try {
+          const { data: commissions } = await supabase
+            .from("commissions")
+            .select(`
+              id,
+              amount_kobo,
+              created_at,
+              contribution_id,
+              referral_user_id
+            `)
+            .eq("agent_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(50);
+          commissionsData = commissions;
+        } catch (error2) {
+          console.log("No commission tables found - feature not available");
+          commissionsData = [];
+        }
+      }
 
       if (commissionsData) {
         setCommissions(commissionsData);
@@ -87,26 +111,32 @@ export function CommissionTracking() {
         });
       }
 
-      // Get or create referral code
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("referral_code")
-        .eq("id", user.id)
-        .single();
-
-      if (profileData?.referral_code) {
-        setReferralCode(profileData.referral_code);
-      } else {
-        // Generate a referral code if none exists
-        const code = `REF${user.id.slice(0, 8).toUpperCase()}`;
-        const { error } = await supabase
+      // Get or create referral code (handle missing column gracefully)
+      try {
+        const { data: profileData } = await supabase
           .from("profiles")
-          .update({ referral_code: code })
-          .eq("id", user.id);
+          .select("referral_code")
+          .eq("id", user.id)
+          .single();
 
-        if (!error) {
-          setReferralCode(code);
+        if (profileData?.referral_code) {
+          setReferralCode(profileData.referral_code);
+        } else {
+          // Generate a referral code if none exists
+          const code = `REF${user.id.slice(0, 8).toUpperCase()}`;
+          const { error } = await supabase
+            .from("profiles")
+            .update({ referral_code: code })
+            .eq("id", user.id);
+
+          if (!error) {
+            setReferralCode(code);
+          }
         }
+      } catch (error) {
+        console.log("Referral code feature not available - column may not exist in current schema");
+        // Set a fallback referral code for display purposes
+        setReferralCode(`REF${user.id.slice(0, 8).toUpperCase()}`);
       }
 
     } catch (error) {

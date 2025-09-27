@@ -14,7 +14,7 @@ import { PeerChallenges } from "@/components/Peer/PeerChallenges";
 import { SavingsCircles } from "@/components/Circle/SavingsCircle";
 import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart } from "lucide-react";
 
-type Role = "customer" | "agent" | "admin";
+type Role = "customer" | "admin";
 
 export default function DashboardLanding({ defaultRole = "customer" as Role }) {
   const [tab, setTab] = useState<Role>(defaultRole);
@@ -22,8 +22,7 @@ export default function DashboardLanding({ defaultRole = "customer" as Role }) {
   const tabs: { key: Role; label: string }[] = useMemo(
     () => [
       { key: "customer", label: "Customer" },
-      { key: "agent", label: "Agent" },
-      { key: "admin", label: "Admin (read-only)" },
+      { key: "admin", label: "Admin" },
     ],
     []
   );
@@ -44,7 +43,6 @@ export default function DashboardLanding({ defaultRole = "customer" as Role }) {
             Contact Support
           </Link>
           <Link href="/customer" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Customer</Link>
-          <Link href="/agent" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Agent</Link>
           <Link href="/admin" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Admin</Link>
           <Link href="/monitoring" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">📊 Monitoring</Link>
         </div>
@@ -65,7 +63,6 @@ export default function DashboardLanding({ defaultRole = "customer" as Role }) {
           transition={{ duration: 0.15 }}
         >
           {tab === "customer" && <CustomerSection />}
-          {tab === "agent" && <AgentSection />}
           {tab === "admin" && <AdminSection />}
         </motion.div>
       </AnimatePresence>
@@ -369,7 +366,12 @@ function CustomerSection() {
                         try {
                           const name = newName.trim();
                           if (name.length < 2) throw new Error("Enter your full name");
-                          await supabase.from("profiles").upsert({ id: userId, full_name: name }, { onConflict: "id" });
+                          try {
+                            await supabase.from("profiles").upsert({ id: userId, full_name: name }, { onConflict: "id" });
+                          } catch (profileError) {
+                            console.warn("Failed to update profile, trying alternative approach:", profileError);
+                            // Fallback: just update auth user data
+                          }
                           await supabase.auth.updateUser({ data: { full_name: name } as any });
                           setDisplayName(name);
                           setEditingName(false);
@@ -683,41 +685,6 @@ function CustomerSection() {
   );
 }
 
-function AgentSection() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 space-y-4">
-        <AnimatedCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium">Approvals Queue</div>
-              <ul className="text-sm mt-2 space-y-1">
-                <li className="flex justify-between"><span>Uche – ₦1,000</span><button className="text-xs border rounded px-2">Approve</button></li>
-                <li className="flex justify-between"><span>Bola – ₦500</span><button className="text-xs border rounded px-2">Approve</button></li>
-              </ul>
-            </div>
-            <Link href="/agent" className="text-sm border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Open Agent</Link>
-          </div>
-        </AnimatedCard>
-        <AnimatedCard>
-          <div className="text-sm font-medium">Commission Summary</div>
-          <div className="text-xl font-semibold">₦6,200</div>
-          <div className="mt-2 text-xs opacity-70">MVP preview</div>
-        </AnimatedCard>
-      </div>
-      <div className="space-y-4">
-        <AnimatedCard>
-          <div className="text-sm font-medium">Customers</div>
-          <ul className="text-sm mt-2 space-y-1">
-            <li>ade@mail.com</li>
-            <li>joan@mail.com</li>
-            <li>chidi@mail.com</li>
-          </ul>
-        </AnimatedCard>
-      </div>
-    </div>
-  );
-}
 
 function AdminSection() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);

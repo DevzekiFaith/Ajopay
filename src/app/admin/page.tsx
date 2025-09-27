@@ -18,8 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type Row = { id: string; user_id: string; agent_id: string | null; amount_kobo: number; method: string; contributed_at: string };
-const COMMISSION_PERCENT = Number(process.env.NEXT_PUBLIC_AGENT_COMMISSION_PERCENT ?? "10");
+// type Row = { id: string; user_id: string; amount_kobo: number; method: string; contributed_at: string };
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -37,46 +36,35 @@ export default async function AdminPage({
   if (!user) return null;
 
   // All contributions (global scope)
-  const { data: allRows } = await supabase.from("contributions").select("amount_kobo, contributed_at, user_id, agent_id");
-  const totalKobo = (allRows ?? []).reduce((acc, r: any) => acc + (r.amount_kobo ?? 0), 0);
+  const { data: allRows } = await supabase.from("contributions").select("amount_kobo, contributed_at, user_id, method, status");
+  const totalKobo = (allRows ?? []).reduce((acc, r: { amount_kobo?: number }) => acc + (r.amount_kobo ?? 0), 0);
 
-  // Build per-user totals (₦) and per-agent totals (₦)
+  // Build per-user totals (₦)
   const sumByUser: Record<string, number> = {};
-  const sumByAgent: Record<string, number> = {};
   for (const r of allRows ?? []) {
     const naira = Math.round((r.amount_kobo ?? 0) / 100);
     sumByUser[r.user_id] = (sumByUser[r.user_id] ?? 0) + naira;
-    if (r.agent_id) sumByAgent[r.agent_id] = (sumByAgent[r.agent_id] ?? 0) + naira;
   }
 
-  // Fetch minimal profile info for users and agents we need to label
+  // Fetch minimal profile info for users we need to label
   const userIds = Object.keys(sumByUser);
-  const agentIds = Object.keys(sumByAgent);
   const { data: userProfiles } = await supabase
     .from("profiles")
     .select("id, full_name, email")
-    .in("id", (userIds as any) ?? []);
-  const { data: agentProfiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, email")
-    .in("id", (agentIds as any) ?? []);
+    .in("id", userIds ?? []);
 
-  let userLabel: Record<string, { name: string; email: string | null }> = {};
+  const userLabel: Record<string, { name: string; email: string | null }> = {};
   for (const p of userProfiles ?? []) {
-    userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
-  }
-  let agentLabel: Record<string, { name: string; email: string | null }> = {};
-  for (const p of agentProfiles ?? []) {
-    agentLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
+    userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email };
   }
 
   const today = new Date().toISOString().slice(0, 10);
   const { data: todayRows } = await supabase.from("contributions").select("amount_kobo, user_id").eq("contributed_at", today);
-  const todayKobo = (todayRows ?? []).reduce((acc, r: any) => acc + (r.amount_kobo ?? 0), 0);
+  const todayKobo = (todayRows ?? []).reduce((acc, r: { amount_kobo?: number }) => acc + (r.amount_kobo ?? 0), 0);
 
   const { data: recent } = await supabase
     .from("contributions")
-    .select("id, user_id, agent_id, amount_kobo, method, contributed_at")
+    .select("id, user_id, amount_kobo, method, status, contributed_at")
     .order("created_at", { ascending: false })
     .limit(30);
 
@@ -87,16 +75,8 @@ export default async function AdminPage({
       const { data: extra } = await supabase
         .from("profiles")
         .select("id, full_name, email")
-        .in("id", recentUserIds as any);
-      for (const p of extra ?? []) userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
-    }
-    const recentAgentIds = Array.from(new Set((recent ?? []).map((r) => r.agent_id).filter(Boolean) as string[])).filter((id) => !agentLabel[id]);
-    if (recentAgentIds.length) {
-      const { data: extraA } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", recentAgentIds as any);
-      for (const p of extraA ?? []) agentLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email } as any;
+        .in("id", recentUserIds);
+      for (const p of extra ?? []) userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email };
     }
   }
 
@@ -108,9 +88,9 @@ export default async function AdminPage({
   });
   const daySums: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
   for (const r of allRows ?? []) {
-    const d = (r as any).contributed_at?.slice(0, 10);
+    const d = (r as { contributed_at?: string }).contributed_at?.slice(0, 10);
     if (d && d in daySums) {
-      daySums[d] += Math.round(((r as any).amount_kobo ?? 0) / 100);
+      daySums[d] += Math.round(((r as { amount_kobo?: number }).amount_kobo ?? 0) / 100);
     }
   }
   const series = days.map((d) => daySums[d] ?? 0);
@@ -137,7 +117,7 @@ export default async function AdminPage({
   });
   const dayHit: Record<string, boolean> = Object.fromEntries(days30.map((d) => [d, false]));
   for (const r of allRows ?? []) {
-    const d = (r as any).contributed_at?.slice(0, 10);
+    const d = (r as { contributed_at?: string }).contributed_at?.slice(0, 10);
     if (d && d in dayHit) dayHit[d] = true;
   }
   const activeDays30 = days30.reduce((acc, d) => acc + (dayHit[d] ? 1 : 0), 0);
@@ -150,10 +130,9 @@ export default async function AdminPage({
   const page = parseInt(((Array.isArray(params?.page) ? params?.page[0] : params?.page) || "1") as string, 10) || 1;
   const pageSize = parseInt(((Array.isArray(params?.pageSize) ? params?.pageSize[0] : params?.pageSize) || "10") as string, 10) || 10;
   const entries = Object.entries(sumByUser).map(([uid, total]) => ({ uid, total, name: userLabel[uid]?.name ?? uid }));
-  const cmp = (a: any, b: any) => {
+  const cmp = (a: { uid: string; total: number; name: string }, b: { uid: string; total: number; name: string }) => {
     const mult = sortDir === "asc" ? 1 : -1;
     if (sortKey === "name") return a.name.localeCompare(b.name) * mult;
-    if (sortKey === "commission") return (Math.floor((a.total * COMMISSION_PERCENT) / 100) - Math.floor((b.total * COMMISSION_PERCENT) / 100)) * mult;
     // default deposited
     return (a.total - b.total) * mult;
   };
@@ -177,7 +156,6 @@ export default async function AdminPage({
     name: userLabel[uid]?.name ?? uid,
     email: userLabel[uid]?.email ?? "",
     deposited: total,
-    commission: Math.floor((total * COMMISSION_PERCENT) / 100),
   }));
 
   return (
@@ -260,33 +238,16 @@ export default async function AdminPage({
               <div className="absolute -top-8 left-0 right-0 h-20 bg-gradient-to-b from-white/30 to-transparent dark:from-white/6" />
             </div>
             <CardHeader>
-              <CardTitle>Cluster Breakdown</CardTitle>
+              <CardTitle>Active Days (30)</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-xs opacity-70">Current cluster via switcher. Top agents by collected amount.</div>
-              <div className="space-y-2">
-                {Object.entries(sumByAgent)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 6)
-                  .map(([aid, total]) => (
-                    <div key={aid} className="flex items-center justify-between text-sm gap-2">
-                      <span className="min-w-0 flex-1 truncate">
-                        <Link className="hover:underline truncate block" href={`/admin/agents/${aid}`}>
-                          {agentLabel[aid]?.name ?? aid}
-                        </Link>
-                      </span>
-                      <span className="font-medium whitespace-nowrap">₦{total.toLocaleString()}</span>
-                    </div>
-                  ))}
-                {Object.keys(sumByAgent).length === 0 && (
-                  <div className="text-sm opacity-70">No agent activity yet.</div>
-                )}
-              </div>
+            <CardContent>
+              <div className="text-3xl font-semibold">{activeDays30}</div>
+              <div className="text-sm opacity-70">{activePct30}% of last 30 days</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Customers in cluster with commission to date */}
+        {/* Customers with contributions */}
         <Card className="relative border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           {/* sheen */}
           <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_35%,transparent_60%)]">
@@ -296,9 +257,6 @@ export default async function AdminPage({
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <CardTitle className="flex items-center gap-2 min-w-0">
                 <span className="truncate">Customers</span>
-                <Tooltip content={<span>Commission to date = {COMMISSION_PERCENT}% of confirmed cash contributions. Earned when a contribution status is confirmed.</span>}>
-                  <span className="text-xs opacity-70 cursor-default">ℹ️</span>
-                </Tooltip>
               </CardTitle>
               <div className="ml-auto shrink-0"><CustomersExportCsvButton rows={csvRows} /></div>
             </div>
@@ -317,9 +275,6 @@ export default async function AdminPage({
                     <TableHead className="text-right">
                       <Link href={makeUrl({ sort: "deposited", dir: sortKey === "deposited" && sortDir === "asc" ? "desc" : "asc", page: "1" })} className="hover:underline">Total Deposited</Link>
                     </TableHead>
-                    <TableHead className="text-right">
-                      <Link href={makeUrl({ sort: "commission", dir: sortKey === "commission" && sortDir === "asc" ? "desc" : "asc", page: "1" })} className="hover:underline">Commission to date</Link>
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -332,7 +287,6 @@ export default async function AdminPage({
                         </div>
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">₦{total.toLocaleString()}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">₦{Math.floor((total * COMMISSION_PERCENT) / 100).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -352,7 +306,6 @@ export default async function AdminPage({
                     defaultValue={String(pageSize)}
                     onChange={(e) => {
                       const href = makeUrl({ pageSize: e.target.value, page: "1" });
-                      // @ts-ignore
                       window.location.href = href;
                     }}
                     className="bg-transparent border rounded px-2 py-1"
@@ -372,7 +325,6 @@ export default async function AdminPage({
                       if (e.key === "Enter") {
                         const target = e.target as HTMLInputElement;
                         const val = Math.max(1, Math.min(totalPages, parseInt(target.value || "1", 10)));
-                        // @ts-ignore
                         window.location.href = makeUrl({ page: String(val) });
                       }
                     }}

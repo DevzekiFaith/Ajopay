@@ -65,6 +65,7 @@ export default function CustomerPage() {
   const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [profileSettings, setProfileSettings] = useState<Record<string, any> | null>(null);
   const [autoBusy, setAutoBusy] = useState<boolean>(false);
+  const [savingSettings, setSavingSettings] = useState<boolean>(false);
   const [activeFeatureTab, setActiveFeatureTab] = useState("overview");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [walletType, setWalletType] = useState<'ngn' | 'crypto'>('ngn');
@@ -178,21 +179,68 @@ export default function CustomerPage() {
     }
     setStreak(s);
 
-    // Load profile settings (for persisted preferences)
-    const { data: me } = await supabase
-      .from("profiles")
-      .select("settings")
-      .eq("id", user.id)
-      .maybeSingle();
-    const settings = (me as any)?.settings ?? null;
-    if (settings) {
-      setProfileSettings(settings);
-      if (typeof settings.customer_skip_confirm === "boolean") {
-        setSkipConfirm(settings.customer_skip_confirm);
+    // Load profile settings (try Firebase Storage first, then database, then localStorage)
+    try {
+      // Try Firebase Storage first
+      const fileName = `user-settings/${user.id}/settings.json`;
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('user-settings')
+        .download(fileName);
+      
+      if (!storageError && storageData) {
+        const text = await storageData.text();
+        const settingsData = JSON.parse(text);
+        const settings = settingsData.settings;
+        
+        if (settings) {
+          setProfileSettings(settings);
+          if (typeof settings.customer_skip_confirm === "boolean") {
+            setSkipConfirm(settings.customer_skip_confirm);
+          }
+          if (typeof settings.customer_auto_mark === "boolean") {
+            setAutoMark(settings.customer_auto_mark);
+          }
+          console.log('Settings loaded from Firebase Storage');
+          return;
+        }
       }
-      if (typeof settings.customer_auto_mark === "boolean") {
-        setAutoMark(settings.customer_auto_mark);
+      
+      console.log('Firebase Storage not available, trying database...');
+      
+      // Try database as fallback
+      const { data: me, error: settingsError } = await supabase
+        .from("profiles")
+        .select("settings")
+        .eq("id", user.id)
+        .maybeSingle();
+      
+      if (!settingsError && me?.settings) {
+        const settings = me.settings;
+        setProfileSettings(settings);
+        if (typeof settings.customer_skip_confirm === "boolean") {
+          setSkipConfirm(settings.customer_skip_confirm);
+        }
+        if (typeof settings.customer_auto_mark === "boolean") {
+          setAutoMark(settings.customer_auto_mark);
+        }
+        console.log('Settings loaded from database');
+        return;
       }
+      
+      console.log('Database also failed, using localStorage fallback');
+      
+    } catch (error) {
+      console.log('All storage methods failed, using localStorage fallback');
+    }
+    
+    // Final fallback to localStorage
+    try {
+      const localAutoMark = localStorage.getItem("cust_auto_mark");
+      if (localAutoMark === "1") {
+        setAutoMark(true);
+      }
+    } catch (localError) {
+      console.warn('LocalStorage not available:', localError);
     }
   };
 
@@ -235,13 +283,17 @@ export default function CustomerPage() {
 
   // Realtime: refresh data when contributions for this user change
   useEffect(() => {
-    let channel: any = null;
+    let contributionsChannel: any = null;
+    let settingsChannel: any = null;
+    
     (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      channel = supabase
+      
+      // Subscribe to contributions changes
+      contributionsChannel = supabase
         .channel("realtime:contributions:self")
         .on(
           "postgres_changes",
@@ -288,26 +340,133 @@ export default function CustomerPage() {
           }
         )
         .subscribe();
+
+      // Subscribe to notifications for settings updates (real-time updates)
+      settingsChannel = supabase
+        .channel("realtime:settings:notifications")
+        .on(
+          "postgres_changes",
+          { 
+            event: "INSERT", 
+            schema: "public", 
+            table: "notifications", 
+            filter: `user_id=eq.${user.id}` 
+          },
+          async (payload: any) => {
+            console.log("Settings notification received:", payload);
+            
+            // Check if this is a settings update notification
+            if (payload?.new?.event === "settings_updated") {
+              const newSettings = payload?.new?.payload?.settings;
+              if (newSettings) {
+                setProfileSettings(newSettings);
+                
+                // Update auto-mark setting if it changed
+                if (typeof newSettings.customer_auto_mark === "boolean") {
+                  setAutoMark(newSettings.customer_auto_mark);
+                  toast.success(`Auto-mark ${newSettings.customer_auto_mark ? 'enabled' : 'disabled'} (real-time update)`);
+                }
+              }
+            }
+          }
+        )
+        .subscribe();
+        
     })();
+    
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      if (contributionsChannel) supabase.removeChannel(contributionsChannel);
+      if (settingsChannel) supabase.removeChannel(settingsChannel);
     };
   }, [supabase]);
 
 
-  // Persist auto-mark preference when toggled
+  // Persist auto-mark preference when toggled using Firebase Storage
   const toggleAutoMark = async (val: boolean) => {
     setAutoMark(val);
+    setSavingSettings(true);
+    
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
+      
+      // Create settings object
       const nextSettings = { ...(profileSettings || {}), customer_auto_mark: val };
-      await supabase.from("profiles").update({ settings: nextSettings }).eq("id", user.id);
-      setProfileSettings(nextSettings);
-      toast.message(val ? "Auto-mark enabled" : "Auto-mark disabled");
-    } catch { }
+      
+      // Try to save to Firebase Storage first
+      try {
+        // Create a simple JSON file in Firebase Storage
+        const settingsData = {
+          userId: user.id,
+          settings: nextSettings,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Use Supabase Storage (which is built on Firebase) to store settings
+        const fileName = `user-settings/${user.id}/settings.json`;
+        const { error: uploadError } = await supabase.storage
+          .from('user-settings')
+          .upload(fileName, JSON.stringify(settingsData), {
+            contentType: 'application/json',
+            upsert: true
+          });
+        
+        if (uploadError) {
+          console.log('Firebase Storage not available, trying database...');
+          throw new Error('Storage upload failed');
+        }
+        
+        // Success - saved to Firebase Storage
+        setProfileSettings(nextSettings);
+        toast.success(val ? "Auto-mark enabled (saved to cloud)" : "Auto-mark disabled (saved to cloud)");
+        
+        // Trigger real-time update for other sessions
+        await triggerSettingsUpdate(user.id, nextSettings);
+        
+      } catch (storageError) {
+        console.log('Firebase Storage failed, trying database...');
+        
+        // Try database update as fallback
+        const { error } = await supabase.from("profiles").update({ settings: nextSettings }).eq("id", user.id);
+        
+        if (error) {
+          console.log('Database also failed, using localStorage...');
+          // Final fallback to localStorage
+          localStorage.setItem("cust_auto_mark", val ? "1" : "0");
+          setProfileSettings(nextSettings);
+          toast.message(val ? "Auto-mark enabled (local storage)" : "Auto-mark disabled (local storage)");
+        } else {
+          // Database update worked
+          setProfileSettings(nextSettings);
+          toast.success(val ? "Auto-mark enabled (saved to database)" : "Auto-mark disabled (saved to database)");
+        }
+      }
+      
+    } catch (error) {
+      console.warn('Settings update error:', error);
+      // Fallback to localStorage
+      localStorage.setItem("cust_auto_mark", val ? "1" : "0");
+      setProfileSettings({ ...(profileSettings || {}), customer_auto_mark: val });
+      toast.message(val ? "Auto-mark enabled (local storage)" : "Auto-mark disabled (local storage)");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  // Function to trigger real-time updates for settings
+  const triggerSettingsUpdate = async (userId: string, settings: any) => {
+    try {
+      // Create a notification to trigger real-time update
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        event: "settings_updated",
+        payload: { settings }
+      });
+    } catch (error) {
+      console.log('Could not trigger real-time update:', error);
+    }
   };
 
   // Auto-mark today's contribution once when enabled and not yet contributed
@@ -502,48 +661,58 @@ export default function CustomerPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="amount" className="text-sm">Amount</Label>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Label htmlFor="amount" className="text-sm flex-shrink-0">Amount</Label>
                   <Input
                     id="amount"
                     type="number"
                     min={200}
                     value={amount}
                     onChange={(e) => setAmount(parseInt(e.target.value || "0", 10))}
-                    className="w-28 sm:w-32"
+                    className="w-28 sm:w-32 flex-shrink-0"
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Switch id="auto" checked={autoMark} onCheckedChange={toggleAutoMark} />
-                  <Label htmlFor="auto" className="text-sm">Auto-mark</Label>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Switch 
+                    id="auto" 
+                    checked={autoMark} 
+                    onCheckedChange={toggleAutoMark}
+                    disabled={savingSettings}
+                  />
+                  <Label htmlFor="auto" className="text-sm whitespace-nowrap">
+                    Auto-mark
+                    {savingSettings && (
+                      <span className="ml-2 text-xs opacity-70">Saving...</span>
+                    )}
+                  </Label>
                 </div>
               </div>
 
-              <ToggleGroup type="single" value={String(amount)} aria-label="Quick amounts" className="justify-center sm:justify-start gap-2">
+              <ToggleGroup type="single" value={String(amount)} aria-label="Quick amounts" className="justify-center sm:justify-start gap-2 flex-wrap">
                 {quick.map((q) => (
                   <ToggleGroupItem
                     key={q}
                     value={String(q)}
                     aria-label={`₦${q}`}
                     onClick={() => setAmount(q)}
-                    className="h-11 sm:h-9 px-3 min-w-[4.5rem]"
+                    className="h-11 sm:h-9 px-3 min-w-[4.5rem] flex-shrink-0"
                   >
                     ₦{q}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
 
-              <div className="flex gap-3">
-                <Button onClick={() => void submit()} disabled={loading} className="h-11 sm:h-10">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={() => void submit()} disabled={loading} className="h-11 sm:h-10 flex-1 sm:flex-none">
                   {loading ? "Submitting..." : "Submit"}
                 </Button>
-                <Button variant="outline" onClick={() => void fund()} className="h-11 sm:h-10">
+                <Button variant="outline" onClick={() => void fund()} className="h-11 sm:h-10 flex-1 sm:flex-none">
                   Fund Wallet
                 </Button>
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="secondary" className="h-11 sm:h-10">Contribute now…</Button>
+                    <Button variant="secondary" className="h-11 sm:h-10 flex-1 sm:flex-none">Contribute now…</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>

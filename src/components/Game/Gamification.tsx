@@ -435,7 +435,6 @@ export function Gamification() {
               repeatType: "reverse",
               ease: "easeInOut"
             }}
-            transition={{ duration: 3, repeat: Infinity }}
           />
           <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl p-8 shadow-[25px_25px_50px_#d1d9e6,-25px_-25px_50px_#ffffff] dark:shadow-[25px_25px_50px_#0f172a,-25px_-25px_50px_#334155] hover:shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:hover:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] transition-all duration-700 border border-white/30 dark:border-slate-700/30">
             
@@ -497,7 +496,6 @@ export function Gamification() {
               repeatType: "reverse",
               ease: "easeInOut"
             }}
-            transition={{ duration: 3, repeat: Infinity, delay: 1 }}
           />
           <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl p-8 shadow-[25px_25px_50px_#d1d9e6,-25px_-25px_50px_#ffffff] dark:shadow-[25px_25px_50px_#0f172a,-25px_-25px_50px_#334155] hover:shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:hover:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] transition-all duration-700 border border-white/30 dark:border-slate-700/30">
             
@@ -541,7 +539,6 @@ export function Gamification() {
               repeatType: "reverse",
               ease: "easeInOut"
             }}
-            transition={{ duration: 3, repeat: Infinity, delay: 2 }}
           />
           <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl p-8 shadow-[25px_25px_50px_#d1d9e6,-25px_-25px_50px_#ffffff] dark:shadow-[25px_25px_50px_#0f172a,-25px_-25px_50px_#334155] hover:shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:hover:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] transition-all duration-700 border border-white/30 dark:border-slate-700/30">
             
@@ -611,7 +608,6 @@ export function Gamification() {
               repeatType: "reverse",
               ease: "easeInOut"
             }}
-                  transition={{ duration: 2, repeat: Infinity }}
                 />
               )}
               

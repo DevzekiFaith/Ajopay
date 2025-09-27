@@ -15,8 +15,9 @@ import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Copy, QrCode, Send, Plus, Download, RefreshCw } from 'lucide-react';
 import { TransactionHistory } from '@/components/wallet/TransactionHistory';
 import { WalletQRCode } from '@/components/wallet/WalletQRCode';
-import { soundManager, playTransactionSound } from '@/lib/sounds';
+import { soundManager, playTransactionSound, playDepositNotification } from '@/lib/sounds';
 import { formatAmount, formatDate, truncateMiddle } from '@/lib/utils';
+import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
 
 interface WalletData {
   balance_kobo: number;
@@ -39,7 +40,9 @@ export default function WalletPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Initialize sound manager
+  // Initialize sound manager and browser notifications
+  const { requestPermission, showDepositNotification } = useBrowserNotifications();
+  
   useEffect(() => {
     soundManager;
   }, []);
@@ -197,9 +200,36 @@ export default function WalletPage() {
           console.log('Wallet transaction update:', payload);
           fetchWallet();
           
-          // Play sound for new transactions
+          // Play sound and show notification for new transactions
           if (payload.eventType === 'INSERT') {
-            playTransactionSound('deposit');
+            const transaction = payload.new;
+            const amount = transaction?.amount_kobo || 0;
+            const isLargeDeposit = amount >= 50000; // 500 NGN or more
+            
+            // Play enhanced deposit notification sound
+            playDepositNotification(amount, isLargeDeposit);
+            
+            // Show toast notification for successful deposits
+            if (transaction?.type === 'credit' && transaction?.status === 'completed') {
+              toast.success(
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20">
+                    <Plus className="w-4 h-4 text-green-500" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Money Received! 💰</div>
+                    <div className="text-sm opacity-80">₦{formatAmount(amount)} added to your wallet</div>
+                  </div>
+                </div>,
+                {
+                  duration: 6000,
+                  className: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
+                }
+              );
+              
+              // Show browser notification
+              showDepositNotification(amount / 100, isLargeDeposit);
+            }
           }
         }
       )
@@ -216,9 +246,31 @@ export default function WalletPage() {
           console.log('Contribution update affecting wallet:', payload);
           fetchWallet();
           
-          // Play sound for new contributions
+          // Play sound and show notification for new contributions
           if (payload.eventType === 'INSERT') {
-            playTransactionSound('deposit');
+            const contribution = payload.new;
+            const amount = contribution?.amount_kobo || 0;
+            const isLargeDeposit = amount >= 50000; // 500 NGN or more
+            
+            // Play enhanced deposit notification sound
+            playDepositNotification(amount, isLargeDeposit);
+            
+            // Show toast notification for contributions
+            toast.success(
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20">
+                  <Plus className="w-4 h-4 text-blue-500" />
+                </div>
+                <div>
+                  <div className="font-semibold">Contribution Added! 💰</div>
+                  <div className="text-sm opacity-80">₦{formatAmount(amount)} added to your savings</div>
+                </div>
+              </div>,
+              {
+                duration: 5000,
+                className: "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20",
+              }
+            );
           }
         }
       )
@@ -282,14 +334,38 @@ export default function WalletPage() {
       
       // Simulate deposit
       const depositAmount = 10000; // 100 NGN
+      const isLargeDeposit = depositAmount >= 50000; // 500 NGN or more
+      
       setWallet({
         ...wallet,
         pending_balance_kobo: wallet.pending_balance_kobo + depositAmount,
         last_activity: new Date().toISOString()
       });
       
-      toast.success('Deposit initiated. It may take a few minutes to process.');
-      playTransactionSound('success');
+      // Enhanced notification with sound
+      toast.success(
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20">
+            <Plus className="w-4 h-4 text-green-500" />
+          </div>
+          <div>
+            <div className="font-semibold">Deposit Initiated! 💰</div>
+            <div className="text-sm opacity-80">₦{formatAmount(depositAmount)} will be added to your wallet</div>
+          </div>
+        </div>,
+        {
+          duration: 5000,
+          className: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
+        }
+      );
+      
+      // Play deposit notification sound
+      playDepositNotification(depositAmount, isLargeDeposit);
+      
+      // Request browser notification permission and show notification
+      await requestPermission();
+      showDepositNotification(depositAmount / 100, isLargeDeposit);
+      
     } catch (error) {
       console.error('Error initiating deposit:', error);
       toast.error('Failed to initiate deposit');
