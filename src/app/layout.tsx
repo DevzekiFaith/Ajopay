@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/Footer";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 
 const inter = Inter({
@@ -254,6 +255,7 @@ export default async function RootLayout({
           )}
           <Toaster richColors position="top-right" closeButton />
           <SpeedInsights />
+          <Analytics />
         </ThemeProvider>
         {/* Register Service Worker */}
         <Script id="sw-register" strategy="afterInteractive">{
