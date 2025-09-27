@@ -38,12 +38,11 @@ export default async function DashboardPage({
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  const role = (profile?.role as "customer" | "agent" | "admin" | undefined) ?? "customer";
+  const role = (profile?.role as "customer" | "admin" | undefined) ?? "customer";
 
   // If hub is not set, redirect to role route; otherwise show hub
   if (!hub) {
     if (role === "customer") redirect("/customer");
-    if (role === "agent") redirect("/customer"); // Agent system removed, redirect to customer dashboard
     if (role === "admin") redirect("/admin");
   }
 

@@ -156,6 +156,7 @@ export default async function AdminPage({
     name: userLabel[uid]?.name ?? uid,
     email: userLabel[uid]?.email ?? "",
     deposited: total,
+    commission: 0, // No commissions since agent system was removed
   }));
 
   return (
@@ -369,7 +370,6 @@ export default async function AdminPage({
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>User</TableHead>
-                    <TableHead>Agent</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
@@ -380,9 +380,6 @@ export default async function AdminPage({
                       <TableCell className="whitespace-nowrap">{r.contributed_at}</TableCell>
                       <TableCell className="text-sm max-w-[220px]">
                         <div className="truncate">{userLabel[r.user_id]?.name ?? r.user_id}</div>
-                      </TableCell>
-                      <TableCell className="text-sm max-w-[220px]">
-                        <div className="truncate">{r.agent_id ? (agentLabel[r.agent_id]?.name ?? r.agent_id) : "-"}</div>
                       </TableCell>
                       <TableCell>{r.method}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">₦{Math.round((r.amount_kobo ?? 0) / 100).toLocaleString()}</TableCell>

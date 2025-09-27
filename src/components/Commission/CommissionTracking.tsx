@@ -49,7 +49,7 @@ export function CommissionTracking() {
       setCurrentUserId(user.id);
 
       // Load commissions (handle missing table gracefully)
-      let commissionsData = null;
+      let commissionsData: any[] | null = null;
       try {
         const { data: agentCommissions } = await supabase
           .from("agent_commissions")

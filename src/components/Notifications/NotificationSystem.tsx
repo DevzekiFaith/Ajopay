@@ -69,11 +69,11 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
           // Show enhanced toast notification with sound
           if (newNotification.type === "wallet_funded") {
             const amount = newNotification.data?.amount_naira || 0;
-            const amountKobo = newNotification.data?.amount_kobo || 0;
-            const isLargeDeposit = newNotification.data?.is_large_deposit || false;
+            const amountKobo = typeof newNotification.data?.amount_kobo === 'number' ? newNotification.data.amount_kobo : 0;
+            const isLargeDeposit = typeof newNotification.data?.is_large_deposit === 'boolean' ? newNotification.data.is_large_deposit : false;
             
             // Play deposit notification sound
-            playDepositNotification(amountKobo, isLargeDeposit);
+            playDepositNotification(amountKobo || 0, isLargeDeposit);
             
             toast.success(
               <div className="flex items-center gap-3">

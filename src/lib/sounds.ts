@@ -24,7 +24,7 @@ class SoundManager {
     
     try {
       // Create audio context
-      this.audioContext = new (window.AudioContext || (window as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       // Generate tones directly since we don't have sound files
       // This avoids 404 errors and provides consistent audio feedback
