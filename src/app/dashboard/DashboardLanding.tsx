@@ -29,22 +29,22 @@ export default function DashboardLanding({ defaultRole = "customer" as Role }) {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="relative h-8 w-8 sm:h-10 sm:w-10">
             <Image src="/aj2.png" alt="Ajopay" fill sizes="(max-width: 640px) 32px, 40px" className="object-contain" />
           </div>
-          <h1 className="text-2xl font-semibold bg-gradient-to-r from-purple-700 to-violet-500 bg-clip-text text-transparent">
+          <h1 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-purple-700 to-violet-500 bg-clip-text text-transparent">
             Choose your workspace
           </h1>
         </div>
-        <div className="flex gap-2 text-sm">
-          <Link href="/contact" className="border border-violet-500/30 rounded px-3 py-2 bg-gradient-to-r from-violet-500/10 to-purple-500/10 hover:from-violet-500/20 hover:to-purple-500/20 transition-all duration-200 text-violet-700 dark:text-violet-300 font-medium backdrop-blur-xl">
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Link href="/contact" className="border border-violet-500/30 rounded px-3 py-2 bg-gradient-to-r from-violet-500/10 to-purple-500/10 hover:from-violet-500/20 hover:to-purple-500/20 transition-all duration-200 text-violet-700 dark:text-violet-300 font-medium backdrop-blur-xl whitespace-nowrap">
             Contact Support
           </Link>
-          <Link href="/customer" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Customer</Link>
-          <Link href="/admin" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">Admin</Link>
-          <Link href="/monitoring" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors">📊 Monitoring</Link>
+          <Link href="/customer" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors whitespace-nowrap">Customer</Link>
+          <Link href="/admin" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors whitespace-nowrap">Admin</Link>
+          <Link href="/monitoring" className="border border-white/30 dark:border-white/10 rounded px-3 py-2 bg-white/10 hover:bg-white/20 transition-colors whitespace-nowrap">📊 Monitoring</Link>
         </div>
       </div>
 
@@ -433,14 +433,14 @@ function CustomerSection() {
       >
         <AnimatedCard className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[8px_8px_24px_rgba(0,0,0,0.15),_-8px_-8px_24px_rgba(255,255,255,0.05)] hover:shadow-[12px_12px_32px_rgba(0,0,0,0.2),_-12px_-12px_32px_rgba(255,255,255,0.08)] transition-all duration-300">
           <CardHeader>
-            <CardTitle className="text-black text-2xl font-bold">Advanced Savings Features</CardTitle>
+            <CardTitle className="text-black text-xl sm:text-2xl font-bold">Advanced Savings Features</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl shadow">
-              <div className="grid w-full grid-cols-5 bg-white/10 backdrop-blur-2xl rounded-t-2xl">
+              <div className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-white/10 backdrop-blur-2xl rounded-t-2xl">
                 <button
                   onClick={() => setActiveFeatureTab("overview")}
-                  className={`px-4 py-3 text-black text-sm font-medium rounded-tl-2xl border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "overview"
+                  className={`px-2 sm:px-4 py-3 text-black text-xs sm:text-sm font-medium rounded-tl-2xl border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "overview"
                     ? "text-black bg-white/20"
                     : "text-black/70 hover:text-black"
                     }`}
@@ -449,7 +449,7 @@ function CustomerSection() {
                 </button>
                 <button
                   onClick={() => setActiveFeatureTab("goals")}
-                  className={`px-4 py-3 text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "goals"
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 sm:rounded-none rounded-tr-2xl ${activeFeatureTab === "goals"
                     ? "text-black bg-white/20"
                     : "text-black/70 hover:text-black"
                     }`}
@@ -458,7 +458,7 @@ function CustomerSection() {
                 </button>
                 <button
                   onClick={() => setActiveFeatureTab("gamification")}
-                  className={`px-4 py-3 text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "gamification"
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "gamification"
                     ? "text-black bg-white/20"
                     : "text-black/70 hover:text-black"
                     }`}
@@ -467,7 +467,7 @@ function CustomerSection() {
                 </button>
                 <button
                   onClick={() => setActiveFeatureTab("challenges")}
-                  className={`px-4 py-3 text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "challenges"
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "challenges"
                     ? "text-black bg-white/20"
                     : "text-black/70 hover:text-black"
                     }`}
@@ -476,7 +476,7 @@ function CustomerSection() {
                 </button>
                 <button
                   onClick={() => setActiveFeatureTab("circles")}
-                  className={`px-4 py-3 text-sm font-medium rounded-tr-2xl hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "circles"
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium lg:rounded-tr-2xl hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "circles"
                     ? "text-black bg-white/20"
                     : "text-black/70 hover:text-black"
                     }`}
@@ -485,7 +485,7 @@ function CustomerSection() {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {activeFeatureTab === "overview" && (
                   <div className="space-y-6">
                     {/* Feature Cards Grid */}
