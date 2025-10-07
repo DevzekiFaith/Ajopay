@@ -60,6 +60,7 @@ export function Nav() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Nav: Auth state change:', _event, session?.user);
       setUser(session?.user ?? null);
+      setIsLoading(false);
     });
     
     return () => {
@@ -73,6 +74,15 @@ export function Nav() {
     setTheme(next);
     toast.message(next === "dark" ? "Dark mode enabled" : "Light mode enabled");
   };
+
+  // Debug logging
+  console.log('Nav render state:', { 
+    isLoading, 
+    user, 
+    hasUserId: user?.id,
+    userEmail: user?.email,
+    userKeys: user ? Object.keys(user) : 'no user'
+  });
   
   // Check if we're on the home page
   const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
