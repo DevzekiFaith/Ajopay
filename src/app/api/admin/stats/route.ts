@@ -4,12 +4,49 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   try {
+    console.log("Admin stats API called");
+    
+    // Check environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log("Environment check:", {
+      hasUrl: !!supabaseUrl,
+      hasAnonKey: !!supabaseAnonKey,
+      hasServiceKey: !!supabaseServiceKey,
+      url: supabaseUrl ? supabaseUrl.substring(0, 30) + "..." : "missing"
+    });
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing Supabase environment variables");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
+    
     const supabase = getSupabaseServerClient();
     const { data: authData, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !authData?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    
+    console.log("Auth check:", {
+      hasUser: !!authData?.user,
+      userId: authData?.user?.id,
+      authError: authErr?.message
+    });
+    
+    if (authErr || !authData?.user) {
+      console.error("Authentication failed:", authErr);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     
     // Check user role to provide appropriate data
-    const admin = getSupabaseAdminClient();
+    let admin;
+    try {
+      admin = getSupabaseAdminClient();
+      console.log("Admin client initialized successfully");
+    } catch (adminError) {
+      console.error("Failed to initialize admin client:", adminError);
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
+    
     const { data: profile, error: profileError } = await admin
       .from("profiles")
       .select("role")
