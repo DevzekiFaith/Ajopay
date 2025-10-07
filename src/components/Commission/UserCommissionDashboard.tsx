@@ -82,7 +82,12 @@ export function UserCommissionDashboard() {
   const loadCommissionData = async () => {
     try {
       // Load commissions
-      const commissionsRes = await fetch('/api/commissions/list');
+      const commissionsRes = await fetch('/api/commissions/list', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       const commissionsData = await commissionsRes.json();
       
       console.log('Commissions API response:', { status: commissionsRes.status, data: commissionsData });
@@ -101,7 +106,12 @@ export function UserCommissionDashboard() {
       }
 
       // Load rewards
-      const rewardsRes = await fetch('/api/commissions/rewards');
+      const rewardsRes = await fetch('/api/commissions/rewards', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       const rewardsData = await rewardsRes.json();
       
       if (rewardsRes.ok) {
@@ -111,7 +121,12 @@ export function UserCommissionDashboard() {
       }
 
       // Load referral stats
-      const referralRes = await fetch('/api/commissions/referral');
+      const referralRes = await fetch('/api/commissions/referral', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       const referralData = await referralRes.json();
       
       if (referralRes.ok) {
@@ -131,7 +146,11 @@ export function UserCommissionDashboard() {
   const handleDailyCheckin = async () => {
     try {
       const response = await fetch('/api/commissions/daily-checkin', {
-        method: 'POST'
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
       
       const data = await response.json();
@@ -186,6 +205,7 @@ export function UserCommissionDashboard() {
     try {
       const response = await fetch('/api/commissions/withdraw', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: parseFloat(withdrawAmount),

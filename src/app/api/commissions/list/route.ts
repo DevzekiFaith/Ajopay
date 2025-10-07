@@ -4,11 +4,28 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 export async function GET(request: Request) {
   try {
     const supabase = getSupabaseServerClient();
+    
+    // Try to get user with more detailed error logging
     const { data: authData, error: authErr } = await supabase.auth.getUser();
     
-    if (authErr || !authData?.user) {
+    console.log('Commission API - Auth check:', { 
+      hasUser: !!authData?.user, 
+      userId: authData?.user?.id,
+      error: authErr?.message 
+    });
+    
+    if (authErr) {
+      console.error('Commission API - Auth error:', authErr);
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication failed', details: authErr.message },
+        { status: 401 }
+      );
+    }
+    
+    if (!authData?.user) {
+      console.log('Commission API - No user found');
+      return NextResponse.json(
+        { error: 'Not authenticated - no user found' },
         { status: 401 }
       );
     }
