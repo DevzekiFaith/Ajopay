@@ -160,8 +160,8 @@ export default function AdminPage() {
   const activePct30 = Math.round((activeDays30 / 30) * 100);
 
   // Sorting & pagination for Customers (simplified for client-side)
-  const sortKey = "deposited"; // Default sort
-  const sortDir = "desc"; // Default direction
+  const sortKey: "deposited" | "name" = "deposited"; // Default sort
+  const sortDir: "asc" | "desc" = "desc"; // Default direction
   const page = 1; // Default page
   const pageSize = 10; // Default page size
   const entries = Object.entries(sumByUser).map(([uid, total]) => ({ uid, total, name: userLabel[uid]?.name ?? uid }));
