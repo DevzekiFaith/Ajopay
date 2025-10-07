@@ -52,11 +52,21 @@ export async function POST(req: NextRequest) {
     
     console.log("Environment check:");
     console.log("- PAYSTACK_SECRET_KEY exists:", !!secret);
+    console.log("- PAYSTACK_SECRET_KEY length:", secret ? secret.length : 0);
+    console.log("- PAYSTACK_SECRET_KEY starts with:", secret ? secret.substring(0, 10) + "..." : "N/A");
     console.log("- Public URL:", publicUrl);
+    console.log("- NODE_ENV:", process.env.NODE_ENV);
+    console.log("- VERCEL_ENV:", process.env.VERCEL_ENV);
     
     if (!secret) {
       console.error("PAYSTACK_SECRET_KEY is missing from environment variables");
-      return NextResponse.json({ error: "PAYSTACK_SECRET_KEY missing" }, { status: 500 });
+      console.error("Available environment variables:", Object.keys(process.env).filter(key => key.includes('PAYSTACK')));
+      return NextResponse.json({ 
+        error: "Payment service configuration error", 
+        details: "PAYSTACK_SECRET_KEY is missing from environment variables",
+        environment: process.env.NODE_ENV,
+        vercel: process.env.VERCEL_ENV
+      }, { status: 500 });
     }
 
     // Prepare Paystack request

@@ -5,8 +5,21 @@ import { createClient } from "@supabase/supabase-js";
 // POST /api/payments/webhook (Paystack)
 export async function POST(req: NextRequest) {
   try {
+    console.log("Paystack webhook received");
+    
     const secret = process.env.PAYSTACK_SECRET_KEY as string;
-    if (!secret) return NextResponse.json({ error: "PAYSTACK_SECRET_KEY missing" }, { status: 500 });
+    console.log("Environment check:");
+    console.log("- PAYSTACK_SECRET_KEY exists:", !!secret);
+    console.log("- PAYSTACK_SECRET_KEY length:", secret ? secret.length : 0);
+    
+    if (!secret) {
+      console.error("PAYSTACK_SECRET_KEY is missing from environment variables");
+      console.error("Available environment variables:", Object.keys(process.env).filter(key => key.includes('PAYSTACK')));
+      return NextResponse.json({ 
+        error: "Payment webhook configuration error", 
+        details: "PAYSTACK_SECRET_KEY is missing from environment variables"
+      }, { status: 500 });
+    }
 
     const raw = await req.text();
     const signature = req.headers.get("x-paystack-signature");
