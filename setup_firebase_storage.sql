@@ -60,3 +60,8 @@ FOR INSERT WITH CHECK (user_id = auth.uid());
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_event ON public.notifications(event);
 
+
+
+
+
+

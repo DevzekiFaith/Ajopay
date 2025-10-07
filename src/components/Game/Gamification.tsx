@@ -282,7 +282,7 @@ export function Gamification() {
     return 1;
   };
 
-  const checkAndAwardBadges = () => {
+  const checkAndAwardBadges = async () => {
     const updatedBadges = userBadges.map(badge => {
       if (!badge.earned) {
         let shouldEarn = false;
@@ -317,6 +317,10 @@ export function Gamification() {
           setCelebratingBadge(earnedBadge);
           toast.success(`🏆 Badge Earned: ${badge.name}!`);
           addXP(50, `earning ${badge.name} badge`);
+          
+          // Award real money commission for badge
+          awardBadgeCommission(badge);
+          
           return earnedBadge;
         }
       }
@@ -324,6 +328,26 @@ export function Gamification() {
     });
 
     setUserBadges(updatedBadges);
+  };
+
+  const awardBadgeCommission = async (badge: Badge) => {
+    try {
+      const response = await fetch('/api/commissions/badge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          badgeName: badge.name,
+          badgeRarity: badge.rarity
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`💰 Earned ${data.amount} for earning ${badge.name} badge!`);
+      }
+    } catch (error) {
+      console.error('Error awarding badge commission:', error);
+    }
   };
 
   const simulateActivity = (type: 'save' | 'streak' | 'goal') => {

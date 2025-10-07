@@ -30,3 +30,8 @@ COMMENT ON COLUMN public.profiles.referral_code IS 'Unique referral code for com
 COMMENT ON COLUMN public.profiles.business_name IS 'Business name for business accounts';
 COMMENT ON COLUMN public.profiles.phone IS 'User phone number';
 
+
+
+
+
+

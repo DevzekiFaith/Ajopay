@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import DashboardShell from "@/components/dashboard/Shell";
@@ -40,18 +40,23 @@ import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
 import { SavingsCircles } from "@/components/Circle/SavingsCircle";
 import { PersonalHealthDashboard } from "@/components/Monitoring/PersonalHealthDashboard";
-import { Bitcoin, Coins } from "lucide-react";
+import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
+import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
 
 export default function CustomerPage() {
+  const USER_SETTINGS_BUCKET = process.env.NEXT_PUBLIC_USER_SETTINGS_BUCKET || 'user-settings';
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [amount, setAmount] = useState(200);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [walletNaira, setWalletNaira] = useState<number>(0);
   const [walletPulse, setWalletPulse] = useState<boolean>(false);
   const [history, setHistory] = useState<Array<{ id: string; amount_kobo: number; contributed_at: string }>>([]);
   const [streak, setStreak] = useState<number>(0);
+  const [isMockData, setIsMockData] = useState<boolean>(false);
   const [last7Naira, setLast7Naira] = useState<number>(0);
   const [prev7Naira, setPrev7Naira] = useState<number>(0);
   const [sparkPoints, setSparkPoints] = useState<string>("");
@@ -68,7 +73,9 @@ export default function CustomerPage() {
   const [activeFeatureTab, setActiveFeatureTab] = useState("overview");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [walletType, setWalletType] = useState<'ngn' | 'crypto'>('ngn');
+  const [balanceVisible, setBalanceVisible] = useState(true);
   const router = useRouter();
+  const autoMarkFiredRef = useRef<string | null>(null);
 
   // Use schema INPUT type to align with zodResolver typing (coerce.number input is unknown)
   type ContributionFormValues = z.input<typeof ContributionSchema>;
@@ -80,153 +87,72 @@ export default function CustomerPage() {
   const quick = [200, 500, 1000];
 
   const loadData = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // Set current user ID for notifications
-    setCurrentUserId(user.id);
-
-    // Wallet total
-    const { data: sumRows, error: sumErr } = await supabase
-      .from("contributions")
-      .select("amount_kobo")
-      .eq("user_id", user.id);
-    if (!sumErr && sumRows) {
-      const totalKobo = sumRows.reduce((acc, r) => acc + (r.amount_kobo ?? 0), 0);
-      setWalletNaira(Math.round(totalKobo / 100));
-    }
-
-    // Recent history
-    const { data: hist, error: histErr } = await supabase
-      .from("contributions")
-      .select("id, amount_kobo, contributed_at")
-      .eq("user_id", user.id)
-      .order("contributed_at", { ascending: false })
-      .limit(60);
-    if (!histErr && hist) setHistory(hist);
-
-    // KPI: last 7 days vs previous 7 days (sum in ₦)
     try {
-      const today = new Date();
-      const toIso = (d: Date) => d.toISOString().slice(0, 10);
-      const end = new Date(toIso(today)); // strip time
-      const start14 = new Date(end);
-      start14.setDate(end.getDate() - 13); // inclusive 14 days
-      const { data: krows } = await supabase
-        .from("contributions")
-        .select("amount_kobo, contributed_at")
-        .eq("user_id", user.id)
-        .gte("contributed_at", toIso(start14))
-        .lte("contributed_at", toIso(end));
-      const rows14 = (krows as any[]) ?? [];
-      const last7Start = new Date(end);
-      last7Start.setDate(end.getDate() - 6);
-      const prev7Start = new Date(end);
-      prev7Start.setDate(end.getDate() - 13);
-      const prev7End = new Date(end);
-      prev7End.setDate(end.getDate() - 7);
-      let last7 = 0, prev7 = 0;
-      for (const r of rows14) {
-        const d = (r.contributed_at || "").slice(0, 10);
-        if (!d) continue;
-        if (d >= toIso(last7Start) && d <= toIso(end)) last7 += (r.amount_kobo ?? 0);
-        else if (d >= toIso(prev7Start) && d <= toIso(prev7End)) prev7 += (r.amount_kobo ?? 0);
+      const res = await fetch('/api/customer/overview', { cache: 'no-store' });
+      if (!res.ok) {
+        console.error('Failed to load customer data:', res.status);
+        return;
       }
-      setLast7Naira(Math.round(last7 / 100));
-      setPrev7Naira(Math.round(prev7 / 100));
-
-      // Build 14-day sparkline points (₦ per day)
-      const days = Array.from({ length: 14 }).map((_, i) => {
-        const d = new Date(end);
-        d.setDate(end.getDate() - (13 - i));
-        return toIso(d);
-      });
-      const daySums: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
-      for (const r of rows14) {
-        const d = (r.contributed_at || "").slice(0, 10);
-        if (d && d in daySums) daySums[d] += Math.round(((r.amount_kobo ?? 0) as number) / 100);
-      }
-      const series = days.map((d) => daySums[d] ?? 0);
-      const maxVal = Math.max(1, ...series);
-      const pts = series
-        .map((v, i) => {
-          const x = (i / (series.length - 1)) * 100;
-          const y = 26 - (v / maxVal) * 26;
-          return `${x},${y}`;
-        })
-        .join(" ");
-      setSparkPoints(pts);
-    } catch { }
-
-    // Streak: compute consecutive days including today if contributed
-    const dates = new Set((hist ?? []).map((h) => h.contributed_at));
-    const todayStr = new Date().toISOString().slice(0, 10);
-    let s = 0;
-    let cursor = new Date(todayStr);
-    // If no contribution today, start from yesterday
-    if (!dates.has(todayStr)) {
-      cursor.setDate(cursor.getDate() - 1);
+      const j = await res.json();
+      console.log('Customer data loaded:', j);
+      setWalletNaira(j.walletNaira ?? 0);
+      setHistory(j.history ?? []);
+      setLast7Naira(j.last7Naira ?? 0);
+      setPrev7Naira(j.prev7Naira ?? 0);
+      setSparkPoints(j.sparkPoints ?? '');
+      setStreak(j.streak ?? 0);
+      setIsMockData(j.isMockData ?? false);
+    } catch (error) {
+      console.error('Error loading customer data:', error);
+    } finally {
+      setInitialLoading(false);
     }
-    while (true) {
-      const iso = cursor.toISOString().slice(0, 10);
-      if (dates.has(iso)) {
-        s += 1;
-        cursor.setDate(cursor.getDate() - 1);
-      } else break;
-    }
-    setStreak(s);
 
     // Load profile settings (try Firebase Storage first, then database, then localStorage)
     try {
-      // Try Firebase Storage first
-      const fileName = `user-settings/${user.id}/settings.json`;
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('user-settings')
-        .download(fileName);
-      
-      if (!storageError && storageData) {
-        const text = await storageData.text();
-        const settingsData = JSON.parse(text);
-        const settings = settingsData.settings;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // Try Supabase Storage first (with proper error handling)
+      try {
+        const fileName = `${user.id}/settings.json`;
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from(USER_SETTINGS_BUCKET)
+          .download(fileName);
         
-        if (settings) {
-          setProfileSettings(settings);
-          if (typeof settings.customer_skip_confirm === "boolean") {
-            setSkipConfirm(settings.customer_skip_confirm);
+        if (!storageError && storageData) {
+          const text = await storageData.text();
+          const settingsData = JSON.parse(text);
+          const settings = settingsData.settings;
+          
+          if (settings) {
+            setProfileSettings(settings);
+            if (typeof settings.customer_skip_confirm === "boolean") {
+              setSkipConfirm(settings.customer_skip_confirm);
+            }
+            if (typeof settings.customer_auto_mark === "boolean") {
+              setAutoMark(settings.customer_auto_mark);
+            }
+            console.log('Settings loaded from Supabase Storage');
+            return;
           }
-          if (typeof settings.customer_auto_mark === "boolean") {
-            setAutoMark(settings.customer_auto_mark);
+        } else if (storageError) {
+          const code = (storageError as any)?.statusCode ?? (storageError as any)?.status;
+          const message = (storageError as any)?.message || 'Unknown storage error';
+          
+          // Log different types of errors appropriately
+          if (code === 404) {
+            console.log('Settings file not found in storage (this is normal for new users)');
+          } else if (code === 400) {
+            console.log('Storage bucket or permissions issue:', message);
+          } else {
+            console.log('Storage download failed:', message);
           }
-          console.log('Settings loaded from Firebase Storage');
-          return;
         }
+      } catch (storageAccessError) {
+        console.log('Supabase Storage access failed:', storageAccessError);
       }
       
-      console.log('Firebase Storage not available, trying database...');
-      
-      // Try database as fallback
-      const { data: me, error: settingsError } = await supabase
-        .from("profiles")
-        .select("settings")
-        .eq("id", user.id)
-        .maybeSingle();
-      
-      if (!settingsError && me?.settings) {
-        const settings = me.settings;
-        setProfileSettings(settings);
-        if (typeof settings.customer_skip_confirm === "boolean") {
-          setSkipConfirm(settings.customer_skip_confirm);
-        }
-        if (typeof settings.customer_auto_mark === "boolean") {
-          setAutoMark(settings.customer_auto_mark);
-        }
-        console.log('Settings loaded from database');
-        return;
-      }
-      
-      console.log('Database also failed, using localStorage fallback');
+      console.log('Skipping database fallback to avoid profiles policy recursion; using localStorage next');
       
     } catch (error) {
       console.log('All storage methods failed, using localStorage fallback');
@@ -234,12 +160,48 @@ export default function CustomerPage() {
     
     // Final fallback to localStorage
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Try the new format first
+        const localSettings = localStorage.getItem(`ajopay_settings_${user.id}`);
+        if (localSettings) {
+          const settingsData = JSON.parse(localSettings);
+          if (settingsData.settings) {
+            setProfileSettings(settingsData.settings);
+            if (typeof settingsData.settings.customer_auto_mark === "boolean") {
+              setAutoMark(settingsData.settings.customer_auto_mark);
+            }
+            console.log('Settings loaded from localStorage (new format)');
+            return;
+          }
+        }
+      }
+      
+      // Fallback to old format
       const localAutoMark = localStorage.getItem("cust_auto_mark");
       if (localAutoMark === "1") {
         setAutoMark(true);
+        console.log('Settings loaded from localStorage (old format)');
       }
     } catch (localError) {
       console.warn('LocalStorage not available:', localError);
+    }
+  };
+
+  const loadSampleData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/sample-data', { method: 'POST' });
+      if (res.ok) {
+        toast.success("Sample data loaded successfully!");
+        await loadData(); // Reload the dashboard data
+      } else {
+        toast.error("Failed to load sample data");
+      }
+    } catch (error) {
+      toast.error("Error loading sample data");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -280,6 +242,31 @@ export default function CustomerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Debug: show Supabase envs and bucket (temporary; remove after diagnosing)
+  useEffect(() => {
+    try {
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || (globalThis as any)?.NEXT_PUBLIC_SUPABASE_URL;
+      const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (globalThis as any)?.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const USER_BUCKET = process.env.NEXT_PUBLIC_USER_SETTINGS_BUCKET || (globalThis as any)?.NEXT_PUBLIC_USER_SETTINGS_BUCKET;
+
+      // eslint-disable-next-line no-console
+      console.info('DEBUG: NEXT_PUBLIC_SUPABASE_URL =', SUPABASE_URL);
+      if (ANON_KEY) {
+        // eslint-disable-next-line no-console
+        console.info('DEBUG: NEXT_PUBLIC_SUPABASE_ANON_KEY length =', (ANON_KEY as string).length,
+          'preview =', (ANON_KEY as string).slice(0,6) + '...' + (ANON_KEY as string).slice(-6));
+      } else {
+        // eslint-disable-next-line no-console
+        console.info('DEBUG: NEXT_PUBLIC_SUPABASE_ANON_KEY = <missing>');
+      }
+      // eslint-disable-next-line no-console
+      console.info('DEBUG: USER_SETTINGS_BUCKET =', USER_BUCKET);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('DEBUG: failed to read envs', err);
+    }
+  }, []);
+
   // Realtime: refresh data when contributions for this user change
   useEffect(() => {
     let contributionsChannel: any = null;
@@ -312,6 +299,13 @@ export default function CustomerPage() {
                         ...prev,
                       ];
                     });
+                    // Optimistically bump wallet balance
+                    try {
+                      const deltaNaira = Math.round(((newRow.amount_kobo ?? 0) as number) / 100);
+                      if (deltaNaira > 0) {
+                        setWalletNaira((prev) => Math.max(0, prev + deltaNaira));
+                      }
+                    } catch {}
                     setJustMarked(true);
                     setTimeout(() => setJustMarked(false), 900);
                   }
@@ -319,8 +313,10 @@ export default function CustomerPage() {
               }
             } catch { }
 
-            // Refresh data (wallet, KPIs, streak, settings)
-            await loadData();
+            // Refresh data only for non-insert events to avoid potential policy recursion on immediate re-read
+            if (payload?.eventType !== "INSERT") {
+              await loadData();
+            }
             // Pulse wallet subtly
             try {
               setWalletPulse(true);
@@ -403,44 +399,56 @@ export default function CustomerPage() {
           updatedAt: new Date().toISOString()
         };
         
-        // Use Supabase Storage (which is built on Firebase) to store settings
-        const fileName = `user-settings/${user.id}/settings.json`;
-        const { error: uploadError } = await supabase.storage
-          .from('user-settings')
-          .upload(fileName, JSON.stringify(settingsData), {
-            contentType: 'application/json',
-            upsert: true
-          });
-        
-        if (uploadError) {
-          console.log('Firebase Storage not available, trying database...');
-          throw new Error('Storage upload failed');
+        // Try to use Supabase Storage to store settings (browser: upload Blob)
+        try {
+          const fileName = `${user.id}/settings.json`;
+          const blob = new Blob([JSON.stringify(settingsData)], { type: 'application/json' });
+          const { error: uploadError } = await supabase.storage
+            .from(USER_SETTINGS_BUCKET)
+            .upload(fileName, blob, {
+              contentType: 'application/json',
+              upsert: true
+            });
+          
+          if (uploadError) {
+            const code = (uploadError as any)?.statusCode ?? (uploadError as any)?.status;
+            const message = (uploadError as any)?.message || 'Unknown upload error';
+            
+            if (code === 400) {
+              console.log('Storage bucket or permissions issue:', message);
+            } else {
+              console.log('Storage upload failed:', message);
+            }
+            
+            // Fallback to localStorage
+            localStorage.setItem(`ajopay_settings_${user.id}`, JSON.stringify(settingsData));
+            setProfileSettings(nextSettings);
+            toast.success(val ? "Auto-mark enabled (saved locally)" : "Auto-mark disabled (saved locally)");
+            return;
+          }
+          
+          // Success - saved to Supabase Storage
+          setProfileSettings(nextSettings);
+          toast.success(val ? "Auto-mark enabled (saved to cloud)" : "Auto-mark disabled (saved to cloud)");
+        } catch (storageError) {
+          console.log('Supabase Storage upload failed:', storageError);
+          
+          // Fallback to localStorage
+          localStorage.setItem(`ajopay_settings_${user.id}`, JSON.stringify(settingsData));
+          setProfileSettings(nextSettings);
+          toast.success(val ? "Auto-mark enabled (saved locally)" : "Auto-mark disabled (saved locally)");
+          return;
         }
-        
-        // Success - saved to Firebase Storage
-        setProfileSettings(nextSettings);
-        toast.success(val ? "Auto-mark enabled (saved to cloud)" : "Auto-mark disabled (saved to cloud)");
         
         // Trigger real-time update for other sessions
         await triggerSettingsUpdate(user.id, nextSettings);
         
       } catch (storageError) {
-        console.log('Firebase Storage failed, trying database...');
-        
-        // Try database update as fallback
-        const { error } = await supabase.from("profiles").update({ settings: nextSettings }).eq("id", user.id);
-        
-        if (error) {
-          console.log('Database also failed, using localStorage...');
-          // Final fallback to localStorage
-          localStorage.setItem("cust_auto_mark", val ? "1" : "0");
-          setProfileSettings(nextSettings);
-          toast.message(val ? "Auto-mark enabled (local storage)" : "Auto-mark disabled (local storage)");
-        } else {
-          // Database update worked
-          setProfileSettings(nextSettings);
-          toast.success(val ? "Auto-mark enabled (saved to database)" : "Auto-mark disabled (saved to database)");
-        }
+        console.log('Cloud storage failed, using localStorage...');
+        // Final fallback to localStorage
+        localStorage.setItem("cust_auto_mark", val ? "1" : "0");
+        setProfileSettings(nextSettings);
+        toast.message(val ? "Auto-mark enabled (local storage)" : "Auto-mark disabled (local storage)");
       }
       
     } catch (error) {
@@ -472,8 +480,12 @@ export default function CustomerPage() {
   useEffect(() => {
     if (!autoMark) return;
     const today = new Date().toISOString().slice(0, 10);
+    if (autoMarkFiredRef.current === today) return;
     const hasToday = history.some((h) => h.contributed_at === today);
-    if (hasToday) return;
+    if (hasToday) {
+      autoMarkFiredRef.current = today;
+      return;
+    }
     try {
       const last = localStorage.getItem("cust_auto_mark_last");
       if (last === today) return;
@@ -482,6 +494,7 @@ export default function CustomerPage() {
     setAutoBusy(true);
     (async () => {
       try {
+        autoMarkFiredRef.current = today;
         await submit();
         try { localStorage.setItem("cust_auto_mark_last", today); } catch { }
       } finally {
@@ -509,19 +522,25 @@ export default function CustomerPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Please sign in");
 
-      const { error } = await supabase.from("contributions").insert({
-        user_id: user.id,
-        amount_kobo: amt * 100,
-        method: "wallet",
-        status: "confirmed",
-        contributed_at: new Date().toISOString().slice(0, 10),
+      // Call server API to insert contribution with service role
+      const res = await fetch("/api/contributions/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          amount_kobo: amt * 100,
+          method: "wallet",
+          status: "confirmed",
+          contributed_at: new Date().toISOString().slice(0, 10),
+        }),
       });
-      if (error) throw error;
+      const j = await res.json();
+      if (!res.ok) throw new Error(j?.error || "Failed to insert contribution");
       setMessage(`Marked contribution: ₦${amt}`);
       toast.success(`Marked contribution: ₦${amt}`);
       setAmount(200);
       form.reset({ amount: 200, proofUrl: "" });
-      await loadData();
+      // Defer to realtime/optimistic updates to refresh UI; avoid immediate re-read to prevent policy recursion
     } catch (err: any) {
       setMessage(err.message ?? "Failed to contribute");
       toast.error(err.message ?? "Failed to contribute");
@@ -541,13 +560,64 @@ export default function CustomerPage() {
     }
   };
 
+  if (initialLoading) {
+    return (
+      <DashboardShell role="customer" title="Customer Dashboard">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="h-8 w-48 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+            <div className="h-8 w-32 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+          </div>
+
+          {/* Insights skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CardSkeleton className="h-24" />
+            <CardSkeleton className="h-24" />
+          </div>
+
+          {/* Wallet section skeleton */}
+          <CardSkeleton className="h-40" />
+
+          {/* Quick actions skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <CardSkeleton className="h-32" />
+            <CardSkeleton className="h-32" />
+            <CardSkeleton className="h-32" />
+          </div>
+
+          {/* Tabs skeleton */}
+          <div className="space-y-4">
+            <div className="h-10 w-64 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+            <CardSkeleton className="h-64" />
+          </div>
+
+          {/* Loading indicator */}
+          <div className="flex justify-center py-8">
+            <AdvancedLoadingSpinner 
+              text="Loading Your Dashboard" 
+              size="lg"
+            />
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
+
   return (
     <DashboardShell role="customer" title="Customer Dashboard">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
         {/* Insights */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-            <div className="text-sm opacity-70">Last 7 days</div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm opacity-70">Last 7 days</div>
+              {isMockData && (
+                <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
+                  Demo Data
+                </div>
+              )}
+            </div>
             <div className="mt-1 text-2xl font-semibold">₦{last7Naira.toLocaleString()}</div>
             {(() => {
               const up = prev7Naira === 0 ? last7Naira > 0 : last7Naira >= prev7Naira;
@@ -566,11 +636,49 @@ export default function CustomerPage() {
             )}
           </div>
           <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-            <div className="text-sm opacity-70">Total contributions</div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm opacity-70">Total contributions</div>
+              {isMockData && (
+                <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
+                  Demo Data
+                </div>
+              )}
+            </div>
             <div className={`mt-1 text-2xl font-semibold ${walletPulse ? "animate-pulse" : ""}`}>₦{walletNaira.toLocaleString()}</div>
             <div className="mt-1 text-xs opacity-70">All time</div>
           </div>
         </div>
+
+        {/* Sample Data Button - Show when no data and not using mock data */}
+        {walletNaira === 0 && last7Naira === 0 && !isMockData && (
+          <div className="rounded-2xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-6 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="text-center space-y-4">
+              <div className="text-orange-800 dark:text-orange-200">
+                <h3 className="text-lg font-semibold mb-2">🚀 Welcome to Your Dashboard!</h3>
+                <p className="text-sm opacity-80">
+                  Start by loading some sample data to see how your savings dashboard works, or make your first contribution!
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={loadSampleData}
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Loading..." : "📊 Load Sample Data"}
+                </button>
+                <button
+                  onClick={() => submit(200)}
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Processing..." : "💰 Make First Contribution"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           <div className="flex items-center gap-3">
             <div className="relative h-7 w-7">
@@ -583,58 +691,160 @@ export default function CustomerPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-            <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)] cursor-pointer group">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle>Digital Wallet</CardTitle>
-                  <ToggleGroup
-                    type="single"
-                    value={walletType}
-                    onValueChange={(value: 'ngn' | 'crypto') => handleWalletToggle(value as 'ngn' | 'crypto')}
-                    className="bg-white/5 p-0.5 rounded-lg border border-white/10 h-8"
+          <motion.div 
+            whileHover={{ y: -4, scale: 1.02 }} 
+            transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}
+            className="cursor-pointer"
+            onClick={() => router.push(`/wallet/${walletType}`)}
+          >
+            <AfricanGlassmorphismCard className="overflow-hidden">
+              {/* African Patterns Background */}
+              <AfricanPatterns />
+              
+              <div className="relative z-10 p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      className="relative"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      <div className="p-3 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-2xl backdrop-blur-sm border border-white/30 shadow-lg">
+                        <Wallet className="h-6 w-6 text-amber-600" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                        <Gem className="h-1.5 w-1.5 text-white" />
+                      </div>
+                    </motion.div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        Digital Wallet
+                        <Crown className="h-4 w-4 text-amber-500" />
+                      </h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
+                        {walletType === 'ngn' ? 'Nigerian Naira' : 'Bitcoin & Crypto'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      setBalanceVisible(!balanceVisible);
+                    }}
+                    className="p-2 bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 text-gray-800 dark:text-white rounded-lg transition-all duration-300"
                   >
-                    <ToggleGroupItem
-                      value="ngn"
-                      className={`h-7 px-2 text-xs ${walletType === 'ngn' ? 'bg-white/10' : 'bg-transparent hover:bg-white/5'}`}
-                    >
-                      <Coins className="h-3 w-3 mr-1.5" />
-                      NGN
-                    </ToggleGroupItem>
-                    <ToggleGroupItem
-                      value="crypto"
-                      className={`h-7 px-2 text-xs ${walletType === 'crypto' ? 'bg-white/10' : 'bg-transparent hover:bg-white/5'}`}
-                    >
-                      <Bitcoin className="h-3 w-3 mr-1.5" />
-                      Crypto
-                    </ToggleGroupItem>
-                  </ToggleGroup>
+                    {balanceVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                  </button>
                 </div>
-              </CardHeader>
-              <CardContent
-                className="group-hover:bg-white/5 transition-colors rounded-b-lg"
-                onClick={() => router.push(`/wallet/${walletType}`)}
-              >
-                <div className={`text-3xl font-semibold transition-all ${walletPulse ? "animate-pulse" : ""}`}>
-                  {walletType === 'crypto' ? (
-                    <>
-                      <div>0.00000000 BTC</div>
-                      <div className="text-sm text-muted-foreground">≈ $0.00</div>
-                    </>
-                  ) : (
-                    `₦${walletNaira.toLocaleString()}`
-                  )}
-                </div>
-                <div className="mt-3 flex items-center justify-between text-xs">
-                  <span className="opacity-70">
-                    {walletType === 'crypto' ? 'Multi-chain support' : 'Personal savings wallet'}
-                  </span>
-                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-                    View details →
+
+                {/* Wallet Type Toggle */}
+                <div className="mb-6">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-1 border border-white/30">
+                    <div className="flex">
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleWalletToggle('ngn');
+                        }}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 relative flex-1 ${
+                          walletType === 'ngn'
+                            ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-gray-800 shadow-lg'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-white/10'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Coins className="h-3 w-3" />
+                        NGN
+                        {walletType === 'ngn' && (
+                          <motion.div
+                            className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        )}
+                      </motion.button>
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleWalletToggle('crypto');
+                        }}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 relative flex-1 ${
+                          walletType === 'crypto'
+                            ? 'bg-gradient-to-r from-orange-500/30 to-red-500/30 text-gray-800 shadow-lg'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-white/10'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Bitcoin className="h-3 w-3" />
+                        Crypto
+                        {walletType === 'crypto' && (
+                          <motion.div
+                            className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        )}
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Balance Display */}
+                <div className="text-center mb-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mb-2"
+                  >
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">Available Balance</p>
+                    </div>
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                    className={`text-2xl font-bold transition-all ${walletPulse ? "animate-pulse" : ""} bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent`}
+                  >
+                    {balanceVisible ? (
+                      walletType === 'crypto' ? (
+                        <>
+                          <div>0.00000000 BTC</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center justify-center gap-1">
+                            <TrendingUp className="h-3 w-3 text-green-500" />
+                            ≈ $0.00
+                            <span className="text-xs text-green-500">+2.5%</span>
+                          </div>
+                        </>
+                      ) : (
+                        `₦${walletNaira.toLocaleString()}`
+                      )
+                    ) : (
+                      '••••••'
+                    )}
+                  </motion.div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="opacity-70 text-gray-600 dark:text-gray-300">
+                    {walletType === 'crypto' ? 'Multi-chain support' : 'Personal savings wallet'}
+                  </span>
+                  <div className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1">
+                    View details
+                    <Sparkles className="h-3 w-3" />
+                  </div>
+                </div>
+              </div>
+            </AfricanGlassmorphismCard>
           </motion.div>
 
           <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>

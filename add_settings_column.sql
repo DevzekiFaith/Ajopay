@@ -31,3 +31,8 @@ GRANT EXECUTE ON FUNCTION add_settings_column_if_not_exists() TO authenticated;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS settings JSONB DEFAULT '{}';
 CREATE INDEX IF NOT EXISTS idx_profiles_settings ON public.profiles USING GIN (settings);
 
+
+
+
+
+

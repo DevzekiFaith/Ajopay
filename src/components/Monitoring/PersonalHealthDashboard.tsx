@@ -42,99 +42,14 @@ export function PersonalHealthDashboard() {
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
-      // Get user's contributions
-      const { data: contributions } = await supabase
-        .from("contributions")
-        .select("amount_kobo, contributed_at")
-        .eq("user_id", user.id)
-        .order("contributed_at", { ascending: false });
-
-      if (!contributions) return;
-
-      const totalSavings = contributions.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-      
-      // Calculate daily average (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const recentContributions = contributions.filter(c => 
-        new Date(c.contributed_at) >= thirtyDaysAgo
-      );
-      const dailyAverage = recentContributions.length > 0 
-        ? recentContributions.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100 / 30
-        : 0;
-
-      // Calculate streak
-      const dates = new Set(contributions.map(c => c.contributed_at));
-      const today = new Date().toISOString().slice(0, 10);
-      let streakDays = 0;
-      let cursor = new Date(today);
-      
-      // If no contribution today, start from yesterday
-      if (!dates.has(today)) {
-        cursor.setDate(cursor.getDate() - 1);
+      // Prefer server API (service role) to avoid RLS issues
+      const res = await fetch("/api/metrics/personal", { cache: "no-store" });
+      if (res.ok) {
+        const j = await res.json();
+        if (j?.metrics) {
+          setMetrics(j.metrics);
+        }
       }
-      
-      while (true) {
-        const iso = cursor.toISOString().slice(0, 10);
-        if (dates.has(iso)) {
-          streakDays += 1;
-          cursor.setDate(cursor.getDate() - 1);
-        } else break;
-      }
-
-      // Calculate contribution consistency (last 30 days)
-      const contributionConsistency = recentContributions.length > 0 
-        ? (recentContributions.length / 30) * 100 
-        : 0;
-
-      // Calculate savings health (composite score)
-      const savingsHealth = Math.min(100, (
-        (contributionConsistency * 0.4) + 
-        (Math.min(100, (dailyAverage / 1000) * 100) * 0.3) + 
-        (Math.min(100, streakDays * 5) * 0.3)
-      ));
-
-      // Calculate weekly growth
-      const lastWeek = contributions.filter(c => {
-        const date = new Date(c.contributed_at);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return date >= weekAgo;
-      });
-      const previousWeek = contributions.filter(c => {
-        const date = new Date(c.contributed_at);
-        const twoWeeksAgo = new Date();
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return date >= twoWeeksAgo && date < weekAgo;
-      });
-
-      const lastWeekTotal = lastWeek.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-      const previousWeekTotal = previousWeek.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-      const weeklyGrowth = previousWeekTotal > 0 
-        ? ((lastWeekTotal - previousWeekTotal) / previousWeekTotal) * 100 
-        : lastWeekTotal > 0 ? 100 : 0;
-
-      // Set monthly target (default ₦10,000)
-      const monthlyTarget = 10000;
-      const goalProgress = Math.min(100, (totalSavings / monthlyTarget) * 100);
-
-      const personalMetrics: PersonalHealthMetrics = {
-        totalSavings,
-        dailyAverage,
-        weeklyGrowth,
-        streakDays,
-        contributionConsistency,
-        savingsHealth,
-        goalProgress,
-        monthlyTarget,
-        lastContribution: contributions[0]?.contributed_at || null,
-        contributionFrequency: recentContributions.length
-      };
-
-      setMetrics(personalMetrics);
 
     } catch (error) {
       console.error("Error loading personal metrics:", error);
@@ -145,6 +60,27 @@ export function PersonalHealthDashboard() {
 
   useEffect(() => {
     loadPersonalMetrics();
+  }, []);
+
+  // Add real-time updates for personal metrics
+  useEffect(() => {
+    const channel = supabase
+      .channel("personal-health-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contributions" },
+        () => {
+          // Debounce the refresh to avoid too many updates
+          setTimeout(() => {
+            loadPersonalMetrics();
+          }, 1000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading) {

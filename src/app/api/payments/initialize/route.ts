@@ -1,7 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// GET /api/payments/initialize?plan=pro&amount=500
 // POST /api/payments/initialize
 // body: { amount_kobo: number, user_id: string, email?: string }
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const plan = searchParams.get('plan');
+    const amount = searchParams.get('amount');
+    
+    if (!plan || !amount) {
+      return NextResponse.json({ error: "Missing plan or amount parameter" }, { status: 400 });
+    }
+    
+    // Convert amount to kobo (multiply by 100)
+    const amountKobo = parseInt(amount) * 100;
+    
+    // For GET requests, redirect to payment page with plan info
+    const redirectUrl = `/payment?plan=${plan}&amount=${amount}&amount_kobo=${amountKobo}`;
+    
+    return NextResponse.redirect(new URL(redirectUrl, req.url));
+  } catch (e: any) {
+    console.error("Payment GET error:", e);
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     console.log("Payment initialization request received");
@@ -40,7 +65,7 @@ export async function POST(req: NextRequest) {
       amount: amount_kobo, // paystack expects kobo
       currency: "NGN",
       metadata: { user_id },
-      callback_url: publicUrl ? `${publicUrl}/customer` : undefined,
+      callback_url: publicUrl ? `${publicUrl}/sign-in?payment=success&redirectTo=/customer` : undefined,
     };
     
     console.log("Paystack payload:", JSON.stringify(paystackPayload, null, 2));
