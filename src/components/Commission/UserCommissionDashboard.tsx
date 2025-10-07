@@ -85,9 +85,19 @@ export function UserCommissionDashboard() {
       const commissionsRes = await fetch('/api/commissions/list');
       const commissionsData = await commissionsRes.json();
       
+      console.log('Commissions API response:', { status: commissionsRes.status, data: commissionsData });
+      
       if (commissionsRes.ok) {
         setCommissions(commissionsData.commissions || []);
-        setSummary(commissionsData.summary || summary);
+        setSummary(commissionsData.summary || {
+          totalEarned: 0,
+          totalPaid: 0,
+          totalPending: 0,
+          byType: {}
+        });
+      } else {
+        console.error('Commissions API error:', commissionsData);
+        toast.error(`Failed to load commissions: ${commissionsData.error || 'Unknown error'}`);
       }
 
       // Load rewards
@@ -96,6 +106,8 @@ export function UserCommissionDashboard() {
       
       if (rewardsRes.ok) {
         setRewards(rewardsData.rewards || []);
+      } else {
+        console.error('Rewards API error:', rewardsData);
       }
 
       // Load referral stats
@@ -104,6 +116,8 @@ export function UserCommissionDashboard() {
       
       if (referralRes.ok) {
         setReferralStats(referralData);
+      } else {
+        console.error('Referral API error:', referralData);
       }
 
     } catch (error) {

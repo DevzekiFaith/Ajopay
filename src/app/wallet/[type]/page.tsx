@@ -145,26 +145,26 @@ export default function WalletDetailPage() {
         <AfricanPatterns />
         
         <div className="relative z-10 max-w-6xl mx-auto">
-          {/* Header */}
+        {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
                 <AfricanButton
                   variant="secondary"
                   className="p-3"
-                  onClick={() => router.back()}
-                >
-                  <ArrowLeft className="h-4 w-4" />
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4" />
                 </AfricanButton>
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="p-4 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-3xl backdrop-blur-sm border border-white/30">
                       <Wallet className="h-8 w-8 text-amber-600" />
-                    </div>
+          </div>
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
                       <Sparkles className="h-2 w-2 text-white" />
                     </div>
@@ -242,15 +242,15 @@ export default function WalletDetailPage() {
                       />
                     )}
                   </motion.button>
-                </div>
+          </div>
               </AfricanGlassmorphismCard>
-            </div>
+        </div>
           </motion.div>
 
           {/* Main Wallet Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="mb-8"
           >
@@ -265,7 +265,7 @@ export default function WalletDetailPage() {
                   <div className="flex items-center justify-between mb-6 relative z-10">
                     <div className="flex items-center gap-4">
                       <motion.div
-                        className="relative"
+          className="relative"
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       >
@@ -280,17 +280,17 @@ export default function WalletDetailPage() {
                         )}
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
                           <Gem className="h-2 w-2 text-white" />
-                        </div>
+                  </div>
                       </motion.div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                           {walletView === 'ngn' ? 'Naira Wallet' : 'Bitcoin Wallet'}
                           <Crown className="h-5 w-5 text-amber-500" />
-                        </h2>
+                            </h2>
                         <p className="text-sm text-gray-600 dark:text-gray-300">
                           {walletView === 'ngn' ? 'Your Nigerian Naira balance' : 'Your Bitcoin holdings'}
-                        </p>
-                      </div>
+                            </p>
+                          </div>
                     </div>
                     <div className="flex items-center gap-3">
                       {!isCrypto && (
@@ -303,13 +303,13 @@ export default function WalletDetailPage() {
                         </AfricanButton>
                       )}
                       <button
-                        onClick={() => setBalanceVisible(!balanceVisible)}
+                      onClick={() => setBalanceVisible(!balanceVisible)}
                         className="p-3 bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 text-gray-800 dark:text-white rounded-lg transition-all duration-300"
-                      >
+                    >
                         {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                       </button>
-                    </div>
                   </div>
+                </div>
 
                   {/* Balance Display */}
                   <div className="text-center mb-8 relative z-10">
@@ -322,7 +322,7 @@ export default function WalletDetailPage() {
                       <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                         <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Available Balance</p>
-                      </div>
+              </div>
                     </motion.div>
                     
                     <motion.div
@@ -339,7 +339,7 @@ export default function WalletDetailPage() {
                               <TrendingUp className="h-4 w-4 text-green-500" />
                               ≈ ${cryptoValue.toLocaleString()}
                               <span className="text-xs text-green-500">+2.5%</span>
-                            </div>
+                  </div>
                           </>
                         ) : (
                           walletData ? formatBalance(walletData.balance_kobo) : '₦0.00'
@@ -348,7 +348,7 @@ export default function WalletDetailPage() {
                         '••••••'
                       )}
                     </motion.div>
-                  </div>
+                </div>
 
                   {/* Quick Actions */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -400,14 +400,14 @@ export default function WalletDetailPage() {
                         </AfricanButton>
                       </motion.div>
                     ))}
-                  </div>
                 </div>
+              </div>
 
-              </CardContent>
+            </CardContent>
             </AfricanGlassmorphismCard>
-          </motion.div>
+        </motion.div>
 
-          {/* Stats Cards */}
+        {/* Stats Cards */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -418,105 +418,105 @@ export default function WalletDetailPage() {
               <CardContent className="p-6 text-center">
                 <div className="p-3 bg-green-500/20 rounded-2xl w-fit mx-auto mb-3">
                   <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
+              </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Deposited</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">
                   {walletData ? formatBalance(walletData.total_contributed_kobo || 0) : '₦0.00'}
-                </p>
-              </CardContent>
+              </p>
+            </CardContent>
             </AfricanGlassmorphismCard>
 
             <AfricanGlassmorphismCard>
               <CardContent className="p-6 text-center">
                 <div className="p-3 bg-red-500/20 rounded-2xl w-fit mx-auto mb-3">
                   <TrendingDown className="h-6 w-6 text-red-600" />
-                </div>
+              </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Withdrawn</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">
                   {walletData ? formatBalance(walletData.total_withdrawn_kobo || 0) : '₦0.00'}
-                </p>
-              </CardContent>
+              </p>
+            </CardContent>
             </AfricanGlassmorphismCard>
 
             <AfricanGlassmorphismCard>
               <CardContent className="p-6 text-center">
                 <div className="p-3 bg-purple-500/20 rounded-2xl w-fit mx-auto mb-3">
                   <Shield className="h-6 w-6 text-purple-600" />
-                </div>
+              </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Security Level</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">High</p>
-              </CardContent>
+            </CardContent>
             </AfricanGlassmorphismCard>
           </motion.div>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="transactions">Transactions</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="overview" className="space-y-4">
+          <TabsContent value="overview" className="space-y-4">
               <AfricanGlassmorphismCard>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Button 
-                    className="h-12 flex-col gap-1"
-                    onClick={() => setShowDepositModal(true)}
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-xs">Deposit</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="h-12 flex-col gap-1"
-                    onClick={() => setShowWithdrawModal(true)}
-                  >
-                    <TrendingDown className="h-4 w-4" />
-                    <span className="text-xs">Withdraw</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="h-12 flex-col gap-1"
-                    onClick={() => setShowSendModal(true)}
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span className="text-xs">Send</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="h-12 flex-col gap-1"
-                    onClick={() => setShowReceiveModal(true)}
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    <span className="text-xs">Receive</span>
-                  </Button>
-                </CardContent>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Button 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowDepositModal(true)}
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-xs">Deposit</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowWithdrawModal(true)}
+                >
+                  <TrendingDown className="h-4 w-4" />
+                  <span className="text-xs">Withdraw</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowSendModal(true)}
+                >
+                  <Copy className="h-4 w-4" />
+                  <span className="text-xs">Send</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-12 flex-col gap-1"
+                  onClick={() => setShowReceiveModal(true)}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  <span className="text-xs">Receive</span>
+                </Button>
+              </CardContent>
               </AfricanGlassmorphismCard>
-            </TabsContent>
+          </TabsContent>
 
-            <TabsContent value="transactions" className="space-y-4">
+          <TabsContent value="transactions" className="space-y-4">
               <AfricanGlassmorphismCard>
-                <CardHeader>
-                  <CardTitle>Transaction History</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <CardHeader>
+                <CardTitle>Transaction History</CardTitle>
+              </CardHeader>
+              <CardContent>
                   {loading ? (
                     <div className="flex justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
                   ) : transactions.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      No transactions yet
+                    No transactions yet
                     </div>
-                  ) : (
-                    <div className="space-y-3">
+                ) : (
+                  <div className="space-y-3">
                       {transactions.map((transaction) => (
                         <div key={transaction.id} className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
-                          <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-full ${
                               transaction.type === 'deposit' || transaction.type === 'commission' 
                                 ? 'bg-green-100 text-green-600' 
@@ -528,14 +528,14 @@ export default function WalletDetailPage() {
                                 <TrendingDown className="h-4 w-4" />
                               )}
                             </div>
-                            <div>
+                          <div>
                               <p className="font-medium">{transaction.description || transaction.type}</p>
                               <p className="text-sm text-muted-foreground">
                                 {format(new Date(transaction.created_at), 'MMM dd, yyyy HH:mm')}
-                              </p>
-                            </div>
+                            </p>
                           </div>
-                          <div className="text-right">
+                        </div>
+                        <div className="text-right">
                             <p className={`font-semibold ${
                               transaction.type === 'deposit' || transaction.type === 'commission' 
                                 ? 'text-green-600' 
@@ -546,27 +546,27 @@ export default function WalletDetailPage() {
                             </p>
                             <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
                               {transaction.status}
-                            </Badge>
-                          </div>
+                          </Badge>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
               </AfricanGlassmorphismCard>
-            </TabsContent>
+          </TabsContent>
 
-            <TabsContent value="settings" className="space-y-4">
+          <TabsContent value="settings" className="space-y-4">
               <AfricanGlassmorphismCard>
-                <CardHeader>
-                  <CardTitle>Wallet Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+              <CardHeader>
+                <CardTitle>Wallet Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
                       <p className="font-medium">Show Balance</p>
                       <p className="text-sm text-muted-foreground">Toggle balance visibility</p>
-                    </div>
+                  </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -574,12 +574,12 @@ export default function WalletDetailPage() {
                     >
                       {balanceVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
                       <p className="font-medium">Wallet Address</p>
                       <p className="text-sm text-muted-foreground">Your wallet address</p>
-                    </div>
+                  </div>
                     <div className="flex items-center gap-2">
                       <code className="text-xs bg-black/20 px-2 py-1 rounded">
                         {walletView === 'crypto' ? 'bc1q...7x8y9z' : `AJO-${walletData?.balance_kobo.toString().slice(-6) || '000000'}`}
@@ -592,20 +592,20 @@ export default function WalletDetailPage() {
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
-                  </div>
-                  {walletView === 'crypto' && (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Private Key Export</p>
-                        <p className="text-sm text-muted-foreground">Export your private keys securely</p>
-                      </div>
-                      <Button variant="outline" size="sm">Export</Button>
+                </div>
+                {walletView === 'crypto' && (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Private Key Export</p>
+                      <p className="text-sm text-muted-foreground">Export your private keys securely</p>
                     </div>
-                  )}
-                </CardContent>
+                    <Button variant="outline" size="sm">Export</Button>
+                  </div>
+                )}
+              </CardContent>
               </AfricanGlassmorphismCard>
-            </TabsContent>
-          </Tabs>
+          </TabsContent>
+        </Tabs>
 
           {/* Wallet Modals */}
           <WalletModals

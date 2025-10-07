@@ -195,7 +195,7 @@ export default function WalletPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
                 <AfricanButton
                   variant="secondary"
                   className="p-3"
@@ -314,8 +314,8 @@ export default function WalletPage() {
                     >
                       {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     </AfricanButton>
-                  </div>
-
+              </div>
+              
                   {/* Balance Display */}
                   <div className="text-center mb-8 relative z-10">
                     <motion.div
@@ -413,7 +413,7 @@ export default function WalletPage() {
                       <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Security Level</p>
                       <p className="text-lg font-bold text-gray-800 dark:text-white">High</p>
                     </div>
-                  </div>
+                </div>
               </div>
             </CardContent>
             </AfricanGlassmorphismCard>
@@ -490,7 +490,7 @@ export default function WalletPage() {
                     </motion.div>
                   ))}
                 </div>
-              </CardContent>
+            </CardContent>
             </AfricanGlassmorphismCard>
           </motion.div>
         </div>
