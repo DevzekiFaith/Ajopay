@@ -148,9 +148,10 @@ export function WalletModals({
       } else {
         throw new Error('Failed to record deposit transaction');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Deposit error:', error);
-      toast.error(error.message || 'Failed to process deposit');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process deposit';
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -194,9 +195,10 @@ export function WalletModals({
       
       // Refresh the page to update wallet balance
       window.location.reload();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Withdrawal error:', error);
-      toast.error(error.message || 'Failed to process withdrawal');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process withdrawal';
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -217,7 +219,7 @@ export function WalletModals({
       setAmount('');
       setRecipient('');
       setDescription('');
-    } catch (error) {
+    } catch {
       toast.error('Failed to send money');
     } finally {
       setIsProcessing(false);

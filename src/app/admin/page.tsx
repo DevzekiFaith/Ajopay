@@ -166,8 +166,8 @@ export default function AdminPage() {
   const pageSize = 10; // Default page size
   const entries = Object.entries(sumByUser).map(([uid, total]) => ({ uid, total, name: userLabel[uid]?.name ?? uid }));
   const cmp = (a: { uid: string; total: number; name: string }, b: { uid: string; total: number; name: string }) => {
-    const mult = sortDir === "asc" ? 1 : -1;
-    if (sortKey === "name") return a.name.localeCompare(b.name) * mult;
+    const mult = (sortDir as "asc" | "desc") === "asc" ? 1 : -1;
+    if ((sortKey as "deposited" | "name") === "name") return a.name.localeCompare(b.name) * mult;
     // default deposited
     return (a.total - b.total) * mult;
   };
@@ -315,10 +315,10 @@ export default function AdminPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>
-                      <Link href={makeUrl({ sort: "name", dir: sortKey === "name" && sortDir === "asc" ? "desc" : "asc", page: "1" })} className="hover:underline">Customer</Link>
+                      <Link href={makeUrl({ sort: "name", dir: (sortKey as "deposited" | "name") === "name" && (sortDir as "asc" | "desc") === "asc" ? "desc" : "asc", page: "1" })} className="hover:underline">Customer</Link>
                     </TableHead>
                     <TableHead className="text-right">
-                      <Link href={makeUrl({ sort: "deposited", dir: sortKey === "deposited" && sortDir === "asc" ? "desc" : "asc", page: "1" })} className="hover:underline">Total Deposited</Link>
+                      <Link href={makeUrl({ sort: "deposited", dir: (sortKey as "deposited" | "name") === "deposited" && (sortDir as "asc" | "desc") === "asc" ? "desc" : "asc", page: "1" })} className="hover:underline">Total Deposited</Link>
                     </TableHead>
                   </TableRow>
                 </TableHeader>

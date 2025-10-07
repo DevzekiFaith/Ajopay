@@ -24,7 +24,7 @@ class SoundManager {
     
     try {
       // Create audio context
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
       
       // Generate tones directly since we don't have sound files
       // This avoids 404 errors and provides consistent audio feedback
@@ -61,7 +61,7 @@ class SoundManager {
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
       this.sounds.set(name, audioBuffer);
       console.log(`Loaded sound: ${name}`);
-    } catch (error) {
+    } catch {
       console.warn(`Failed to load sound ${name} from ${url}, trying fallback...`);
       
       // Try fallback URL if provided
