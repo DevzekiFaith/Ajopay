@@ -162,7 +162,7 @@ export function UserCommissionDashboard() {
       return;
     }
 
-    const availableAmount = (summary.totalAvailable || summary.totalEarned) / 100;
+    const availableAmount = (summary.totalEarned - summary.totalPaid) / 100;
     if (parseFloat(withdrawAmount) > availableAmount) {
       toast.error('Insufficient balance for withdrawal');
       return;
@@ -292,7 +292,7 @@ export function UserCommissionDashboard() {
                 <div>
                   <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Available</p>
                   <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
-                    {formatAmount(summary.totalAvailable || summary.totalEarned)}
+                    {formatAmount(summary.totalEarned - summary.totalPaid)}
                   </p>
                 </div>
                 <div className="p-3 bg-blue-100 dark:bg-blue-800/30 rounded-full">
@@ -302,7 +302,7 @@ export function UserCommissionDashboard() {
               <Button 
                 onClick={() => setShowWithdrawModal(true)}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={!summary.totalAvailable && !summary.totalEarned}
+                disabled={summary.totalEarned - summary.totalPaid <= 0}
               >
                 <DollarSign className="w-4 h-4 mr-2" />
                 Withdraw Now
@@ -607,7 +607,7 @@ export function UserCommissionDashboard() {
                   Available Balance
                 </label>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatAmount(summary.totalAvailable || summary.totalEarned)}
+                  {formatAmount(summary.totalEarned - summary.totalPaid)}
                 </div>
               </div>
 
@@ -622,7 +622,7 @@ export function UserCommissionDashboard() {
                   placeholder="Enter amount"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
                   min="100"
-                  max={(summary.totalAvailable || summary.totalEarned) / 100}
+                  max={(summary.totalEarned - summary.totalPaid) / 100}
                 />
               </div>
 

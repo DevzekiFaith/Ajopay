@@ -163,7 +163,7 @@ export default function WalletPage() {
   ];
 
   return (
-    <DashboardShell>
+    <DashboardShell role="customer">
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8">
         {/* African-inspired background elements */}
         <AfricanPatterns />

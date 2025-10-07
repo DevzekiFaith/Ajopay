@@ -421,7 +421,7 @@ export default function WalletDetailPage() {
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Deposited</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">
-                  {walletData ? formatBalance(walletData.total_contributed_kobo) : '₦0.00'}
+                  {walletData ? formatBalance(walletData.total_contributed_kobo || 0) : '₦0.00'}
                 </p>
               </CardContent>
             </AfricanGlassmorphismCard>
@@ -433,7 +433,7 @@ export default function WalletDetailPage() {
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Withdrawn</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">
-                  {walletData ? formatBalance(walletData.total_withdrawn_kobo) : '₦0.00'}
+                  {walletData ? formatBalance(walletData.total_withdrawn_kobo || 0) : '₦0.00'}
                 </p>
               </CardContent>
             </AfricanGlassmorphismCard>
