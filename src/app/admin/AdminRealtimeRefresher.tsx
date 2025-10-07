@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function AdminRealtimeRefresher() {
-  const router = useRouter();
+interface AdminRealtimeRefresherProps {
+  onRefresh: () => void;
+}
+
+export default function AdminRealtimeRefresher({ onRefresh }: AdminRealtimeRefresherProps) {
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -17,7 +19,7 @@ export default function AdminRealtimeRefresher() {
         () => {
           if (tRef.current) clearTimeout(tRef.current);
           tRef.current = setTimeout(() => {
-            router.refresh();
+            onRefresh();
           }, 250);
         }
       )
@@ -27,7 +29,7 @@ export default function AdminRealtimeRefresher() {
         () => {
           if (tRef.current) clearTimeout(tRef.current);
           tRef.current = setTimeout(() => {
-            router.refresh();
+            onRefresh();
           }, 250);
         }
       )
@@ -37,7 +39,7 @@ export default function AdminRealtimeRefresher() {
         () => {
           if (tRef.current) clearTimeout(tRef.current);
           tRef.current = setTimeout(() => {
-            router.refresh();
+            onRefresh();
           }, 250);
         }
       )
@@ -49,6 +51,6 @@ export default function AdminRealtimeRefresher() {
       } catch {}
       if (tRef.current) clearTimeout(tRef.current);
     };
-  }, [router]);
+  }, [onRefresh]);
   return null;
 }

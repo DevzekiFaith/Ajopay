@@ -22,6 +22,7 @@ import {
   LineChart
 } from "lucide-react";
 import DashboardShell from "@/components/dashboard/Shell";
+import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
 
 interface HealthMetrics {
   totalUsers: number;
@@ -64,119 +65,17 @@ export default function MonitoringDashboard() {
     try {
       setLoading(true);
       
-      // Get date range
-      const endDate = new Date();
-      const startDate = new Date();
-      const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-      startDate.setDate(endDate.getDate() - days);
-
-      // Load all metrics in parallel
-      const [
-        usersResult,
-        contributionsResult,
-        savingsCirclesResult,
-        recentActivityResult
-      ] = await Promise.all([
-        supabase.from("profiles").select("id, created_at, role"),
-        supabase.from("contributions").select("amount_kobo, contributed_at, user_id"),
-        supabase.from("savings_circles").select("id, is_active, created_at"),
-        supabase.from("contributions")
-          .select("amount_kobo, contributed_at, user_id")
-          .gte("contributed_at", startDate.toISOString().slice(0, 10))
-          .lte("contributed_at", endDate.toISOString().slice(0, 10))
-      ]);
-
-      const users = usersResult.data || [];
-      const contributions = contributionsResult.data || [];
-      const savingsCircles = savingsCirclesResult.data || [];
-      const recentActivity = recentActivityResult.data || [];
-
-      // Calculate metrics
-      const totalUsers = users.length;
-      const activeUsers = new Set(recentActivity.map(c => c.user_id)).size;
-      const totalContributions = contributions.length;
-      const totalSavings = contributions.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-      
-      // Calculate daily average
-      const dailyAverage = totalSavings / Math.max(1, days);
-      
-      // Calculate growth rates
-      const midPoint = Math.floor(days / 2);
-      const firstHalf = recentActivity.filter(c => {
-        const date = new Date(c.contributed_at);
-        return date >= startDate && date < new Date(startDate.getTime() + midPoint * 24 * 60 * 60 * 1000);
-      });
-      const secondHalf = recentActivity.filter(c => {
-        const date = new Date(c.contributed_at);
-        return date >= new Date(startDate.getTime() + midPoint * 24 * 60 * 60 * 1000);
-      });
-      
-      const firstHalfTotal = firstHalf.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-      const secondHalfTotal = secondHalf.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-      const weeklyGrowth = firstHalfTotal > 0 ? ((secondHalfTotal - firstHalfTotal) / firstHalfTotal) * 100 : 0;
-      
-      // Calculate contribution health (based on consistency)
-      const userContributionCounts = recentActivity.reduce((acc, c) => {
-        acc[c.user_id] = (acc[c.user_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      const avgContributionsPerUser = Object.values(userContributionCounts).reduce((sum, count) => sum + count, 0) / Math.max(1, activeUsers);
-      const contributionHealth = Math.min(100, (avgContributionsPerUser / days) * 100);
-      
-      // Calculate user engagement (active users / total users)
-      const userEngagement = totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0;
-      
-      // Calculate system health (composite score)
-      const systemHealth = (contributionHealth + userEngagement + Math.min(100, (totalSavings / 1000000) * 100)) / 3;
-
-      const healthMetrics: HealthMetrics = {
-        totalUsers,
-        activeUsers,
-        totalContributions,
-        dailyAverage,
-        weeklyGrowth,
-        monthlyGrowth: weeklyGrowth * 4, // Approximate monthly from weekly
-        streakAverage: 0, // Would need more complex calculation
-        savingsCircles: savingsCircles.length,
-        activeCircles: savingsCircles.filter(c => c.is_active).length,
-        totalSavings,
-        contributionHealth,
-        userEngagement,
-        systemHealth
-      };
-
-      setMetrics(healthMetrics);
-
-      // Generate trend data
-      const trendData: ContributionTrend[] = [];
-      const activityData: UserActivity[] = [];
-      
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().slice(0, 10);
-        
-        const dayContributions = recentActivity.filter(c => c.contributed_at === dateStr);
-        const dayAmount = dayContributions.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-        const dayUsers = new Set(dayContributions.map(c => c.user_id)).size;
-        
-        trendData.push({
-          date: dateStr,
-          amount: dayAmount,
-          users: dayUsers
-        });
-
-        const newUsersToday = users.filter(u => u.created_at?.startsWith(dateStr)).length;
-        activityData.push({
-          date: dateStr,
-          activeUsers: dayUsers,
-          newUsers: newUsersToday,
-          contributions: dayContributions.length
-        });
+      const res = await fetch(`/api/monitoring/health?timeRange=${timeRange}`, { cache: 'no-store' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Monitoring health API error:', errorData);
+        throw new Error(errorData.error || `HTTP ${res.status}: Failed to fetch monitoring data`);
       }
-
-      setContributionTrends(trendData);
-      setUserActivity(activityData);
+      
+      const data = await res.json();
+      setMetrics(data.metrics);
+      setContributionTrends(data.trends);
+      setUserActivity(data.activity);
 
     } catch (error) {
       console.error("Error loading metrics:", error);
@@ -189,11 +88,75 @@ export default function MonitoringDashboard() {
     loadMetrics();
   }, [timeRange]);
 
+  // Add real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("monitoring-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contributions" },
+        () => {
+          // Debounce the refresh to avoid too many updates
+          setTimeout(() => {
+            loadMetrics();
+          }, 1000);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          setTimeout(() => {
+            loadMetrics();
+          }, 1000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [timeRange]);
+
   if (loading) {
     return (
       <DashboardShell role="admin" title="Monitoring Dashboard">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-6">
+          {/* Time Range Selector Skeleton */}
+          <div className="flex justify-end">
+            <div className="h-10 w-48 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+          </div>
+
+          {/* Health Overview Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <CardSkeleton key={i} className="h-40" />
+            ))}
+          </div>
+
+          {/* Key Metrics Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <CardSkeleton key={i} className="h-32" />
+            ))}
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CardSkeleton className="h-80" />
+            <CardSkeleton className="h-80" />
+          </div>
+
+          {/* Health Insights Skeleton */}
+          <CardSkeleton className="h-64" />
+
+          {/* Loading indicator */}
+          <div className="flex justify-center py-8">
+            <AdvancedLoadingSpinner 
+              text="Loading Monitoring Dashboard" 
+              size="lg"
+            />
+          </div>
         </div>
       </DashboardShell>
     );
@@ -202,8 +165,31 @@ export default function MonitoringDashboard() {
   if (!metrics) {
     return (
       <DashboardShell role="admin" title="Monitoring Dashboard">
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Failed to load metrics</p>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-6 max-w-md mx-auto">
+            <div className="relative">
+              <div className="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Failed to Load Monitoring Data
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                This could be due to insufficient permissions or a server error. 
+                Please check the browser console for more details.
+              </p>
+            </div>
+            <button 
+              onClick={loadMetrics}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </DashboardShell>
     );

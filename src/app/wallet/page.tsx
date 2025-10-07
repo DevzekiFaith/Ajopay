@@ -1,606 +1,513 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { format } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Copy, QrCode, Send, Plus, Download, RefreshCw } from 'lucide-react';
-import { TransactionHistory } from '@/components/wallet/TransactionHistory';
-import { WalletQRCode } from '@/components/wallet/WalletQRCode';
-import { soundManager, playTransactionSound, playDepositNotification } from '@/lib/sounds';
-import { formatAmount, formatDate, truncateMiddle } from '@/lib/utils';
-import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ArrowLeft, 
+  Copy, 
+  Eye, 
+  EyeOff, 
+  CreditCard, 
+  TrendingUp, 
+  TrendingDown, 
+  Wallet, 
+  RefreshCw,
+  Send,
+  Download,
+  Upload,
+  QrCode,
+  Bitcoin,
+  Coins,
+  Shield,
+  Zap,
+  Star,
+  Globe,
+  Smartphone,
+  Banknote,
+  ArrowUpRight,
+  ArrowDownLeft,
+  History,
+  Settings,
+  Bell,
+  ChevronRight,
+  Sparkles,
+  Crown,
+  Gem
+} from "lucide-react";
+import { toast } from "sonner";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import DashboardShell from "@/components/dashboard/Shell";
+import { WalletModals } from "@/components/wallet/WalletModals";
+import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
 
 interface WalletData {
   balance_kobo: number;
-  address: string;
-  currency: 'NGN' | 'BTC';
-  last_activity: string;
-  pending_balance_kobo: number;
+  total_contributed_kobo: number;
+  total_withdrawn_kobo: number;
+  last_activity_at: string;
 }
 
 export default function WalletPage() {
-  const router = useRouter();
-  const supabase = getSupabaseBrowserClient();
-  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [sendAmount, setSendAmount] = useState('');
-  const [recipientAddress, setRecipientAddress] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const [isDepositing, setIsDepositing] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Initialize sound manager and browser notifications
-  const { requestPermission, showDepositNotification } = useBrowserNotifications();
+  const [balanceVisible, setBalanceVisible] = useState(true);
+  const [activeWallet, setActiveWallet] = useState<'ngn' | 'crypto'>('ngn');
+  const [cryptoBalance, setCryptoBalance] = useState(0.00234567);
+  const [btcPrice, setBtcPrice] = useState<number | null>(45000);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+
+  // Calculate crypto value in NGN
+  const cryptoValue = useMemo(() => {
+    if (!btcPrice) return 0;
+    return parseFloat((cryptoBalance * btcPrice).toFixed(2));
+  }, [cryptoBalance, btcPrice]);
+
+  const formatAmount = (amountKobo: number) => {
+    return `₦${(amountKobo / 100).toLocaleString()}`;
+  };
+
+  const formatCryptoAmount = (amount: number) => {
+    return `${amount.toFixed(8)} BTC`;
+  };
   
   useEffect(() => {
-    soundManager;
+    loadWalletData();
   }, []);
 
-  // Fetch wallet data
-  const fetchWallet = async () => {
+  const loadWalletData = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/sign-in');
-        return;
-      }
-
-      console.log('Fetching wallet for user:', user.id);
-
-      // Fetch real wallet data from database
-      const { data: walletData, error: walletError } = await supabase
-        .from("wallets")
-        .select("*")
-        .eq("profile_id", user.id)
-        .single();
-
-      // Also fetch contributions to sync wallet balance
-      const { data: contributions } = await supabase
-        .from("contributions")
-        .select("amount_kobo")
-        .eq("user_id", user.id);
-      
-      const totalContributions = contributions?.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) || 0;
-
-      if (walletError) {
-        console.log('Wallet not found, creating new wallet:', walletError);
-        
-        // Create new wallet if it doesn't exist, sync with contributions
-        const { data: newWallet, error: createError } = await supabase
-          .from("wallets")
-          .insert({
-            profile_id: user.id,
-            balance_kobo: totalContributions,
-            total_contributed_kobo: totalContributions,
-            total_withdrawn_kobo: 0
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating wallet:', createError);
-          toast.error('Failed to create wallet');
-          return;
-        }
-
-        const wallet: WalletData = {
-          balance_kobo: newWallet.balance_kobo,
-          pending_balance_kobo: 0,
-          address: newWallet.id, // Use wallet ID as address
-          currency: 'NGN',
-          last_activity: newWallet.updated_at || new Date().toISOString()
-        };
-
-        setWallet(wallet);
-      } else {
-        console.log('Found existing wallet:', walletData);
-        
-        // Sync wallet balance with contributions if needed
-        if (walletData.balance_kobo !== totalContributions) {
-          console.log('Syncing wallet balance with contributions:', {
-            walletBalance: walletData.balance_kobo,
-            totalContributions: totalContributions
-          });
-          
-          // Update wallet balance to match contributions
-          const { error: updateError } = await supabase
-            .from("wallets")
-            .update({
-              balance_kobo: totalContributions,
-              total_contributed_kobo: totalContributions,
-              updated_at: new Date().toISOString()
-            })
-            .eq("profile_id", user.id);
-
-          if (updateError) {
-            console.error('Error syncing wallet balance:', updateError);
-          } else {
-            console.log('Wallet balance synced successfully');
-          }
-        }
-        
-        const wallet: WalletData = {
-          balance_kobo: totalContributions, // Use synced balance
-          pending_balance_kobo: 0, // You can add pending balance logic here
-          address: walletData.id, // Use wallet ID as address
-          currency: 'NGN',
-          last_activity: walletData.updated_at || new Date().toISOString()
-        };
-
-        setWallet(wallet);
-      }
+      // Simulate loading wallet data
+      setTimeout(() => {
+        setWalletData({
+          balance_kobo: 2500000, // ₦25,000
+          total_contributed_kobo: 5000000, // ₦50,000
+          total_withdrawn_kobo: 2500000, // ₦25,000
+          last_activity_at: new Date().toISOString()
+        });
+        setLoading(false);
+      }, 1000);
     } catch (error) {
-      console.error('Error fetching wallet:', error);
-      toast.error('Failed to load wallet data');
-    } finally {
+      console.error('Error loading wallet data:', error);
       setLoading(false);
     }
   };
 
-  // Manual refresh function
-  const refreshWallet = async () => {
-    setIsRefreshing(true);
-    try {
-      await fetchWallet();
-      toast.success('Wallet balance refreshed');
-    } catch (error) {
-      toast.error('Failed to refresh wallet');
-    } finally {
-      setIsRefreshing(false);
+  const quickActions = [
+    {
+      id: 'send',
+      title: 'Send',
+      icon: Send,
+      color: 'from-blue-500 to-cyan-500',
+      action: () => setShowSendModal(true)
+    },
+    {
+      id: 'receive',
+      title: 'Receive',
+      icon: Download,
+      color: 'from-green-500 to-emerald-500',
+      action: () => setShowReceiveModal(true)
+    },
+    {
+      id: 'deposit',
+      title: 'Deposit',
+      icon: Upload,
+      color: 'from-purple-500 to-violet-500',
+      action: () => setShowDepositModal(true)
+    },
+    {
+      id: 'withdraw',
+      title: 'Withdraw',
+      icon: ArrowUpRight,
+      color: 'from-orange-500 to-red-500',
+      action: () => setShowWithdrawModal(true)
     }
-  };
+  ];
 
-  // Initial fetch
-  useEffect(() => {
-    fetchWallet();
-  }, []);
-
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!wallet) return;
-
-    const channel = supabase
-      .channel('wallet_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'wallets',
-          filter: `profile_id=eq.${wallet.address}`
-        },
-        (payload) => {
-          // Handle real-time wallet balance updates
-          console.log('Wallet balance update:', payload);
-          fetchWallet();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'wallet_transactions',
-          filter: `wallet_id=eq.${wallet.address}`
-        },
-        (payload) => {
-          // Handle wallet transaction updates
-          console.log('Wallet transaction update:', payload);
-          fetchWallet();
-          
-          // Play sound and show notification for new transactions
-          if (payload.eventType === 'INSERT') {
-            const transaction = payload.new;
-            const amount = transaction?.amount_kobo || 0;
-            const isLargeDeposit = amount >= 50000; // 500 NGN or more
-            
-            // Play enhanced deposit notification sound
-            playDepositNotification(amount, isLargeDeposit);
-            
-            // Show toast notification for successful deposits
-            if (transaction?.type === 'credit' && transaction?.status === 'completed') {
-              toast.success(
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20">
-                    <Plus className="w-4 h-4 text-green-500" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">Money Received! 💰</div>
-                    <div className="text-sm opacity-80">₦{formatAmount(amount)} added to your wallet</div>
-                  </div>
-                </div>,
-                {
-                  duration: 6000,
-                  className: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
-                }
-              );
-              
-              // Show browser notification
-              showDepositNotification(amount / 100, isLargeDeposit);
-            }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'contributions',
-          filter: `user_id=eq.${wallet.address}`
-        },
-        (payload) => {
-          // Handle contribution updates that affect wallet balance
-          console.log('Contribution update affecting wallet:', payload);
-          fetchWallet();
-          
-          // Play sound and show notification for new contributions
-          if (payload.eventType === 'INSERT') {
-            const contribution = payload.new;
-            const amount = contribution?.amount_kobo || 0;
-            const isLargeDeposit = amount >= 50000; // 500 NGN or more
-            
-            // Play enhanced deposit notification sound
-            playDepositNotification(amount, isLargeDeposit);
-            
-            // Show toast notification for contributions
-            toast.success(
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20">
-                  <Plus className="w-4 h-4 text-blue-500" />
-                </div>
-                <div>
-                  <div className="font-semibold">Contribution Added! 💰</div>
-                  <div className="text-sm opacity-80">₦{formatAmount(amount)} added to your savings</div>
-                </div>
-              </div>,
-              {
-                duration: 5000,
-                className: "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20",
-              }
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [wallet?.address]);
-
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!wallet || !sendAmount || !recipientAddress) return;
-
-    const amount = parseFloat(sendAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
+  const recentTransactions = [
+    {
+      id: '1',
+      type: 'deposit',
+      amount: 50000,
+      description: 'Daily check-in bonus',
+      time: '2 hours ago',
+      status: 'completed',
+      icon: Star
+    },
+    {
+      id: '2',
+      type: 'send',
+      amount: -15000,
+      description: 'Transfer to John Doe',
+      time: '1 day ago',
+      status: 'completed',
+      icon: Send
+    },
+    {
+      id: '3',
+      type: 'commission',
+      amount: 25000,
+      description: 'Goal completion bonus',
+      time: '2 days ago',
+      status: 'completed',
+      icon: Crown
     }
-
-    if (amount * 100 > wallet.balance_kobo) {
-      toast.error('Insufficient balance');
-      return;
-    }
-
-    try {
-      setIsSending(true);
-      
-      // In a real app, this would be an API call to your backend
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate transaction
-      const newBalance = wallet.balance_kobo - (amount * 100);
-      setWallet({
-        ...wallet,
-        balance_kobo: newBalance,
-        last_activity: new Date().toISOString()
-      });
-      
-      toast.success(`Sent ${formatAmount(amount * 100)} to ${truncateMiddle(recipientAddress)}`);
-      setSendAmount('');
-      setRecipientAddress('');
-      playTransactionSound('withdrawal');
-    } catch (error) {
-      console.error('Error sending funds:', error);
-      toast.error('Failed to send funds');
-      playTransactionSound('error');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleDeposit = async () => {
-    if (!wallet) return;
-    
-    try {
-      setIsDepositing(true);
-      
-      // In a real app, this would redirect to a payment gateway
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulate deposit
-      const depositAmount = 10000; // 100 NGN
-      const isLargeDeposit = depositAmount >= 50000; // 500 NGN or more
-      
-      setWallet({
-        ...wallet,
-        pending_balance_kobo: wallet.pending_balance_kobo + depositAmount,
-        last_activity: new Date().toISOString()
-      });
-      
-      // Enhanced notification with sound
-      toast.success(
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20">
-            <Plus className="w-4 h-4 text-green-500" />
-          </div>
-          <div>
-            <div className="font-semibold">Deposit Initiated! 💰</div>
-            <div className="text-sm opacity-80">₦{formatAmount(depositAmount)} will be added to your wallet</div>
-          </div>
-        </div>,
-        {
-          duration: 5000,
-          className: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
-        }
-      );
-      
-      // Play deposit notification sound
-      playDepositNotification(depositAmount, isLargeDeposit);
-      
-      // Request browser notification permission and show notification
-      await requestPermission();
-      showDepositNotification(depositAmount / 100, isLargeDeposit);
-      
-    } catch (error) {
-      console.error('Error initiating deposit:', error);
-      toast.error('Failed to initiate deposit');
-      playTransactionSound('error');
-    } finally {
-      setIsDepositing(false);
-    }
-  };
-
-  const handleWithdraw = async () => {
-    if (!wallet) return;
-    
-    try {
-      setIsWithdrawing(true);
-      
-      // In a real app, this would be an API call to your backend
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate withdrawal
-      const withdrawalAmount = Math.min(10000, wallet.balance_kobo); // Max 100 NGN
-      setWallet({
-        ...wallet,
-        balance_kobo: wallet.balance_kobo - withdrawalAmount,
-        last_activity: new Date().toISOString()
-      });
-      
-      toast.success(`Withdrawal of ${formatAmount(withdrawalAmount)} initiated`);
-      playTransactionSound('success');
-    } catch (error) {
-      console.error('Error initiating withdrawal:', error);
-      toast.error('Failed to initiate withdrawal');
-      playTransactionSound('error');
-    } finally {
-      setIsWithdrawing(false);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
-  };
-
-  if (loading || !wallet) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="flex items-center gap-4 mb-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.back()}
-          className="rounded-full h-10 w-10"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          <span className="sr-only">Back</span>
-        </Button>
-        <h1 className="text-3xl font-bold">Wallet</h1>
-      </div>
+    <DashboardShell>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8">
+        {/* African-inspired background elements */}
+        <AfricanPatterns />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-xs">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          {/* Balance Card */}
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardDescription>Available Balance</CardDescription>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={refreshWallet}
-                  disabled={isRefreshing}
-                  className="h-8 w-8 p-0"
-                >
-                  {isRefreshing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              <CardTitle className="text-4xl font-bold">
-                {formatAmount(wallet.balance_kobo)}
-              </CardTitle>
-              {wallet.pending_balance_kobo > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  +{formatAmount(wallet.pending_balance_kobo)} pending
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-3">
-                <Button 
-                  onClick={handleDeposit} 
-                  disabled={isDepositing}
-                  className="flex-1 min-w-[120px]"
-                >
-                  {isDepositing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Deposit
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleWithdraw}
-                  disabled={isWithdrawing || wallet.balance_kobo <= 0}
-                  className="flex-1 min-w-[120px]"
-                >
-                  {isWithdrawing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="mr-2 h-4 w-4" />
-                      Withdraw
-                    </>
-                  )}
-                </Button>
-                <WalletQRCode 
-                  address={wallet.address}
-                  label="Receive"
-                  isCrypto={wallet.currency === 'BTC'}
-                />
-              </div>
-              
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Wallet Address</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono">{truncateMiddle(wallet.address)}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                      onClick={() => copyToClipboard(wallet!.address)}
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      <span className="sr-only">Copy address</span>
-                    </Button>
+        <div className="relative z-10 max-w-6xl mx-auto">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="p-4 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-3xl backdrop-blur-sm border border-white/30">
+                    <Wallet className="h-8 w-8 text-amber-600" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <Sparkles className="h-2 w-2 text-white" />
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-muted-foreground">Last Activity</span>
-                  <span>{formatDate(wallet.last_activity, 'MMM d, yyyy h:mm a')}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Send Funds Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Send Funds</CardTitle>
-              <CardDescription>Transfer money to another wallet</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSend} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="recipient">Recipient Address</Label>
-                  <Input
-                    id="recipient"
-                    placeholder="Enter wallet address"
-                    value={recipientAddress}
-                    onChange={(e) => setRecipientAddress(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount (NGN)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={sendAmount}
-                    onChange={(e) => setSendAmount(e.target.value)}
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Available: {formatAmount(wallet.balance_kobo)}
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
+                    Digital Wallet
+                    <Crown className="h-6 w-6 text-amber-500" />
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Manage your Naira and crypto assets with African-inspired design
                   </p>
                 </div>
-                <Button type="submit" className="w-full" disabled={isSending}>
-                  {isSending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Now
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </div>
+              <div className="flex items-center gap-3">
+                <AfricanButton
+                  variant="secondary"
+                  className="p-3"
+                >
+                  <Bell className="h-4 w-4" />
+                </AfricanButton>
+                <AfricanButton
+                  variant="secondary"
+                  className="p-3"
+                >
+                  <Settings className="h-4 w-4" />
+                </AfricanButton>
+              </div>
+            </div>
 
-        <TabsContent value="transactions" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
-              <CardDescription>All your wallet transactions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TransactionHistory 
-                userId={wallet.address} 
-                isCrypto={wallet.currency === 'BTC'}
-              />
+            {/* Wallet Type Toggle */}
+            <div className="flex items-center justify-center">
+              <AfricanGlassmorphismCard className="p-2">
+                <div className="flex">
+                  <motion.button
+                    onClick={() => setActiveWallet('ngn')}
+                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 relative ${
+                      activeWallet === 'ngn'
+                        ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-gray-800 shadow-lg'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-white/10'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Coins className="h-4 w-4" />
+                    Naira Wallet
+                    {activeWallet === 'ngn' && (
+                      <motion.div
+                        className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                  </motion.button>
+                  <motion.button
+                    onClick={() => setActiveWallet('crypto')}
+                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 relative ${
+                      activeWallet === 'crypto'
+                        ? 'bg-gradient-to-r from-orange-500/30 to-red-500/30 text-gray-800 shadow-lg'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-white/10'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Bitcoin className="h-4 w-4" />
+                    Crypto Wallet
+                    {activeWallet === 'crypto' && (
+                      <motion.div
+                        className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                  </motion.button>
+                </div>
+              </AfricanGlassmorphismCard>
+            </div>
+          </motion.div>
+
+          {/* Main Wallet Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <AfricanGlassmorphismCard className="overflow-hidden">
+              <CardContent className="p-0">
+                {/* Wallet Header */}
+                <div className="relative p-8 bg-gradient-to-br from-amber-400/20 via-orange-400/20 to-red-400/20 overflow-hidden">
+                  {/* Decorative elements */}
+                  <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-amber-300/10 to-orange-300/10 rounded-full blur-xl"></div>
+                  <div className="absolute bottom-4 left-4 w-16 h-16 bg-gradient-to-br from-red-300/10 to-pink-300/10 rounded-full blur-xl"></div>
+                  
+                  <div className="flex items-center justify-between mb-6 relative z-10">
+                    <div className="flex items-center gap-4">
+                      <motion.div
+                        className="relative"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      >
+                        {activeWallet === 'ngn' ? (
+                          <div className="p-4 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-3xl backdrop-blur-sm border border-white/30 shadow-lg">
+                            <Coins className="h-8 w-8 text-amber-600" />
+                          </div>
+                        ) : (
+                          <div className="p-4 bg-gradient-to-br from-orange-400/30 to-red-400/30 rounded-3xl backdrop-blur-sm border border-white/30 shadow-lg">
+                            <Bitcoin className="h-8 w-8 text-orange-600" />
+                          </div>
+                        )}
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                          <Gem className="h-2 w-2 text-white" />
+                        </div>
+                      </motion.div>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                          {activeWallet === 'ngn' ? 'Naira Wallet' : 'Bitcoin Wallet'}
+                          <Crown className="h-5 w-5 text-amber-500" />
+                        </h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          {activeWallet === 'ngn' ? 'Your Nigerian Naira balance' : 'Your Bitcoin holdings'}
+                        </p>
+                      </div>
+                    </div>
+                    <AfricanButton
+                      variant="secondary"
+                      className="p-3"
+                      onClick={() => setBalanceVisible(!balanceVisible)}
+                    >
+                      {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </AfricanButton>
+                  </div>
+
+                  {/* Balance Display */}
+                  <div className="text-center mb-8 relative z-10">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="mb-4"
+                    >
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Available Balance</p>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                      className="text-5xl font-bold text-gray-800 dark:text-white mb-2 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
+                    >
+                      {balanceVisible ? (
+                        activeWallet === 'ngn' ? (
+                          walletData ? formatAmount(walletData.balance_kobo) : '₦0'
+                        ) : (
+                          formatCryptoAmount(cryptoBalance)
+                        )
+                      ) : (
+                        '••••••'
+                      )}
+                    </motion.div>
+                    
+                    {activeWallet === 'crypto' && balanceVisible && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="text-lg text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2"
+                      >
+                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        ≈ {formatAmount(cryptoValue * 100)}
+                        <span className="text-xs text-green-500">+2.5%</span>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {quickActions.map((action, index) => (
+                      <motion.div
+                        key={action.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 + index * 0.1 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <AfricanButton
+                          onClick={action.action}
+                          variant={action.id === 'send' ? 'primary' : action.id === 'receive' ? 'accent' : 'secondary'}
+                          className="w-full h-20 flex flex-col items-center justify-center gap-2"
+                        >
+                          <action.icon className="h-6 w-6" />
+                          <span className="text-sm font-medium">{action.title}</span>
+                        </AfricanButton>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Wallet Stats */}
+                <div className="p-6 bg-white/10 backdrop-blur-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="text-center">
+                      <div className="p-3 bg-green-500/20 rounded-2xl w-fit mx-auto mb-3">
+                        <TrendingUp className="h-6 w-6 text-green-600" />
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Deposited</p>
+                      <p className="text-lg font-bold text-gray-800 dark:text-white">
+                        {walletData ? formatAmount(walletData.total_contributed_kobo) : '₦0'}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <div className="p-3 bg-blue-500/20 rounded-2xl w-fit mx-auto mb-3">
+                        <ArrowUpRight className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Withdrawn</p>
+                      <p className="text-lg font-bold text-gray-800 dark:text-white">
+                        {walletData ? formatAmount(walletData.total_withdrawn_kobo) : '₦0'}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <div className="p-3 bg-purple-500/20 rounded-2xl w-fit mx-auto mb-3">
+                        <Shield className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Security Level</p>
+                      <p className="text-lg font-bold text-gray-800 dark:text-white">High</p>
+                    </div>
+                  </div>
+              </div>
             </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </AfricanGlassmorphismCard>
+          </motion.div>
+
+          {/* Recent Transactions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <AfricanGlassmorphismCard>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-bold text-gray-800 dark:text-white">
+                    Recent Transactions
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-600 hover:text-gray-800"
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    View All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentTransactions.map((transaction, index) => (
+                    <motion.div
+                      key={transaction.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
+                      className="flex items-center justify-between p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-2xl ${
+                          transaction.type === 'deposit' || transaction.type === 'commission' 
+                            ? 'bg-green-500/20' 
+                            : 'bg-red-500/20'
+                        }`}>
+                          <transaction.icon className={`h-5 w-5 ${
+                            transaction.type === 'deposit' || transaction.type === 'commission' 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800 dark:text-white">
+                            {transaction.description}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {transaction.time}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold ${
+                          transaction.amount > 0 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          {transaction.amount > 0 ? '+' : ''}{formatAmount(Math.abs(transaction.amount))}
+                        </p>
+                        <Badge 
+                          variant={transaction.status === 'completed' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {transaction.status}
+                        </Badge>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </AfricanGlassmorphismCard>
+          </motion.div>
+        </div>
+
+        {/* Wallet Modals */}
+        <WalletModals
+          showDepositModal={showDepositModal}
+          setShowDepositModal={setShowDepositModal}
+          showWithdrawModal={showWithdrawModal}
+          setShowWithdrawModal={setShowWithdrawModal}
+          showSendModal={showSendModal}
+          setShowSendModal={setShowSendModal}
+          showReceiveModal={showReceiveModal}
+          setShowReceiveModal={setShowReceiveModal}
+          activeWallet={activeWallet}
+        />
     </div>
+    </DashboardShell>
   );
 }

@@ -12,6 +12,7 @@ import { SavingsGoals } from "@/components/Savings/SavingsGoals";
 import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
 import { SavingsCircles } from "@/components/Circle/SavingsCircle";
+import { UserCommissionDashboard } from "@/components/Commission/UserCommissionDashboard";
 import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart } from "lucide-react";
 
 type Role = "customer" | "admin";
@@ -127,34 +128,29 @@ function CustomerSection() {
       setUserId(uid);
       if (uid) setLast4(uid.replace(/[^0-9a-f]/gi, "").slice(-4).padStart(4, "0"));
 
-      // Initial profile fetch (select * to avoid unknown-column errors)
+      // Load profile and wallet data from server endpoint
       if (uid) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", uid)
-          .maybeSingle();
-        const name = (profile as any)?.full_name || (profile as any)?.name || metaName || email || "Customer";
-        setDisplayName(name);
-        setNewName(name);
+        try {
+          const res = await fetch('/api/dashboard/profile', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            const profile = data.profile;
+            const name = (profile as any)?.full_name || (profile as any)?.name || metaName || email || "Customer";
+            setDisplayName(name);
+            setNewName(name);
+            setWalletTotalNaira(data.walletTotalNaira || 0);
+            setTodayNaira(data.todayNaira || 0);
+          }
+        } catch (error) {
+          console.error('Error loading profile data:', error);
+          // Fallback to basic name
+          const name = metaName || email || "Customer";
+          setDisplayName(name);
+          setNewName(name);
+        }
 
         // Load advanced features data
         await loadAdvancedFeaturesData(uid);
-
-        // Initial wallet load (total and today)
-        try {
-          const { data: sumRows } = await supabase
-            .from("contributions")
-            .select("amount_kobo, contributed_at")
-            .eq("user_id", uid);
-          const totalKobo = (sumRows ?? []).reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
-          setWalletTotalNaira(Math.round(totalKobo / 100));
-          const todayStr = new Date().toISOString().slice(0, 10);
-          const todayKobo = (sumRows ?? [])
-            .filter((r: any) => r.contributed_at === todayStr)
-            .reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
-          setTodayNaira(Math.round(todayKobo / 100));
-        } catch { }
 
         // Realtime subscription for live updates
         channel = supabase
@@ -178,22 +174,18 @@ function CustomerSection() {
             { event: "*", schema: "public", table: "contributions", filter: `user_id=eq.${uid}` },
             async (payload) => {
               try {
-                const { data: sumRows } = await supabase
-                  .from("contributions")
-                  .select("amount_kobo, contributed_at")
-                  .eq("user_id", uid);
-                const totalKobo = (sumRows ?? []).reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
-                setWalletTotalNaira(Math.round(totalKobo / 100));
-                const todayStr = new Date().toISOString().slice(0, 10);
-                const todayKobo = (sumRows ?? [])
-                  .filter((r: any) => r.contributed_at === todayStr)
-                  .reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
-                setTodayNaira(Math.round(todayKobo / 100));
-                setWalletPulse(true);
-                setTimeout(() => setWalletPulse(false), 600);
+                // Use server endpoint to avoid RLS recursion
+                const res = await fetch('/api/dashboard/profile', { cache: 'no-store' });
+                if (res.ok) {
+                  const data = await res.json();
+                  setWalletTotalNaira(data.walletTotalNaira || 0);
+                  setTodayNaira(data.todayNaira || 0);
+                  setWalletPulse(true);
+                  setTimeout(() => setWalletPulse(false), 600);
 
-                // Update advanced features when wallet changes
-                await loadAdvancedFeaturesData(uid);
+                  // Update advanced features when wallet changes
+                  await loadAdvancedFeaturesData(uid);
+                }
               } catch { }
             }
           )
@@ -476,12 +468,21 @@ function CustomerSection() {
                 </button>
                 <button
                   onClick={() => setActiveFeatureTab("circles")}
-                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium lg:rounded-tr-2xl hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "circles"
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "circles"
                     ? "text-black bg-white/20"
                     : "text-black/70 hover:text-black"
                     }`}
                 >
                   Circles
+                </button>
+                <button
+                  onClick={() => setActiveFeatureTab("commissions")}
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium lg:rounded-tr-2xl hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "commissions"
+                    ? "text-black bg-white/20"
+                    : "text-black/70 hover:text-black"
+                    }`}
+                >
+                  💰 Earn
                 </button>
               </div>
 
@@ -676,6 +677,10 @@ function CustomerSection() {
                 {activeFeatureTab === "circles" && (
                   <SavingsCircles />
                 )}
+
+                {activeFeatureTab === "commissions" && (
+                  <UserCommissionDashboard />
+                )}
               </div>
             </div>
           </CardContent>
@@ -695,56 +700,17 @@ function AdminSection() {
   const [pulse, setPulse] = useState<boolean>(false);
 
   const load = async () => {
-    const { data: ures } = await supabase.auth.getUser();
-    const uid = ures?.user?.id ?? null;
-    if (!uid) return;
-    const { data: me } = await supabase.from("profiles").select("cluster_id").eq("id", uid).maybeSingle();
-    const cid = (me as any)?.cluster_id ?? null;
-
-    // gather cluster member ids
-    const ids = cid
-      ? ((await supabase.from("profiles").select("id").eq("cluster_id", cid)).data?.map((p: any) => p.id) ?? [])
-      : [];
-
-    // all rows in scope
-    const { data: allRows } = await supabase
-      .from("contributions")
-      .select("amount_kobo, contributed_at, user_id")
-      .in("user_id", (ids as any) ?? []);
-    const totalKobo = (allRows ?? []).reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
-    setTotal(Math.round(totalKobo / 100));
-
-    const today = new Date().toISOString().slice(0, 10);
-    setTodayStr(today);
-    const { data: todayRows } = await supabase
-      .from("contributions")
-      .select("amount_kobo, user_id")
-      .eq("contributed_at", today)
-      .in("user_id", (ids as any) ?? []);
-    const todayKobo = (todayRows ?? []).reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
-    setTodayTotal(Math.round(todayKobo / 100));
-
-    // Build sparkline (last 14 days)
-    const days = Array.from({ length: 14 }).map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (13 - i));
-      return d.toISOString().slice(0, 10);
-    });
-    const sums: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
-    for (const r of allRows ?? []) {
-      const d = (r as any).contributed_at?.slice(0, 10);
-      if (d && d in sums) sums[d] += Math.round(((r as any).amount_kobo ?? 0) / 100);
+    try {
+      const res = await fetch('/api/admin/cluster-stats', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setTotal(data.total || 0);
+      setTodayTotal(data.todayTotal || 0);
+      setTodayStr(data.todayStr || new Date().toISOString().slice(0, 10));
+      setSpark(data.spark || '');
+    } catch (error) {
+      console.error('Error loading admin stats:', error);
     }
-    const series = days.map((d) => sums[d] ?? 0);
-    const maxVal = Math.max(1, ...series);
-    const pts = series
-      .map((v, i) => {
-        const x = (i / (series.length - 1)) * 100;
-        const y = 30 - (v / maxVal) * 30;
-        return `${x},${y}`;
-      })
-      .join(" ");
-    setSpark(pts);
   };
 
   useEffect(() => {

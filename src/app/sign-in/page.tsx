@@ -16,6 +16,9 @@ export default function SignInPage() {
   const [pendingConfirm, setPendingConfirm] = useState(false);
   const [resendSending, setResendSending] = useState(false);
   const [reauth, setReauth] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
   const isEmailValid = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
 
   // Password helpers
@@ -24,7 +27,7 @@ export default function SignInPage() {
     return isSignup ? base && fullName.trim().length >= 2 : base;
   }, [isEmailValid, password, isSignup, confirmPassword, fullName]);
 
-  // Prefill from localStorage
+  // Prefill from localStorage and check for payment success
   useEffect(() => {
     try {
       const lastEmail = localStorage.getItem("ajopay_last_email");
@@ -33,6 +36,15 @@ export default function SignInPage() {
     try {
       const qs = new URLSearchParams(window.location.search);
       if (qs.get("reauth") === "1") setReauth(true);
+      if (qs.get("payment") === "success") {
+        setMessage("🎉 Payment successful! Please sign in to access your dashboard and start saving.");
+      }
+      if (qs.get("mode") === "signup") {
+        setIsSignup(true);
+      }
+      if (qs.get("ref")) {
+        setReferralCode(qs.get("ref") || "");
+      }
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -64,10 +76,32 @@ export default function SignInPage() {
         } catch {}
         try { await supabase.auth.signOut(); } catch {}
       }
+      // Process referral code if provided
+      if (referralCode.trim()) {
+        try {
+          const referralResponse = await fetch('/api/commissions/referral', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ referralCode: referralCode.trim() })
+          });
+          
+          if (referralResponse.ok) {
+            const referralData = await referralResponse.json();
+            setMessage(`Account created successfully! ${referralData.message} Please sign in to continue.`);
+          } else {
+            setMessage("Account created successfully! Please sign in to continue to your subscription plan.");
+          }
+        } catch (error) {
+          console.error('Referral processing error:', error);
+          setMessage("Account created successfully! Please sign in to continue to your subscription plan.");
+        }
+      } else {
+        setMessage("Account created successfully! Please sign in to continue to your subscription plan.");
+      }
+
       // Switch back to sign-in form with success message (no email confirmation required)
       setIsSignup(false);
       setPendingConfirm(false);
-      setMessage("Account created. Please sign in.");
       try { localStorage.setItem("ajopay_last_email", email); } catch {}
     } catch (err: any) {
       console.error("signUp error", err);
@@ -150,7 +184,14 @@ export default function SignInPage() {
       // Get the redirect URL from query params or default to /dashboard
       const params = new URLSearchParams(window.location.search);
       const redirectTo = params.get('redirectTo') || '/dashboard';
-      window.location.href = redirectTo;
+      const isNewUser = params.get('newUser') === 'true';
+      
+      // If it's a new user and no specific redirect, send them to home page to choose plan
+      if (isNewUser && !params.get('redirectTo')) {
+        window.location.href = '/?newUser=true';
+      } else {
+        window.location.href = redirectTo;
+      }
       try { localStorage.setItem("ajopay_last_email", email); } catch {}
     } catch (err: any) {
       setMessage(err?.message || "Failed to sign in");
@@ -207,6 +248,22 @@ export default function SignInPage() {
               />
             </div>
           )}
+          {isSignup && (
+            <div className="grid gap-2">
+              <label htmlFor="referral_code" className="text-sm text-gray-700 dark:text-gray-200">
+                Referral Code <span className="text-xs text-gray-500">(Optional)</span>
+              </label>
+              <input
+                id="referral_code"
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder="FRIEND123"
+                className="w-full border-none rounded-xl px-4 py-3 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
+              />
+              <p className="text-xs text-gray-500">Get ₦500 bonus for you and your referrer!</p>
+            </div>
+          )}
           <div className="grid gap-2">
             <label htmlFor="email_pw" className="text-sm text-gray-700 dark:text-gray-200">Email</label>
             <input
@@ -221,28 +278,64 @@ export default function SignInPage() {
           </div>
           <div className="grid gap-2">
             <label htmlFor="pw" className="text-sm text-gray-700 dark:text-gray-200">Password</label>
-            <input
-              id="pw"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-              className="w-full border-none rounded-xl px-4 py-3 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
-            />
+            <div className="relative">
+              <input
+                id="pw"
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                className="w-full border-none rounded-xl px-4 py-3 pr-12 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
+              >
+                {showPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
           {isSignup && (
             <div className="grid gap-2">
               <label htmlFor="pw2" className="text-sm text-gray-700 dark:text-gray-200">Confirm password</label>
-              <input
-                id="pw2"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-                className="w-full border-none rounded-xl px-4 py-3 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
-              />
+              <div className="relative">
+                <input
+                  id="pw2"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                  className="w-full border-none rounded-xl px-4 py-3 pr-12 bg-white shadow-inner dark:bg-[#23233a] focus:outline-none focus:ring-2 focus:ring-purple-400/40 text-gray-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
+                >
+                  {showConfirmPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
           )}
           <div className="flex items-center justify-between text-xs mt-2">

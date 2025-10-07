@@ -530,20 +530,18 @@ export function PeerChallenges() {
     console.log("Current user ID:", currentUserId);
 
     try {
-      // First, find the user by email
-      const { data: targetUser, error: userError } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .eq("email", friendEmail.trim())
-        .single();
+      // First, find the user by email using our API endpoint (bypasses RLS issues)
+      const response = await fetch(`/api/users/search?email=${encodeURIComponent(friendEmail.trim())}`);
+      const data = await response.json();
 
-      console.log("Target user found:", targetUser);
-      console.log("User error:", userError);
+      console.log("Search response:", data);
 
-      if (userError || !targetUser) {
+      if (!response.ok || !data.user) {
         toast.error("User not found with this email address");
         return;
       }
+
+      const targetUser = data.user;
 
       if (targetUser.id === currentUserId) {
         toast.error("You cannot add yourself as a friend");
@@ -573,6 +571,29 @@ export function PeerChallenges() {
 
       if (error) throw error;
 
+      // Create notification for the target user
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: targetUser.id,
+          type: "friend_request",
+          title: "New Friend Request! 👋",
+          message: `You have a new friend request from ${currentUserId}. Accept to start challenging each other!`,
+          data: {
+            from_user_id: currentUserId,
+            connection_type: "friend_request",
+            timestamp: new Date().toISOString()
+          },
+          read: false,
+          created_at: new Date().toISOString()
+        });
+
+      if (notificationError) {
+        console.error("Failed to create friend request notification:", notificationError);
+      } else {
+        console.log("Friend request notification created for user:", targetUser.id);
+      }
+
       toast.success(`Friend request sent to ${targetUser.full_name || targetUser.email || 'user'}! 📤`);
       setFriendEmail("");
       setShowAddFriend(false);
@@ -596,12 +617,47 @@ export function PeerChallenges() {
     if (!currentUserId) return;
 
     try {
+      // First, get the connection details to find the sender
+      const { data: connection, error: fetchError } = await supabase
+        .from("user_connections")
+        .select("user_id, friend_id")
+        .eq("id", connectionId)
+        .single();
+
+      if (fetchError || !connection) {
+        throw new Error("Connection not found");
+      }
+
+      // Update the connection status
       const { error } = await supabase
         .from("user_connections")
         .update({ status: "accepted" })
         .eq("id", connectionId);
 
       if (error) throw error;
+
+      // Create notification for the original sender
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: connection.user_id, // The original sender
+          type: "friend_request_accepted",
+          title: "Friend Request Accepted! 🎉",
+          message: `Your friend request has been accepted! You can now challenge each other.`,
+          data: {
+            accepted_by_user_id: currentUserId,
+            connection_type: "friend_request_accepted",
+            timestamp: new Date().toISOString()
+          },
+          read: false,
+          created_at: new Date().toISOString()
+        });
+
+      if (notificationError) {
+        console.error("Failed to create acceptance notification:", notificationError);
+      } else {
+        console.log("Friend request acceptance notification created for user:", connection.user_id);
+      }
 
       toast.success("Friend request accepted! 🎉");
       

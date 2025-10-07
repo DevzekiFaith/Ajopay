@@ -41,111 +41,122 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
         .limit(20);
 
       if (data) {
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.read).length);
+        setNotifications(data as Notification[]);
+        setUnreadCount((data as Notification[]).filter(n => !n.read).length);
       }
     };
 
     loadNotifications();
 
-    // Listen for real-time notifications
-    const channel = supabase
-      .channel("notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          
-          // Add to notifications list
-          setNotifications(prev => [newNotification, ...prev.slice(0, 19)]);
-          setUnreadCount(prev => prev + 1);
+    // create channel then attach handlers (avoids chaining/brace issues)
+    const notificationsChannel = supabase.channel("notifications");
+    notificationsChannel.on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload: any) => {
+        const newNotification = payload.new as Notification;
 
-          // Show enhanced toast notification with sound
-          if (newNotification.type === "wallet_funded") {
-            const amount = newNotification.data?.amount_naira || 0;
-            const amountKobo = typeof newNotification.data?.amount_kobo === 'number' ? newNotification.data.amount_kobo : 0;
-            const isLargeDeposit = typeof newNotification.data?.is_large_deposit === 'boolean' ? newNotification.data.is_large_deposit : false;
-            
-            // Play deposit notification sound
-            playDepositNotification(amountKobo || 0, isLargeDeposit);
-            
-            toast.success(
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20">
-                  <Plus className="w-4 h-4 text-green-500" />
+        // Add to notifications list
+        setNotifications(prev => [newNotification, ...prev.slice(0, 19)]);
+        setUnreadCount(prev => prev + 1);
+
+        // Show enhanced toast notification with sound
+        if (newNotification.type === "wallet_funded") {
+          const rawAmount = newNotification.data?.amount_naira ?? 0;
+          const amount = typeof rawAmount === "number" ? rawAmount : Number(rawAmount) || 0;
+          const amountKobo = typeof newNotification.data?.amount_kobo === 'number' ? newNotification.data.amount_kobo : 0;
+          const isLargeDeposit = typeof newNotification.data?.is_large_deposit === 'boolean' ? newNotification.data.is_large_deposit : false;
+
+          // Play deposit notification sound
+          playDepositNotification(amountKobo || 0, isLargeDeposit);
+
+          toast.success(
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20">
+                <Plus className="w-4 h-4 text-green-500" />
+              </div>
+              <div>
+                <div className="font-semibold">
+                  {isLargeDeposit ? "Large Deposit Received! 🎉" : "Wallet Funded! 💰"}
                 </div>
-                <div>
-                  <div className="font-semibold">
-                    {isLargeDeposit ? "Large Deposit Received! 🎉" : "Wallet Funded! 💰"}
-                  </div>
-                  <div className="text-sm opacity-80">₦{amount.toLocaleString()} added to your wallet</div>
-                </div>
-              </div>,
-              {
-                duration: isLargeDeposit ? 7000 : 5000,
-                className: isLargeDeposit 
-                  ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
-                  : "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
-              }
-            );
-            
-            // Show browser notification for large deposits
-            if (isLargeDeposit && 'Notification' in window && Notification.permission === 'granted') {
-              new Notification('AjoPay - Large Deposit! 🎉', {
-                body: `₦${amount.toLocaleString()} has been added to your wallet`,
-                icon: '/favicon.ico',
-                badge: '/favicon.ico',
-                tag: 'large-deposit'
-              });
+                <div className="text-sm opacity-80">₦{amount.toLocaleString()} added to your wallet</div>
+              </div>
+            </div>,
+            {
+              duration: isLargeDeposit ? 7000 : 5000,
+              className: isLargeDeposit
+                ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
+                : "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
             }
-          } else {
-            toast.success(newNotification.title, {
-              description: newNotification.message,
-              duration: 4000,
+          );
+
+          // Show browser notification for large deposits
+          if (isLargeDeposit && typeof window !== "undefined" && "Notification" in window && Notification.permission === 'granted') {
+            // use window.Notification to avoid TypeScript confusion in some configs
+            // eslint-disable-next-line no-new
+            new (window as any).Notification('AjoPay - Large Deposit! 🎉', {
+              body: `₦${amount.toLocaleString()} has been added to your wallet`,
+              icon: '/favicon.ico',
+              badge: '/favicon.ico',
+              tag: 'large-deposit'
             });
           }
+        } else {
+          toast.success(
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10">
+                {getNotificationIcon(newNotification.type)}
+              </div>
+              <div>
+                <div className="font-medium">{newNotification.title}</div>
+                {newNotification.message && <div className="text-sm opacity-80">{newNotification.message}</div>}
+              </div>
+            </div>,
+            { duration: 4000 }
+          );
         }
-      )
-      .subscribe();
+      }
+    );
+    notificationsChannel.subscribe();
 
-    // Listen for wallet funding broadcasts
-    const walletChannel = supabase
-      .channel(`user:${userId}`)
-      .on("broadcast", { event: "wallet_funded" }, (payload) => {
-        const { amount_naira, message } = payload.payload;
-        
-        // Show immediate visual feedback
-        toast.success(
-          <div className="flex items-center gap-3">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
-            >
-              <Wallet className="w-4 h-4 text-white" />
-            </motion.div>
-            <div>
-              <div className="font-bold">Payment Confirmed! 🎉</div>
-              <div className="text-sm">₦{amount_naira.toLocaleString()} credited instantly</div>
-            </div>
-          </div>,
-          {
-            duration: 6000,
-            className: "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30",
-          }
-        );
-      })
-      .subscribe();
+    // Listen for wallet funding broadcasts on a user-specific channel
+    const walletChannel = supabase.channel(`user:${userId}`);
+    walletChannel.on("broadcast", { event: "wallet_funded" }, (payload: any) => {
+      const { amount_naira } = payload.payload ?? {};
+      const amount = typeof amount_naira === "number" ? amount_naira : Number(amount_naira) || 0;
+
+      // Show immediate visual feedback
+      toast.success(
+        <div className="flex items-center gap-3">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
+          >
+            <Wallet className="w-4 h-4 text-white" />
+          </motion.div>
+          <div>
+            <div className="font-bold">Payment Confirmed! 🎉</div>
+            <div className="text-sm">₦{amount.toLocaleString()} credited instantly</div>
+          </div>
+        </div>,
+        {
+          duration: 6000,
+          className: "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30",
+        }
+      );
+    });
+    walletChannel.subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(walletChannel);
+      // cleanup channels
+      try { supabase.removeChannel(notificationsChannel); } catch { /* ignore */ }
+      try { supabase.removeChannel(walletChannel); } catch { /* ignore */ }
     };
   }, [userId, supabase]);
 
@@ -228,11 +239,11 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
         {showNotifications && (
           <>
             {/* Backdrop overlay */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[2147483647]"
               onClick={() => setShowNotifications(false)}
             />
-            
+
             {/* Dropdown */}
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}

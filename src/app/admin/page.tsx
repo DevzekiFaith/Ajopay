@@ -1,4 +1,6 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
 import DashboardShell from "@/components/dashboard/Shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Tooltip } from "@/components/ui/tooltip";
 import CustomersExportCsvButton from "./customers/CustomersExportCsvButton";
+import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
 import {
   Table,
   TableBody,
@@ -18,117 +21,149 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// type Row = { id: string; user_id: string; amount_kobo: number; method: string; contributed_at: string };
+interface AdminStats {
+  totalKobo: number;
+  todayKobo: number;
+  last7Naira: number;
+  prev7Naira: number;
+  wowPct: number;
+  isUp: boolean;
+  sparkPoints: string;
+  sumByUser: Record<string, number>;
+  userLabel: Record<string, { name: string; email: string | null }>;
+  recent: any[];
+  today: string;
+}
 
-export const revalidate = 0;
-export const dynamic = "force-dynamic";
+export default function AdminPage() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [promoting, setPromoting] = useState(false);
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const supabase = getSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  // All contributions (global scope)
-  const { data: allRows } = await supabase.from("contributions").select("amount_kobo, contributed_at, user_id, method, status");
-  const totalKobo = (allRows ?? []).reduce((acc, r: { amount_kobo?: number }) => acc + (r.amount_kobo ?? 0), 0);
-
-  // Build per-user totals (₦)
-  const sumByUser: Record<string, number> = {};
-  for (const r of allRows ?? []) {
-    const naira = Math.round((r.amount_kobo ?? 0) / 100);
-    sumByUser[r.user_id] = (sumByUser[r.user_id] ?? 0) + naira;
-  }
-
-  // Fetch minimal profile info for users we need to label
-  const userIds = Object.keys(sumByUser);
-  const { data: userProfiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, email")
-    .in("id", userIds ?? []);
-
-  const userLabel: Record<string, { name: string; email: string | null }> = {};
-  for (const p of userProfiles ?? []) {
-    userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email };
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: todayRows } = await supabase.from("contributions").select("amount_kobo, user_id").eq("contributed_at", today);
-  const todayKobo = (todayRows ?? []).reduce((acc, r: { amount_kobo?: number }) => acc + (r.amount_kobo ?? 0), 0);
-
-  const { data: recent } = await supabase
-    .from("contributions")
-    .select("id, user_id, amount_kobo, method, status, contributed_at")
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  // Ensure label maps include names for any IDs present only in recent
-  {
-    const recentUserIds = Array.from(new Set((recent ?? []).map((r) => r.user_id))).filter((id) => !userLabel[id]);
-    if (recentUserIds.length) {
-      const { data: extra } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", recentUserIds);
-      for (const p of extra ?? []) userLabel[p.id] = { name: p.full_name ?? p.email ?? p.id, email: p.email };
+  const loadStats = async () => {
+    try {
+      const res = await fetch('/api/admin/stats', { cache: 'no-store' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Admin stats API error:', errorData);
+        throw new Error(errorData.error || `HTTP ${res.status}: Failed to fetch admin stats`);
+      }
+      const data = await res.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Error loading admin stats:', error);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  // Build last 14 days totals for sparkline (₦)
-  const days = Array.from({ length: 14 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (13 - i));
-    return d.toISOString().slice(0, 10);
-  });
-  const daySums: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
-  for (const r of allRows ?? []) {
-    const d = (r as { contributed_at?: string }).contributed_at?.slice(0, 10);
-    if (d && d in daySums) {
-      daySums[d] += Math.round(((r as { amount_kobo?: number }).amount_kobo ?? 0) / 100);
+  const promoteToAdmin = async () => {
+    setPromoting(true);
+    try {
+      const res = await fetch('/api/admin/promote-user', { method: 'POST' });
+      if (res.ok) {
+        alert('Successfully promoted to admin! Please refresh the page.');
+        window.location.reload();
+      } else {
+        const error = await res.json();
+        alert('Failed to promote: ' + error.error);
+      }
+    } catch (error) {
+      alert('Error promoting to admin');
+    } finally {
+      setPromoting(false);
     }
-  }
-  const series = days.map((d) => daySums[d] ?? 0);
-  const maxVal = Math.max(1, ...series);
-  const sparkPoints = series
-    .map((v, i) => {
-      const x = (i / (series.length - 1)) * 100;
-      const y = 30 - (v / maxVal) * 30;
-      return `${x},${y}`;
-    })
-    .join(" ");
+  };
 
-  // Derive last 7 vs previous 7 from series
-  const prev7Naira = series.slice(0, 7).reduce((a, b) => a + b, 0);
-  const last7Naira = series.slice(7).reduce((a, b) => a + b, 0);
-  const wowPct = prev7Naira === 0 ? (last7Naira > 0 ? 100 : 0) : Math.round(((last7Naira - prev7Naira) / prev7Naira) * 100);
-  const isUp = prev7Naira === 0 ? last7Naira > 0 : last7Naira >= prev7Naira;
+  useEffect(() => {
+    loadStats();
+  }, []);
 
-  // Active days in last 30 within scope
-  const days30 = Array.from({ length: 30 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (29 - i));
-    return d.toISOString().slice(0, 10);
-  });
-  const dayHit: Record<string, boolean> = Object.fromEntries(days30.map((d) => [d, false]));
-  for (const r of allRows ?? []) {
-    const d = (r as { contributed_at?: string }).contributed_at?.slice(0, 10);
-    if (d && d in dayHit) dayHit[d] = true;
+  if (loading) {
+    return (
+      <DashboardShell role="admin" title="Admin Dashboard">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
+          {/* Header skeleton */}
+          <div className="relative flex flex-wrap items-center justify-between gap-3 border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+              <div className="h-6 w-32 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+            </div>
+            <div className="flex items-center gap-3 ml-auto">
+              <div className="h-8 w-24 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+              <div className="h-8 w-20 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Stats cards skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <CardSkeleton key={i} className="h-32" />
+            ))}
+          </div>
+
+          {/* Tables skeleton */}
+          <div className="space-y-6">
+            <CardSkeleton className="h-64" />
+            <CardSkeleton className="h-64" />
+          </div>
+
+          {/* Loading indicator */}
+          <div className="flex justify-center py-8">
+            <AdvancedLoadingSpinner 
+              text="Loading Admin Dashboard" 
+              size="lg"
+            />
+          </div>
+        </div>
+      </DashboardShell>
+    );
   }
-  const activeDays30 = days30.reduce((acc, d) => acc + (dayHit[d] ? 1 : 0), 0);
+
+  if (!stats) {
+    return (
+      <DashboardShell role="admin">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-6 max-w-md mx-auto">
+            <div className="relative">
+              <div className="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Failed to Load Admin Data
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                This could be due to insufficient permissions or a server error. 
+                Please check the browser console for more details.
+              </p>
+            </div>
+            <button 
+              onClick={loadStats}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  const { totalKobo, todayKobo, last7Naira, prev7Naira, wowPct, isUp, sparkPoints, sumByUser, userLabel, recent, today } = stats;
+
+  // Active days in last 30 within scope (simplified calculation)
+  const activeDays30 = Math.min(30, Object.keys(sumByUser).length); // Simplified for now
   const activePct30 = Math.round((activeDays30 / 30) * 100);
 
-  // Sorting & pagination for Customers
-  const params = await searchParams;
-  const sortKey = (Array.isArray(params?.sort) ? params?.sort[0] : params?.sort) || "deposited";
-  const sortDir = (Array.isArray(params?.dir) ? params?.dir[0] : params?.dir) || "desc";
-  const page = parseInt(((Array.isArray(params?.page) ? params?.page[0] : params?.page) || "1") as string, 10) || 1;
-  const pageSize = parseInt(((Array.isArray(params?.pageSize) ? params?.pageSize[0] : params?.pageSize) || "10") as string, 10) || 10;
+  // Sorting & pagination for Customers (simplified for client-side)
+  const sortKey = "deposited"; // Default sort
+  const sortDir = "desc"; // Default direction
+  const page = 1; // Default page
+  const pageSize = 10; // Default page size
   const entries = Object.entries(sumByUser).map(([uid, total]) => ({ uid, total, name: userLabel[uid]?.name ?? uid }));
   const cmp = (a: { uid: string; total: number; name: string }, b: { uid: string; total: number; name: string }) => {
     const mult = sortDir === "asc" ? 1 : -1;
@@ -161,7 +196,7 @@ export default async function AdminPage({
 
   return (
     <DashboardShell role="admin" title="Admin Dashboard">
-      <AdminRealtimeRefresher />
+        <AdminRealtimeRefresher onRefresh={loadStats} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
         <div className="relative flex flex-wrap items-center justify-between gap-3 border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl rounded-2xl p-3 shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
           {/* sheen */}
@@ -196,6 +231,15 @@ export default async function AdminPage({
             <h1 className="text-2xl font-semibold truncate">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-3 ml-auto flex-wrap">
+            <Button 
+              onClick={promoteToAdmin}
+              disabled={promoting}
+              variant="outline" 
+              size="sm" 
+              className="bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-green-600"
+            >
+              {promoting ? "Promoting..." : "👑 Become Admin"}
+            </Button>
             <Link href="/monitoring">
               <Button variant="outline" size="sm" className="bg-white/10 border-white/20 hover:bg-white/20">
                 📊 Monitoring

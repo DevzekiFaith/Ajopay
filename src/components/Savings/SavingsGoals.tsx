@@ -188,6 +188,9 @@ export function SavingsGoals() {
           goalId,
           targetAmount: goal.targetAmount
         });
+        
+        // Award commission for goal completion
+        awardGoalCompletionCommission(goalId, goal.title, goal.targetAmount);
       } else {
         triggerUpdate('goal_progress', {
           goalTitle: goal.title,
@@ -248,6 +251,27 @@ export function SavingsGoals() {
     } catch (error) {
       console.error("Error updating goal:", error);
       toast.error("Failed to update goal");
+    }
+  };
+
+  const awardGoalCompletionCommission = async (goalId: string, goalTitle: string, targetAmount: number) => {
+    try {
+      const response = await fetch('/api/commissions/goal-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goalId,
+          goalTitle,
+          targetAmount
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`💰 Earned ${data.amount} for completing "${goalTitle}"!`);
+      }
+    } catch (error) {
+      console.error('Error awarding goal completion commission:', error);
     }
   };
 

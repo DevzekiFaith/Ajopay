@@ -27,3 +27,8 @@
 - ✅ API routes work without middleware interference
 
 The middleware should now work correctly on Vercel deployment.
+
+
+
+
+
