@@ -39,6 +39,10 @@ export async function GET() {
 
     const totalDeposited = transactions?.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount_kobo, 0) || 0;
     const totalWithdrawn = transactions?.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount_kobo, 0) || 0;
+    const totalCommissions = transactions?.filter(t => t.type === 'commission').reduce((sum, t) => sum + t.amount_kobo, 0) || 0;
+    
+    // Calculate actual wallet balance including commissions
+    const actualBalance = totalContributions + totalCommissions - totalWithdrawn;
 
     if (walletError) {
       console.error('Error fetching wallet:', walletError);
@@ -50,7 +54,7 @@ export async function GET() {
           .from("wallets")
           .insert({
             profile_id: userId,
-            balance_kobo: totalContributions
+            balance_kobo: actualBalance
           })
           .select()
           .single();
@@ -65,6 +69,7 @@ export async function GET() {
             ...newWallet,
             total_contributed_kobo: totalDeposited,
             total_withdrawn_kobo: totalWithdrawn,
+            total_commission_kobo: totalCommissions,
             last_activity_at: new Date().toISOString()
           },
           totalContributions,
@@ -75,18 +80,21 @@ export async function GET() {
         return NextResponse.json({ error: walletError.message }, { status: 500 });
       }
     } else if (walletData) {
-      // Sync wallet balance with contributions if needed
-      if (walletData.balance_kobo !== totalContributions) {
-        console.log('Syncing wallet balance with contributions:', {
+      // Sync wallet balance with actual balance (contributions + commissions - withdrawals)
+      if (walletData.balance_kobo !== actualBalance) {
+        console.log('Syncing wallet balance with actual balance:', {
           walletBalance: walletData.balance_kobo,
-          totalContributions: totalContributions
+          actualBalance: actualBalance,
+          contributions: totalContributions,
+          commissions: totalCommissions,
+          withdrawals: totalWithdrawn
         });
         
-        // Update wallet balance to match contributions
+        // Update wallet balance to match actual balance
         const { error: updateError } = await admin
           .from("wallets")
           .update({
-            balance_kobo: totalContributions
+            balance_kobo: actualBalance
           })
           .eq("profile_id", userId);
 
@@ -99,9 +107,10 @@ export async function GET() {
         return NextResponse.json({
           wallet: {
             ...walletData,
-            balance_kobo: totalContributions,
+            balance_kobo: actualBalance,
             total_contributed_kobo: totalDeposited,
             total_withdrawn_kobo: totalWithdrawn,
+            total_commission_kobo: totalCommissions,
             last_activity_at: new Date().toISOString()
           },
           totalContributions,
@@ -114,6 +123,7 @@ export async function GET() {
           ...walletData,
           total_contributed_kobo: totalDeposited,
           total_withdrawn_kobo: totalWithdrawn,
+          total_commission_kobo: totalCommissions,
           last_activity_at: new Date().toISOString()
         },
         totalContributions,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 
 export async function POST() {
   try {
@@ -37,17 +38,53 @@ export async function POST() {
       const streakBonus = Math.min(simulatedStreak * 1000, 5000); // ₦10 per day, max ₦50
       const totalAmount = baseAmount + streakBonus;
 
+      // Store commission in local storage simulation (for demo purposes)
+      // In production, this would be stored in the database
+      const commissionData = {
+        id: `checkin_${Date.now()}`,
+        commission_type: 'daily_checkin',
+        amount_kobo: totalAmount,
+        description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
+        status: 'paid',
+        created_at: new Date().toISOString(),
+        user_id: user.id
+      };
+
+      // For demo purposes, we'll also create a transaction record to show the commission
+      try {
+        const admin = getSupabaseAdminClient();
+        const { data: transaction, error: transactionError } = await admin
+          .from("transactions")
+          .insert({
+            user_id: user.id,
+            type: 'commission',
+            amount_kobo: totalAmount,
+            reference: `COMM-${Date.now().toString().slice(-8)}`,
+            description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            metadata: {
+              commission_type: 'daily_checkin',
+              streak_days: simulatedStreak,
+              source: 'commission_system'
+            }
+          })
+          .select()
+          .single();
+
+        if (transactionError) {
+          console.error('Error creating commission transaction:', transactionError);
+        } else {
+          console.log('Commission transaction created:', transaction);
+        }
+      } catch (error) {
+        console.error('Error creating commission transaction:', error);
+      }
+
       return NextResponse.json({
         success: true,
         message: `Daily check-in successful! Earned ₦${(totalAmount / 100).toLocaleString()} (${simulatedStreak} day streak)`,
-        commission: {
-          id: `checkin_${Date.now()}`,
-          commission_type: 'daily_checkin',
-          amount_kobo: totalAmount,
-          description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
-          status: 'paid',
-          created_at: new Date().toISOString()
-        },
+        commission: commissionData,
         streakDays: simulatedStreak,
         amount: `₦${(totalAmount / 100).toLocaleString()}`
       });

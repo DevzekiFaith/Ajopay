@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
   try {
@@ -46,14 +47,47 @@ export async function GET(request: Request) {
       const streakBonus = Math.min(simulatedStreak * 1000, 5000);
       const totalAmount = baseAmount + streakBonus;
       
-      demoCommissions.push({
+      const commissionData = {
         id: `checkin_${Date.now()}`,
         commission_type: 'daily_checkin',
         amount_kobo: totalAmount,
         description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
         status: 'paid',
         created_at: new Date().toISOString()
-      });
+      };
+      
+      demoCommissions.push(commissionData);
+
+      // Also create a transaction record for this commission
+      try {
+        const admin = getSupabaseAdminClient();
+        const { data: transaction, error: transactionError } = await admin
+          .from("transactions")
+          .insert({
+            user_id: user.id,
+            type: 'commission',
+            amount_kobo: totalAmount,
+            reference: `COMM-${Date.now().toString().slice(-8)}`,
+            description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            metadata: {
+              commission_type: 'daily_checkin',
+              streak_days: simulatedStreak,
+              source: 'commission_system'
+            }
+          })
+          .select()
+          .single();
+
+        if (transactionError) {
+          console.error('Error creating commission transaction:', transactionError);
+        } else {
+          console.log('Commission transaction created:', transaction);
+        }
+      } catch (error) {
+        console.error('Error creating commission transaction:', error);
+      }
 
       // Add some sample commissions for demo
       if (simulatedStreak >= 7) {
