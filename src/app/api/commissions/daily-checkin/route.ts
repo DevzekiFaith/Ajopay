@@ -28,6 +28,30 @@ export async function POST() {
       // Tables don't exist yet, use fallback with demo data
       console.log('Commission tables not found, using fallback check-in');
       
+      // Check if user has already checked in today
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const admin = getSupabaseAdminClient();
+      
+      // Check for existing check-in today
+      const { data: existingCheckin, error: checkinError } = await admin
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("type", "commission")
+        .eq("metadata->>commission_type", "daily_checkin")
+        .gte("created_at", `${today}T00:00:00.000Z`)
+        .lt("created_at", `${today}T23:59:59.999Z`)
+        .single();
+
+      if (existingCheckin) {
+        return NextResponse.json({
+          success: false,
+          message: 'You have already checked in today! Come back tomorrow for your next reward.',
+          alreadyCheckedIn: true,
+          lastCheckin: existingCheckin.created_at
+        });
+      }
+
       // Generate a simple streak based on user ID and date (deterministic)
       const userHash = user.id.split('-')[0]; // Use first part of UUID
       const dayOfYear = Math.floor((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 60 * 24));
@@ -52,7 +76,6 @@ export async function POST() {
 
       // For demo purposes, we'll also create a transaction record to show the commission
       try {
-        const admin = getSupabaseAdminClient();
         const { data: transaction, error: transactionError } = await admin
           .from("transactions")
           .insert({
@@ -66,7 +89,8 @@ export async function POST() {
             metadata: {
               commission_type: 'daily_checkin',
               streak_days: simulatedStreak,
-              source: 'commission_system'
+              source: 'commission_system',
+              checkin_date: today
             }
           })
           .select()
@@ -74,11 +98,21 @@ export async function POST() {
 
         if (transactionError) {
           console.error('Error creating commission transaction:', transactionError);
+          return NextResponse.json({
+            success: false,
+            message: 'Failed to record check-in. Please try again.',
+            error: transactionError.message
+          });
         } else {
           console.log('Commission transaction created:', transaction);
         }
       } catch (error) {
         console.error('Error creating commission transaction:', error);
+        return NextResponse.json({
+          success: false,
+          message: 'Failed to record check-in. Please try again.',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
 
       return NextResponse.json({

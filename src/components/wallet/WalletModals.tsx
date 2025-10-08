@@ -36,6 +36,7 @@ interface WalletModalsProps {
   showReceiveModal: boolean;
   setShowReceiveModal: (show: boolean) => void;
   activeWallet: 'ngn' | 'crypto';
+  onWalletUpdate?: () => void; // Callback to refresh wallet data
 }
 
 export function WalletModals({
@@ -47,7 +48,8 @@ export function WalletModals({
   setShowSendModal,
   showReceiveModal,
   setShowReceiveModal,
-  activeWallet
+  activeWallet,
+  onWalletUpdate
 }: WalletModalsProps) {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
@@ -143,8 +145,13 @@ export function WalletModals({
         setAmount('');
         setSelectedMethod('');
         
-        // Refresh the page to update wallet balance
-        window.location.reload();
+        // Refresh wallet data
+        if (onWalletUpdate) {
+          onWalletUpdate();
+        } else {
+          // Fallback to page reload if no callback provided
+          window.location.reload();
+        }
       } else {
         throw new Error('Failed to record deposit transaction');
       }
@@ -193,8 +200,13 @@ export function WalletModals({
       setAmount('');
       setSelectedMethod('');
       
-      // Refresh the page to update wallet balance
-      window.location.reload();
+      // Refresh wallet data
+      if (onWalletUpdate) {
+        onWalletUpdate();
+      } else {
+        // Fallback to page reload if no callback provided
+        window.location.reload();
+      }
     } catch (error: unknown) {
       console.error('Withdrawal error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to process withdrawal';
@@ -240,64 +252,64 @@ export function WalletModals({
       {/* Deposit Modal */}
       <AnimatePresence>
         {showDepositModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white/20 backdrop-blur-2xl rounded-2xl p-4 w-full max-w-sm border border-white/30 shadow-2xl"
+              className="bg-white/20 backdrop-blur-2xl rounded-xl sm:rounded-2xl p-3 sm:p-4 w-full max-w-sm border border-white/30 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white">
                   Deposit {activeWallet === 'ngn' ? 'Naira' : 'Bitcoin'}
                 </h3>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowDepositModal(false)}
-                  className="bg-white/20 hover:bg-white/30"
+                  className="bg-white/20 hover:bg-white/30 h-6 w-6 sm:h-8 sm:w-8"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div>
-                  <Label className="text-sm text-gray-700 dark:text-gray-300">Amount</Label>
+                  <Label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Amount</Label>
                   <Input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Enter amount"
-                    className="bg-white/20 border-white/30 focus:border-white/50 h-9"
+                    className="bg-white/20 border-white/30 focus:border-white/50 h-8 sm:h-9 text-sm"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-sm text-gray-700 dark:text-gray-300">Deposit Method</Label>
+                  <Label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Deposit Method</Label>
                   <div className="space-y-1">
                     {depositMethods.map((method) => (
                       <button
                         key={method.id}
                         onClick={() => setSelectedMethod(method.id)}
-                        className={`w-full p-3 rounded-xl border-2 transition-all duration-300 ${
+                        className={`w-full p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all duration-300 ${
                           selectedMethod === method.id
                             ? 'border-white/50 bg-white/20'
                             : 'border-white/20 bg-white/10 hover:bg-white/15'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-lg bg-gradient-to-br ${method.color}`}>
-                            <method.icon className="h-4 w-4 text-white" />
+                          <div className={`p-1 sm:p-1.5 rounded-md sm:rounded-lg bg-gradient-to-br ${method.color}`}>
+                            <method.icon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                           </div>
                           <div className="text-left">
-                            <p className="text-sm font-medium text-gray-800 dark:text-white">
+                            <p className="text-xs sm:text-sm font-medium text-gray-800 dark:text-white">
                               {method.name}
                             </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-300">
+                            <p className="text-xs text-gray-600 dark:text-gray-300 hidden sm:block">
                               {method.description}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 hidden sm:block">
                               {method.processingTime}
                             </p>
                           </div>
@@ -310,7 +322,7 @@ export function WalletModals({
                 <Button
                   onClick={handleDeposit}
                   disabled={isProcessing || !amount || !selectedMethod}
-                  className="w-full h-9 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white text-sm"
+                  className="w-full h-8 sm:h-9 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white text-xs sm:text-sm"
                 >
                   {isProcessing ? 'Processing...' : 'Deposit'}
                 </Button>
@@ -323,64 +335,64 @@ export function WalletModals({
       {/* Withdraw Modal */}
       <AnimatePresence>
         {showWithdrawModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white/20 backdrop-blur-2xl rounded-2xl p-4 w-full max-w-sm border border-white/30 shadow-2xl"
+              className="bg-white/20 backdrop-blur-2xl rounded-xl sm:rounded-2xl p-3 sm:p-4 w-full max-w-sm border border-white/30 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white">
                   Withdraw {activeWallet === 'ngn' ? 'Naira' : 'Bitcoin'}
                 </h3>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowWithdrawModal(false)}
-                  className="bg-white/20 hover:bg-white/30"
+                  className="bg-white/20 hover:bg-white/30 h-6 w-6 sm:h-8 sm:w-8"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div>
-                  <Label className="text-sm text-gray-700 dark:text-gray-300">Amount</Label>
+                  <Label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Amount</Label>
                   <Input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Enter amount"
-                    className="bg-white/20 border-white/30 focus:border-white/50 h-9"
+                    className="bg-white/20 border-white/30 focus:border-white/50 h-8 sm:h-9 text-sm"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-sm text-gray-700 dark:text-gray-300">Withdrawal Method</Label>
+                  <Label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Withdrawal Method</Label>
                   <div className="space-y-1">
                     {withdrawMethods.map((method) => (
                       <button
                         key={method.id}
                         onClick={() => setSelectedMethod(method.id)}
-                        className={`w-full p-3 rounded-xl border-2 transition-all duration-300 ${
+                        className={`w-full p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all duration-300 ${
                           selectedMethod === method.id
                             ? 'border-white/50 bg-white/20'
                             : 'border-white/20 bg-white/10 hover:bg-white/15'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-lg bg-gradient-to-br ${method.color}`}>
-                            <method.icon className="h-4 w-4 text-white" />
+                          <div className={`p-1 sm:p-1.5 rounded-md sm:rounded-lg bg-gradient-to-br ${method.color}`}>
+                            <method.icon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                           </div>
                           <div className="text-left">
-                            <p className="text-sm font-medium text-gray-800 dark:text-white">
+                            <p className="text-xs sm:text-sm font-medium text-gray-800 dark:text-white">
                               {method.name}
                             </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-300">
+                            <p className="text-xs text-gray-600 dark:text-gray-300 hidden sm:block">
                               {method.description}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 hidden sm:block">
                               {method.processingTime}
                             </p>
                           </div>
@@ -393,7 +405,7 @@ export function WalletModals({
                 <Button
                   onClick={handleWithdraw}
                   disabled={isProcessing || !amount || !selectedMethod}
-                  className="w-full h-9 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm"
+                  className="w-full h-8 sm:h-9 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs sm:text-sm"
                 >
                   {isProcessing ? 'Processing...' : 'Withdraw'}
                 </Button>

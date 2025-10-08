@@ -176,7 +176,8 @@ export function Nav() {
               <span className="h-2.5 w-2.5 rounded-full bg-violet-500" />
             </span>
           </button>
-          {!isLoading && user && user.id ? (
+          {/* Only show burger menu when user is signed in AND not on home page */}
+          {!isLoading && user && user.id && !isHomePage ? (
             <button
               aria-label="Open menu"
               aria-expanded={mobileOpen}
@@ -203,8 +204,8 @@ export function Nav() {
         </div>
       </nav>
 
-      {/* Mobile Sheet menu - only show when user is signed in */}
-      {!isLoading && user && user.id && (
+      {/* Mobile Sheet menu - only show when user is signed in AND not on home page */}
+      {!isLoading && user && user.id && !isHomePage && (
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="right" className="sm:hidden w-80 p-4 backdrop-blur-xl bg-white/10 dark:bg-zinc-900/30 border-l border-white/20 dark:border-white/10" ref={panelRef}>
             <SheetHeader className="mb-4">

@@ -140,6 +140,14 @@ export async function POST(request: Request) {
 
     // Update wallet balance (subtract withdrawal amount)
     const newBalance = walletData.balance_kobo - amountKobo;
+    
+    console.log('Withdrawal balance update:', {
+      userId: user.id,
+      currentBalance: walletData.balance_kobo,
+      withdrawalAmount: amountKobo,
+      newBalance: newBalance
+    });
+    
     const { error: updateError } = await admin
       .from("wallets")
       .update({
@@ -159,6 +167,11 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+    
+    console.log('Wallet balance updated successfully:', {
+      userId: user.id,
+      newBalance: newBalance
+    });
 
     return NextResponse.json({
       success: true,

@@ -131,15 +131,24 @@ function CustomerSection() {
       // Load profile and wallet data from server endpoint
       if (uid) {
         try {
-          const res = await fetch('/api/dashboard/profile', { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            const profile = data.profile;
+          // Load profile data
+          const profileRes = await fetch('/api/dashboard/profile', { cache: 'no-store' });
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            const profile = profileData.profile;
             const name = (profile as any)?.full_name || (profile as any)?.name || metaName || email || "Customer";
             setDisplayName(name);
             setNewName(name);
-            setWalletTotalNaira(data.walletTotalNaira || 0);
-            setTodayNaira(data.todayNaira || 0);
+          }
+          
+          // Load real wallet balance using wallet API
+          const walletRes = await fetch('/api/wallet/data', { cache: 'no-store' });
+          if (walletRes.ok) {
+            const walletData = await walletRes.json();
+            if (walletData.wallet) {
+              setWalletTotalNaira(Math.round(walletData.wallet.balance_kobo / 100));
+              setTodayNaira(walletData.todayNaira || 0);
+            }
           }
         } catch (error) {
           console.error('Error loading profile data:', error);
@@ -166,7 +175,7 @@ function CustomerSection() {
           )
           .subscribe();
 
-        // Realtime: update wallet when contributions change for this user
+        // Realtime: update wallet when contributions or transactions change for this user
         contribChannel = supabase
           .channel("realtime:contributions:self:landing")
           .on(
@@ -174,17 +183,41 @@ function CustomerSection() {
             { event: "*", schema: "public", table: "contributions", filter: `user_id=eq.${uid}` },
             async (payload) => {
               try {
-                // Use server endpoint to avoid RLS recursion
-                const res = await fetch('/api/dashboard/profile', { cache: 'no-store' });
+                // Use wallet API endpoint to get real balance including commissions and withdrawals
+                const res = await fetch('/api/wallet/data', { cache: 'no-store' });
                 if (res.ok) {
                   const data = await res.json();
-                  setWalletTotalNaira(data.walletTotalNaira || 0);
-                  setTodayNaira(data.todayNaira || 0);
-                  setWalletPulse(true);
-                  setTimeout(() => setWalletPulse(false), 600);
+                  if (data.wallet) {
+                    setWalletTotalNaira(Math.round(data.wallet.balance_kobo / 100));
+                    setTodayNaira(data.todayNaira || 0);
+                    setWalletPulse(true);
+                    setTimeout(() => setWalletPulse(false), 600);
 
-                  // Update advanced features when wallet changes
-                  await loadAdvancedFeaturesData(uid);
+                    // Update advanced features when wallet changes
+                    await loadAdvancedFeaturesData(uid);
+                  }
+                }
+              } catch { }
+            }
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${uid}` },
+            async (payload) => {
+              try {
+                // Use wallet API endpoint to get real balance including commissions and withdrawals
+                const res = await fetch('/api/wallet/data', { cache: 'no-store' });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.wallet) {
+                    setWalletTotalNaira(Math.round(data.wallet.balance_kobo / 100));
+                    setTodayNaira(data.todayNaira || 0);
+                    setWalletPulse(true);
+                    setTimeout(() => setWalletPulse(false), 600);
+
+                    // Update advanced features when wallet changes
+                    await loadAdvancedFeaturesData(uid);
+                  }
                 }
               } catch { }
             }

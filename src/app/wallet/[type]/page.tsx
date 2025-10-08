@@ -140,69 +140,69 @@ export default function WalletDetailPage() {
 
   return (
     <DashboardShell role="customer" title={`${isCrypto ? 'Crypto' : 'NGN'} Wallet`}>
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-2 sm:p-4 md:p-6 lg:p-8">
         {/* African-inspired background elements */}
         <AfricanPatterns />
         
-        <div className="relative z-10 max-w-6xl mx-auto">
+        <div className="relative z-10 max-w-6xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
         {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-4 sm:mb-6 lg:mb-8"
           >
-            <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <AfricanButton
                   variant="secondary"
-                  className="p-3"
+                  className="p-2 sm:p-3"
               onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-4 w-4" />
+                >
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                 </AfricanButton>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div className="relative">
-                    <div className="p-4 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-3xl backdrop-blur-sm border border-white/30">
-                      <Wallet className="h-8 w-8 text-amber-600" />
+                    <div className="p-2 sm:p-3 lg:p-4 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-2xl sm:rounded-3xl backdrop-blur-sm border border-white/30">
+                      <Wallet className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-amber-600" />
           </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <Sparkles className="h-2 w-2 text-white" />
+                    <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <Sparkles className="h-1.5 w-1.5 sm:h-2 sm:w-2 text-white" />
                     </div>
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2">
                       {walletView === 'crypto' ? 'Crypto Wallet' : 'Naira Wallet'}
-                      <Crown className="h-6 w-6 text-amber-500" />
+                      <Crown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-amber-500" />
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-300">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                       {walletView === 'crypto' ? 'Manage your crypto assets with African-inspired design' : 'Manage your NGN balance and transactions'}
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <AfricanButton
                   variant="secondary"
-                  className="p-3"
+                  className="p-2 sm:p-3"
                 >
-                  <Bell className="h-4 w-4" />
+                  <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
                 </AfricanButton>
                 <AfricanButton
                   variant="secondary"
-                  className="p-3"
+                  className="p-2 sm:p-3"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
                 </AfricanButton>
               </div>
             </div>
 
             {/* Wallet Type Toggle */}
             <div className="flex items-center justify-center">
-              <AfricanGlassmorphismCard className="p-2">
+              <AfricanGlassmorphismCard className="p-1 sm:p-2">
                 <div className="flex">
                   <motion.button
                     onClick={() => handleWalletToggle('ngn')}
-                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 relative ${
+                    className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-300 flex items-center gap-1 sm:gap-2 relative text-xs sm:text-sm ${
                       walletView === 'ngn'
                         ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-gray-800 shadow-lg'
                         : 'text-gray-600 hover:text-gray-800 hover:bg-white/10'
@@ -210,11 +210,12 @@ export default function WalletDetailPage() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Coins className="h-4 w-4" />
-                    Naira Wallet
+                    <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Naira Wallet</span>
+                    <span className="sm:hidden">NGN</span>
                     {walletView === 'ngn' && (
                       <motion.div
-                        className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                        className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -223,7 +224,7 @@ export default function WalletDetailPage() {
                   </motion.button>
                   <motion.button
                     onClick={() => handleWalletToggle('crypto')}
-                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 relative ${
+                    className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-300 flex items-center gap-1 sm:gap-2 relative text-xs sm:text-sm ${
                       walletView === 'crypto'
                         ? 'bg-gradient-to-r from-orange-500/30 to-red-500/30 text-gray-800 shadow-lg'
                         : 'text-gray-600 hover:text-gray-800 hover:bg-white/10'
@@ -231,11 +232,12 @@ export default function WalletDetailPage() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Bitcoin className="h-4 w-4" />
-                    Crypto Wallet
+                    <Bitcoin className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Crypto Wallet</span>
+                    <span className="sm:hidden">BTC</span>
                     {walletView === 'crypto' && (
                       <motion.div
-                        className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                        className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -252,76 +254,76 @@ export default function WalletDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mb-8"
+            className="mb-4 sm:mb-6 lg:mb-8"
           >
             <AfricanGlassmorphismCard className="overflow-hidden">
               <CardContent className="p-0">
                 {/* Wallet Header */}
-                <div className="relative p-8 bg-gradient-to-br from-amber-400/20 via-orange-400/20 to-red-400/20 overflow-hidden">
+                <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-amber-400/20 via-orange-400/20 to-red-400/20 overflow-hidden">
                   {/* Decorative elements */}
-                  <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-amber-300/10 to-orange-300/10 rounded-full blur-xl"></div>
-                  <div className="absolute bottom-4 left-4 w-16 h-16 bg-gradient-to-br from-red-300/10 to-pink-300/10 rounded-full blur-xl"></div>
+                  <div className="absolute top-2 right-2 sm:top-4 sm:right-4 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-amber-300/10 to-orange-300/10 rounded-full blur-xl"></div>
+                  <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-red-300/10 to-pink-300/10 rounded-full blur-xl"></div>
                   
-                  <div className="flex items-center justify-between mb-6 relative z-10">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6 relative z-10">
+                    <div className="flex items-center gap-2 sm:gap-4">
                       <motion.div
           className="relative"
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       >
                         {walletView === 'ngn' ? (
-                          <div className="p-4 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-3xl backdrop-blur-sm border border-white/30 shadow-lg">
-                            <Coins className="h-8 w-8 text-amber-600" />
+                          <div className="p-2 sm:p-3 lg:p-4 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-2xl sm:rounded-3xl backdrop-blur-sm border border-white/30 shadow-lg">
+                            <Coins className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-amber-600" />
                           </div>
                         ) : (
-                          <div className="p-4 bg-gradient-to-br from-orange-400/30 to-red-400/30 rounded-3xl backdrop-blur-sm border border-white/30 shadow-lg">
-                            <Bitcoin className="h-8 w-8 text-orange-600" />
+                          <div className="p-2 sm:p-3 lg:p-4 bg-gradient-to-br from-orange-400/30 to-red-400/30 rounded-2xl sm:rounded-3xl backdrop-blur-sm border border-white/30 shadow-lg">
+                            <Bitcoin className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-orange-600" />
                           </div>
                         )}
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                          <Gem className="h-2 w-2 text-white" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                          <Gem className="h-1.5 w-1.5 sm:h-2 sm:w-2 text-white" />
                   </div>
                       </motion.div>
                       <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white flex items-center gap-1 sm:gap-2">
                           {walletView === 'ngn' ? 'Naira Wallet' : 'Bitcoin Wallet'}
-                          <Crown className="h-5 w-5 text-amber-500" />
+                          <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                             </h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                           {walletView === 'ngn' ? 'Your Nigerian Naira balance' : 'Your Bitcoin holdings'}
                             </p>
                           </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       {!isCrypto && (
                         <AfricanButton
                           variant="secondary"
-                          className="p-3"
+                          className="p-2 sm:p-3"
                           onClick={refreshWallet}
                         >
-                          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                         </AfricanButton>
                       )}
                       <button
                       onClick={() => setBalanceVisible(!balanceVisible)}
-                        className="p-3 bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 text-gray-800 dark:text-white rounded-lg transition-all duration-300"
+                        className="p-2 sm:p-3 bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 text-gray-800 dark:text-white rounded-lg transition-all duration-300"
                     >
-                        {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        {balanceVisible ? <Eye className="h-3 w-3 sm:h-4 sm:w-4" /> : <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" />}
                       </button>
                   </div>
                 </div>
 
                   {/* Balance Display */}
-                  <div className="text-center mb-8 relative z-10">
+                  <div className="text-center mb-4 sm:mb-6 lg:mb-8 relative z-10">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="mb-4"
+                      className="mb-3 sm:mb-4"
                     >
-                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Available Balance</p>
+                      <div className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium">Available Balance</p>
               </div>
                     </motion.div>
                     
@@ -329,14 +331,14 @@ export default function WalletDetailPage() {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                      className="text-5xl font-bold text-gray-800 dark:text-white mb-2 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
+                      className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-800 dark:text-white mb-2 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
                     >
                       {balanceVisible ? (
                         walletView === 'crypto' ? (
                           <>
-                            <div>{cryptoBalance.toFixed(8)} BTC</div>
-                            <div className="text-lg text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2">
-                              <TrendingUp className="h-4 w-4 text-green-500" />
+                            <div className="break-all">{cryptoBalance.toFixed(8)} BTC</div>
+                            <div className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 flex items-center justify-center gap-1 sm:gap-2">
+                              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
                               ≈ ${cryptoValue.toLocaleString()}
                               <span className="text-xs text-green-500">+2.5%</span>
                   </div>
@@ -351,7 +353,7 @@ export default function WalletDetailPage() {
                 </div>
 
                   {/* Quick Actions */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                     {[
                       {
                         id: 'send',
@@ -393,10 +395,10 @@ export default function WalletDetailPage() {
                         <AfricanButton
                           onClick={action.action}
                           variant={action.id === 'send' ? 'primary' : action.id === 'receive' ? 'accent' : 'secondary'}
-                          className="w-full h-20 flex flex-col items-center justify-center gap-2"
+                          className="w-full h-16 sm:h-18 lg:h-20 flex flex-col items-center justify-center gap-1 sm:gap-2"
                         >
-                          <action.icon className="h-6 w-6" />
-                          <span className="text-sm font-medium">{action.title}</span>
+                          <action.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+                          <span className="text-xs sm:text-sm font-medium">{action.title}</span>
                         </AfricanButton>
                       </motion.div>
                     ))}
@@ -412,86 +414,86 @@ export default function WalletDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8"
           >
             <AfricanGlassmorphismCard>
-              <CardContent className="p-6 text-center">
-                <div className="p-3 bg-green-500/20 rounded-2xl w-fit mx-auto mb-3">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
+              <CardContent className="p-4 sm:p-6 text-center">
+                <div className="p-2 sm:p-3 bg-green-500/20 rounded-xl sm:rounded-2xl w-fit mx-auto mb-2 sm:mb-3">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
               </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Deposited</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-1">Total Deposited</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
                   {walletData ? formatBalance(walletData.total_contributed_kobo || 0) : '₦0.00'}
               </p>
             </CardContent>
             </AfricanGlassmorphismCard>
 
             <AfricanGlassmorphismCard>
-              <CardContent className="p-6 text-center">
-                <div className="p-3 bg-red-500/20 rounded-2xl w-fit mx-auto mb-3">
-                  <TrendingDown className="h-6 w-6 text-red-600" />
+              <CardContent className="p-4 sm:p-6 text-center">
+                <div className="p-2 sm:p-3 bg-red-500/20 rounded-xl sm:rounded-2xl w-fit mx-auto mb-2 sm:mb-3">
+                  <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-red-600" />
               </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Withdrawn</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-1">Total Withdrawn</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
                   {walletData ? formatBalance(walletData.total_withdrawn_kobo || 0) : '₦0.00'}
               </p>
             </CardContent>
             </AfricanGlassmorphismCard>
 
-            <AfricanGlassmorphismCard>
-              <CardContent className="p-6 text-center">
-                <div className="p-3 bg-purple-500/20 rounded-2xl w-fit mx-auto mb-3">
-                  <Shield className="h-6 w-6 text-purple-600" />
+            <AfricanGlassmorphismCard className="sm:col-span-2 lg:col-span-1">
+              <CardContent className="p-4 sm:p-6 text-center">
+                <div className="p-2 sm:p-3 bg-purple-500/20 rounded-xl sm:rounded-2xl w-fit mx-auto mb-2 sm:mb-3">
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-purple-600" />
               </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Security Level</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">High</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-1">Security Level</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">High</p>
             </CardContent>
             </AfricanGlassmorphismCard>
           </motion.div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 h-8 sm:h-10">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="transactions" className="text-xs sm:text-sm">Transactions</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
+          <TabsContent value="overview" className="space-y-3 sm:space-y-4">
               <AfricanGlassmorphismCard>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <Button 
-                  className="h-12 flex-col gap-1"
+                  className="h-10 sm:h-12 flex-col gap-1"
                   onClick={() => setShowDepositModal(true)}
                 >
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs">Deposit</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-12 flex-col gap-1"
+                  className="h-10 sm:h-12 flex-col gap-1"
                   onClick={() => setShowWithdrawModal(true)}
                 >
-                  <TrendingDown className="h-4 w-4" />
+                  <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs">Withdraw</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-12 flex-col gap-1"
+                  className="h-10 sm:h-12 flex-col gap-1"
                   onClick={() => setShowSendModal(true)}
                 >
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs">Send</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-12 flex-col gap-1"
+                  className="h-10 sm:h-12 flex-col gap-1"
                   onClick={() => setShowReceiveModal(true)}
                 >
-                  <CreditCard className="h-4 w-4" />
+                  <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs">Receive</span>
                 </Button>
               </CardContent>
@@ -618,6 +620,7 @@ export default function WalletDetailPage() {
             showReceiveModal={showReceiveModal}
             setShowReceiveModal={setShowReceiveModal}
             activeWallet={walletView}
+            onWalletUpdate={loadWalletData}
           />
         </div>
       </div>
