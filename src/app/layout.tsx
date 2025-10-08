@@ -134,8 +134,11 @@ export default async function RootLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  
+  const fontClasses = [inter.variable, jetbrainsMono.variable].filter(Boolean).join(' ');
+  
   return (
-    <html lang="en">
+    <html lang="en" className={fontClasses}>
       <head>
         <link rel="icon" href="/aj2.png" type="image/png" />
         <link rel="shortcut icon" href="/aj2.png" type="image/png" />
@@ -200,11 +203,11 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={[inter.variable, jetbrainsMono.variable, "antialiased"].join(" ")}>
+      <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Nav />
           <BackButton />
-          <main className="pt-12 sm:pt-14">
+          <main className="pt-12 sm:pt-14 font-sans antialiased">
             {children}
           </main>
           {/* Mobile floating morph modal trigger - show always; contents depend on auth */}

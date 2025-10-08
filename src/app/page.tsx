@@ -348,7 +348,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 max-w-8xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 md:gap-8 lg:gap-10 xl:gap-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {[
               {
                 icon: "💰",
@@ -383,7 +383,7 @@ export default function Home() {
             ].map((feature, index) => (
               <motion.div
                 key={feature.title}
-                className="group relative p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 rounded-2xl sm:rounded-3xl md:rounded-4xl bg-white/90 backdrop-blur-xl border border-white/40 shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.9)] hover:shadow-[20px_20px_40px_rgba(0,0,0,0.2),-20px_-20px_40px_rgba(255,255,255,1)] transition-all duration-500 overflow-hidden min-h-[450px] sm:min-h-[500px] md:min-h-[550px] lg:min-h-[600px] xl:min-h-[650px] w-full"
+                className="group relative p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10 rounded-xl sm:rounded-2xl md:rounded-3xl bg-white/90 backdrop-blur-xl border border-white/40 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.8)] hover:shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.9)] transition-all duration-500 overflow-hidden min-h-[400px] sm:min-h-[450px] md:min-h-[500px] lg:min-h-[550px] xl:min-h-[600px] w-full"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.2 + index * 0.1, duration: 0.8 }}
@@ -398,7 +398,7 @@ export default function Home() {
                 </div>
 
                 {/* Feature image with enhanced height and mobile responsiveness */}
-                <div className="relative w-full aspect-[3/4] sm:aspect-[4/5] md:aspect-[5/6] lg:aspect-[4/5] xl:aspect-[3/4] mb-4 sm:mb-6 md:mb-8 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl">
+                <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] md:aspect-[4/5] lg:aspect-[3/4] xl:aspect-[4/5] mb-3 sm:mb-4 md:mb-6 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden shadow-xl">
                   <Image
                     src={feature.image}
                     alt={feature.title}
@@ -409,39 +409,39 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   
                   {/* African-inspired achievement badge - mobile responsive */}
-                  <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 text-white text-xs sm:text-sm font-bold bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 px-2 py-1 sm:px-4 sm:py-3 rounded-lg sm:rounded-2xl shadow-xl border border-orange-300/30 backdrop-blur-sm">
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <span className="text-sm sm:text-lg">👑</span>
+                  <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 md:bottom-4 md:right-4 text-white text-xs sm:text-sm font-bold bg-gradient-to-r from-orange-500 via-red-500 to-orange-600 px-1.5 py-0.5 sm:px-3 sm:py-1.5 md:px-4 md:py-3 rounded-md sm:rounded-lg md:rounded-2xl shadow-lg border border-orange-300/30 backdrop-blur-sm">
+                    <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
+                      <span className="text-xs sm:text-sm md:text-lg">👑</span>
                       <span className="hidden sm:inline">{feature.achievement}</span>
                       <span className="sm:hidden">{feature.achievement.replace('K+', 'K')}</span>
                     </div>
                   </div>
                   
                   {/* African pattern overlay on image - mobile responsive */}
-                  <div className="absolute top-2 left-2 sm:top-4 sm:left-4 w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400/20 to-red-500/20 rounded-full backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                    <span className="text-lg sm:text-2xl">{feature.icon}</span>
+                  <div className="absolute top-1 left-1 sm:top-2 sm:left-2 md:top-4 md:left-4 w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 bg-gradient-to-br from-orange-400/20 to-red-500/20 rounded-full backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                    <span className="text-sm sm:text-lg md:text-2xl">{feature.icon}</span>
                   </div>
                 </div>
 
                 <div className="relative z-10 flex flex-col justify-between h-full">
                   <div>
                     {/* Enhanced icon with African styling - mobile responsive */}
-                    <div className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-xl sm:rounded-2xl md:rounded-3xl bg-gradient-to-r ${feature.color} flex items-center justify-center text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-3 sm:mb-4 md:mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl border-2 border-white/30`}>
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-3xl bg-gradient-to-r ${feature.color} flex items-center justify-center text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl mb-2 sm:mb-3 md:mb-4 lg:mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-xl border-2 border-white/30`}>
                       {feature.icon}
                     </div>
                     
-                    <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-gray-800 dark:text-gray-100 mb-2 sm:mb-3 md:mb-4 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                    <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-black text-gray-800 dark:text-gray-100 mb-1 sm:mb-2 md:mb-3 lg:mb-4 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                       {feature.title}
                     </h3>
                     
-                    <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed font-medium">
+                    <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed font-medium">
                       {feature.desc}
                     </p>
                   </div>
                   
                   {/* African-inspired decorative element */}
-                  <div className="mt-6 flex justify-center">
-                    <div className="w-16 h-1 bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 rounded-full group-hover:w-24 transition-all duration-500" />
+                  <div className="mt-3 sm:mt-4 md:mt-6 flex justify-center">
+                    <div className="w-12 sm:w-16 md:w-20 h-0.5 sm:h-1 bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 rounded-full group-hover:w-16 sm:group-hover:w-24 md:group-hover:w-28 transition-all duration-500" />
                   </div>
                 </div>
               </motion.div>

@@ -173,6 +173,34 @@ export async function POST(request: Request) {
       newBalance: newBalance
     });
 
+    // Create withdrawal notification
+    const { error: notificationError } = await admin
+      .from("notifications")
+      .insert({
+        user_id: user.id,
+        type: "withdrawal",
+        title: "Withdrawal Processed! 📤",
+        message: `Your withdrawal of ₦${amount.toLocaleString()} has been ${method === 'wallet' ? 'completed' : 'initiated'}. ${processingTime} processing time.`,
+        data: {
+          amount_kobo: amountKobo,
+          amount_naira: amount,
+          transaction_id: transaction.id,
+          method: method,
+          status: method === 'wallet' ? 'completed' : 'pending',
+          processing_time: processingTime,
+          reference: `WTH-${referenceId}`,
+          timestamp: new Date().toISOString()
+        },
+        read: false,
+        created_at: new Date().toISOString()
+      });
+
+    if (notificationError) {
+      console.error("⚠️ Failed to create withdrawal notification:", notificationError);
+    } else {
+      console.log(`🔔 Withdrawal notification created for user ${user.id}`);
+    }
+
     return NextResponse.json({
       success: true,
       message: `Withdrawal of ₦${amount} initiated successfully! ${processingTime} processing time.`,
