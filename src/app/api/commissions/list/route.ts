@@ -42,85 +42,72 @@ export async function GET(request: Request) {
       
       const demoCommissions = [];
       
-      // Add a daily check-in commission
-      const baseAmount = 5000; // ₦50
-      const streakBonus = Math.min(simulatedStreak * 1000, 5000);
-      const totalAmount = baseAmount + streakBonus;
-      
-      const commissionData = {
-        id: `checkin_${Date.now()}`,
-        commission_type: 'daily_checkin',
-        amount_kobo: totalAmount,
-        description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
-        status: 'paid',
-        created_at: new Date().toISOString()
-      };
-      
-      demoCommissions.push(commissionData);
+      // Get existing commission transactions for this user
+      const admin = getSupabaseAdminClient();
+      const { data: existingCommissions, error: commissionError } = await admin
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("type", "commission")
+        .eq("metadata->>commission_type", "daily_checkin")
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-      // Also create a transaction record for this commission
-      try {
-        const admin = getSupabaseAdminClient();
-        const { data: transaction, error: transactionError } = await admin
-          .from("transactions")
-          .insert({
-            user_id: user.id,
-            type: 'commission',
-            amount_kobo: totalAmount,
-            reference: `COMM-${Date.now().toString().slice(-8)}`,
-            description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            metadata: {
-              commission_type: 'daily_checkin',
-              streak_days: simulatedStreak,
-              source: 'commission_system'
-            }
-          })
-          .select()
-          .single();
-
-        if (transactionError) {
-          console.error('Error creating commission transaction:', transactionError);
-        } else {
-          console.log('Commission transaction created:', transaction);
-        }
-      } catch (error) {
-        console.error('Error creating commission transaction:', error);
+      if (commissionError) {
+        console.error('Error fetching existing commissions:', commissionError);
       }
 
-      // Add some sample commissions for demo
-      if (simulatedStreak >= 7) {
-        demoCommissions.push({
-          id: `streak_${Date.now()}`,
-          commission_type: 'streak_milestone',
-          amount_kobo: 100000, // ₦1,000
-          description: '7-day streak milestone bonus',
-          status: 'paid',
-          created_at: new Date(Date.now() - 86400000).toISOString() // Yesterday
+      // If user has existing commissions, use those
+      if (existingCommissions && existingCommissions.length > 0) {
+        const commissionTransactions = existingCommissions.map(transaction => ({
+          id: transaction.id,
+          commission_type: 'daily_checkin',
+          amount_kobo: transaction.amount_kobo,
+          description: transaction.description,
+          status: transaction.status,
+          created_at: transaction.created_at
+        }));
+
+        const totalEarned = existingCommissions.reduce((sum, t) => sum + t.amount_kobo, 0);
+        const totalPaid = existingCommissions.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.amount_kobo, 0);
+
+        return NextResponse.json({
+          commissions: commissionTransactions,
+          summary: {
+            totalEarned: totalEarned,
+            totalPaid: totalPaid,
+            totalPending: totalEarned - totalPaid,
+            totalAvailable: totalEarned - totalPaid,
+            byType: {
+              daily_checkin: totalEarned
+            }
+          },
+          pagination: {
+            limit,
+            offset,
+            hasMore: false
+          }
         });
       }
 
-      const summary = {
-        totalEarned: demoCommissions.reduce((sum, c) => sum + c.amount_kobo, 0),
-        totalPaid: demoCommissions.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amount_kobo, 0),
-        totalPending: demoCommissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount_kobo, 0),
-        totalAvailable: demoCommissions.reduce((sum, c) => sum + c.amount_kobo, 0),
-        byType: {
-          daily_checkin: demoCommissions.filter(c => c.commission_type === 'daily_checkin').reduce((sum, c) => sum + c.amount_kobo, 0),
-          streak_milestone: demoCommissions.filter(c => c.commission_type === 'streak_milestone').reduce((sum, c) => sum + c.amount_kobo, 0)
-        }
-      };
-
+      // If no existing commissions, don't create new ones automatically
+      // Let the user check in manually to earn commissions
       return NextResponse.json({
-        commissions: demoCommissions,
-        summary,
+        commissions: [],
+        summary: {
+          totalEarned: 0,
+          totalPaid: 0,
+          totalPending: 0,
+          totalAvailable: 0,
+          byType: {}
+        },
         pagination: {
           limit,
           offset,
           hasMore: false
         }
       });
+
     }
 
     // Tables exist, use real data

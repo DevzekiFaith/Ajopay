@@ -36,3 +36,5 @@ CREATE INDEX IF NOT EXISTS idx_profiles_settings ON public.profiles USING GIN (s
 
 
 
+
+

@@ -378,3 +378,5 @@ CREATE TRIGGER update_commission_payouts_updated_at BEFORE UPDATE ON commission_
 
 CREATE TRIGGER update_user_referrals_updated_at BEFORE UPDATE ON user_referrals
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+

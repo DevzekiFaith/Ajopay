@@ -156,10 +156,14 @@ export function UserCommissionDashboard() {
       const data = await response.json();
       
       if (response.ok) {
-        toast.success(data.message);
+        if (data.alreadyCheckedIn) {
+          toast.info(data.message);
+        } else {
+          toast.success(data.message);
+        }
         loadCommissionData(); // Refresh data
       } else {
-        toast.error(data.error);
+        toast.error(data.error || data.message || 'Failed to check in');
       }
     } catch (error) {
       console.error('Daily check-in error:', error);
@@ -280,35 +284,35 @@ export function UserCommissionDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4">
+      {/* Header - Mobile Responsive */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-white mb-2">
           💰 Commission Dashboard
         </h2>
-        <p className="text-gray-600 dark:text-gray-300">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 px-4">
           Earn real money by using AjoPay! Check in daily, complete goals, and refer friends.
         </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Summary Cards - Enhanced Mobile Responsiveness */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Total Earned</p>
-                  <p className="text-2xl font-bold text-green-800 dark:text-green-200">
+                <div className="flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-green-600 dark:text-green-400">Total Earned</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-800 dark:text-green-200">
                     {formatAmount(summary.totalEarned)}
                   </p>
                 </div>
-                <div className="p-3 bg-green-100 dark:bg-green-800/30 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-800/30 rounded-full">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </CardContent>
@@ -321,25 +325,26 @@ export function UserCommissionDashboard() {
           transition={{ delay: 0.2 }}
         >
           <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Available</p>
-                  <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400">Available</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-800 dark:text-blue-200">
                     {formatAmount(summary.totalEarned - summary.totalPaid)}
                   </p>
                 </div>
-                <div className="p-3 bg-blue-100 dark:bg-blue-800/30 rounded-full">
-                  <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-800/30 rounded-full">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
               <Button 
                 onClick={() => setShowWithdrawModal(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base py-2 sm:py-3"
                 disabled={summary.totalEarned - summary.totalPaid <= 0}
               >
                 <DollarSign className="w-4 h-4 mr-2" />
-                Withdraw Now
+                <span className="hidden sm:inline">Withdraw Now</span>
+                <span className="sm:hidden">Withdraw</span>
               </Button>
             </CardContent>
           </Card>
@@ -350,17 +355,17 @@ export function UserCommissionDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-            <CardContent className="p-6">
+          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 sm:col-span-2 lg:col-span-1">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Paid Out</p>
-                  <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                <div className="flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400">Paid Out</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-800 dark:text-purple-200">
                     {formatAmount(summary.totalPaid)}
                   </p>
                 </div>
-                <div className="p-3 bg-purple-100 dark:bg-purple-800/30 rounded-full">
-                  <CheckCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <div className="p-2 sm:p-3 bg-purple-100 dark:bg-purple-800/30 rounded-full">
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
             </CardContent>
@@ -397,17 +402,29 @@ export function UserCommissionDashboard() {
         </Card>
       </motion.div>
 
-      {/* Tabs */}
+      {/* Tabs - Mobile Responsive */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="commissions">Commissions</TabsTrigger>
-          <TabsTrigger value="rewards">Rewards</TabsTrigger>
-          <TabsTrigger value="referrals">Referrals</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 sm:py-3">
+            <span className="hidden sm:inline">Overview</span>
+            <span className="sm:hidden">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="commissions" className="text-xs sm:text-sm py-2 sm:py-3">
+            <span className="hidden sm:inline">Commissions</span>
+            <span className="sm:hidden">Earnings</span>
+          </TabsTrigger>
+          <TabsTrigger value="rewards" className="text-xs sm:text-sm py-2 sm:py-3">
+            <span className="hidden sm:inline">Rewards</span>
+            <span className="sm:hidden">Rewards</span>
+          </TabsTrigger>
+          <TabsTrigger value="referrals" className="text-xs sm:text-sm py-2 sm:py-3">
+            <span className="hidden sm:inline">Referrals</span>
+            <span className="sm:hidden">Refer</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Commission Types Breakdown */}
             <Card>
               <CardHeader>
@@ -443,30 +460,33 @@ export function UserCommissionDashboard() {
                   Quick Actions
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 sm:space-y-3">
                 <Button 
                   onClick={handleDailyCheckin}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm sm:text-base py-2 sm:py-3"
                   variant="outline"
                 >
                   <Clock className="w-4 h-4 mr-2" />
-                  Daily Check-in
+                  <span className="hidden sm:inline">Daily Check-in</span>
+                  <span className="sm:hidden">Check-in</span>
                 </Button>
                 <Button 
                   onClick={copyReferralCode}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm sm:text-base py-2 sm:py-3"
                   variant="outline"
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  Copy Referral Code
+                  <span className="hidden sm:inline">Copy Referral Code</span>
+                  <span className="sm:hidden">Copy Code</span>
                 </Button>
                 <Button 
                   onClick={() => setActiveTab('rewards')}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm sm:text-base py-2 sm:py-3"
                   variant="outline"
                 >
                   <Gift className="w-4 h-4 mr-2" />
-                  View Rewards
+                  <span className="hidden sm:inline">View Rewards</span>
+                  <span className="sm:hidden">Rewards</span>
                 </Button>
               </CardContent>
             </Card>
@@ -476,10 +496,10 @@ export function UserCommissionDashboard() {
         <TabsContent value="commissions" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Commissions</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Recent Commissions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <AnimatePresence>
                   {commissions.slice(0, 10).map((commission, index) => (
                     <motion.div
@@ -487,22 +507,24 @@ export function UserCommissionDashboard() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                     >
-                      <div className="flex items-center gap-3">
-                        {getCommissionIcon(commission.commission_type)}
-                        <div>
-                          <p className="font-medium">{commission.description}</p>
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0">
+                          {getCommissionIcon(commission.commission_type)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm sm:text-base truncate">{commission.description}</p>
                           <p className="text-sm text-gray-500">
                             {new Date(commission.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-green-600">
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-semibold text-green-600 text-sm sm:text-base">
                           {formatAmount(commission.amount_kobo)}
                         </p>
-                        <Badge className={getStatusColor(commission.status)}>
+                        <Badge className={`${getStatusColor(commission.status)} text-xs`}>
                           {commission.status}
                         </Badge>
                       </div>

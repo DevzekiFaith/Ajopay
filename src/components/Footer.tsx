@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Mail,
   Phone,
@@ -31,29 +32,29 @@ export function Footer() {
   };
 
   const footerLinks = {
-    product: [
-      { name: "Dashboard", href: "/dashboard" },
-      { name: "Customer Portal", href: "/customer" },
-      { name: "Agent Tools", href: "/agent" },
-      { name: "Admin Panel", href: "/admin" }
+    "Our Services": [
+      { name: "Digital Wallet", href: "/wallet/ngn" },
+      { name: "Savings Circles", href: "/dashboard" },
+      { name: "Commission Rewards", href: "/dashboard" },
+      { name: "Crypto Trading", href: "/wallet/crypto" }
     ],
-    company: [
-      { name: "About Us", href: "/about" },
-      { name: "Contact", href: "/contact" },
-      { name: "Careers", href: "/careers" },
-      { name: "Blog", href: "/blog" }
+    "Community": [
+      { name: "About AjoPay", href: "/about" },
+      { name: "Contact Us", href: "/contact" },
+      { name: "Success Stories", href: "/stories" },
+      { name: "Learn More", href: "/learn-more" }
     ],
-    support: [
+    "Support": [
       { name: "Help Center", href: "/help" },
-      { name: "Documentation", href: "/docs" },
-      { name: "API Reference", href: "/api-docs" },
-      { name: "Status", href: "/status" }
+      { name: "FAQ", href: "/faq" },
+      { name: "Live Chat", href: "/chat" },
+      { name: "System Status", href: "/status" }
     ],
-    legal: [
+    "Legal": [
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms of Service", href: "/terms" },
-      { name: "Cookie Policy", href: "/cookies" },
-      { name: "Security", href: "/security" }
+      { name: "Security", href: "/security" },
+      { name: "Compliance", href: "/compliance" }
     ]
   };
 
@@ -66,11 +67,11 @@ export function Footer() {
   return (
     <footer className="relative mt-20 overflow-hidden">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-purple-900/50 to-transparent dark:from-[#0a0218] dark:via-[#1a0b2e]/50 dark:to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-amber-900/50 to-transparent dark:from-[#0a0218] dark:via-[#1a0b2e]/50 dark:to-transparent" />
 
       {/* Animated background orbs */}
       <motion.div
-        className="absolute -top-32 -left-32 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-fuchsia-400/10 blur-3xl"
+        className="absolute -top-32 -left-32 h-64 w-64 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-400/10 blur-3xl"
         animate={{
           scale: [1, 1.2, 1],
           opacity: [0.3, 0.5, 0.3]
@@ -82,7 +83,7 @@ export function Footer() {
         }}
       />
       <motion.div
-        className="absolute -bottom-16 -right-32 h-80 w-80 rounded-full bg-gradient-to-tl from-purple-400/15 to-cyan-400/10 blur-3xl"
+        className="absolute -bottom-16 -right-32 h-80 w-80 rounded-full bg-gradient-to-tl from-orange-400/15 to-red-400/10 blur-3xl"
         animate={{
           scale: [1.1, 0.9, 1.1],
           opacity: [0.2, 0.4, 0.2]
@@ -114,16 +115,25 @@ export function Footer() {
                 transition={{ duration: 0.6, delay: 0.1 }}
                 viewport={{ once: true }}
               >
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-500 shadow-lg">
-                    <Sparkles className="w-5 h-5 text-white" />
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="relative w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
+                    <Image
+                      src="/aj1.png"
+                      alt="AjoPay Logo"
+                      fill
+                      className="object-contain p-1"
+                      sizes="48px"
+                    />
                   </div>
-                  <span className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-fuchsia-200 bg-clip-text text-transparent">
-                    Thriftly
+                  <span className="text-2xl font-bold bg-gradient-to-r from-white via-amber-200 to-orange-200 bg-clip-text text-transparent">
+                    AjoPay
                   </span>
                 </div>
                 <p className="text-white/70 dark:text-white/70 leading-relaxed mb-6 max-w-sm">
-                  Empowering communities through smart savings and financial growth. Save small, grow big with Thriftly.
+                  From the heart of Africa we rise,<br/>
+                  Building wealth before your eyes.<br/>
+                  Save with pride, grow with grace,<br/>
+                  AjoPay brings financial embrace.
                 </p>
 
                 {/* Contact info */}
@@ -132,22 +142,22 @@ export function Footer() {
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
-                    <Mail className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
-                    <span className="text-sm">hello@thriftly.com</span>
+                    <Mail className="w-4 h-4 group-hover:text-amber-400 transition-colors" />
+                    <span className="text-sm">hello@ajopay.com</span>
                   </motion.div>
                   <motion.div
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
-                    <Phone className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
-                    <span className="text-sm">+234 (0) 123 456 7890</span>
+                    <Phone className="w-4 h-4 group-hover:text-amber-400 transition-colors" />
+                    <span className="text-sm">+234 7014441418</span>
                   </motion.div>
                   <motion.div
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
-                    <MapPin className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
-                    <span className="text-sm">Lagos, Nigeria</span>
+                    <MapPin className="w-4 h-4 group-hover:text-amber-400 transition-colors" />
+                    <span className="text-sm">Lagos, Nigeria 🇳🇬</span>
                   </motion.div>
                 </div>
               </motion.div>
@@ -218,15 +228,15 @@ export function Footer() {
                 >
                   <input
                     type="email"
-                    placeholder="Enter your email"
-                    className="px-4 py-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300"
+                    placeholder="Join our African family"
+                    className="px-4 py-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all duration-300"
                   />
                   <motion.button
-                    className="px-6 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="px-6 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Subscribe
+                    Join Us
                   </motion.button>
                 </motion.div>
               </div>
@@ -245,7 +255,7 @@ export function Footer() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2 text-white/60 text-sm">
-                <span>© 2025 Yonan Technologies. Made with</span>
+                <span>© 2025 AjoPay. Made with</span>
                 <motion.div
                   animate={{ scale: [1, 1.2] }}
                   transition={{ 
@@ -257,13 +267,13 @@ export function Footer() {
                 >
                   <Heart className="w-4 h-4 text-red-400 fill-current" />
                 </motion.div>
-                {/* <span>in Nigeria</span> */}
+                <span>in Nigeria 🇳🇬</span>
               </div>
 
               <div className="flex items-center gap-4 text-white/60 text-sm">
-                {/* <span>Powered by Supabase & Next.js</span> */}
+                <span>Empowering Africa's Future</span>
                 <div className="w-1 h-1 rounded-full bg-white/40" />
-                {/* <span>v2.0.1</span> */}
+                <span>v2.0.1</span>
               </div>
             </div>
           </div>

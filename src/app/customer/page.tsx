@@ -88,20 +88,28 @@ export default function CustomerPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch('/api/customer/overview', { cache: 'no-store' });
-      if (!res.ok) {
-        console.error('Failed to load customer data:', res.status);
-        return;
+      // Load customer overview data (history, streaks, etc.)
+      const overviewRes = await fetch('/api/customer/overview', { cache: 'no-store' });
+      if (overviewRes.ok) {
+        const overviewData = await overviewRes.json();
+        console.log('Customer overview data loaded:', overviewData);
+        setHistory(overviewData.history ?? []);
+        setLast7Naira(overviewData.last7Naira ?? 0);
+        setPrev7Naira(overviewData.prev7Naira ?? 0);
+        setSparkPoints(overviewData.sparkPoints ?? '');
+        setStreak(overviewData.streak ?? 0);
+        setIsMockData(overviewData.isMockData ?? false);
       }
-      const j = await res.json();
-      console.log('Customer data loaded:', j);
-      setWalletNaira(j.walletNaira ?? 0);
-      setHistory(j.history ?? []);
-      setLast7Naira(j.last7Naira ?? 0);
-      setPrev7Naira(j.prev7Naira ?? 0);
-      setSparkPoints(j.sparkPoints ?? '');
-      setStreak(j.streak ?? 0);
-      setIsMockData(j.isMockData ?? false);
+
+      // Load real wallet balance using wallet API
+      const walletRes = await fetch('/api/wallet/data', { cache: 'no-store' });
+      if (walletRes.ok) {
+        const walletData = await walletRes.json();
+        console.log('Wallet data loaded:', walletData);
+        if (walletData.wallet) {
+          setWalletNaira(Math.round(walletData.wallet.balance_kobo / 100));
+        }
+      }
     } catch (error) {
       console.error('Error loading customer data:', error);
     } finally {
@@ -271,6 +279,7 @@ export default function CustomerPage() {
   useEffect(() => {
     let contributionsChannel: any = null;
     let settingsChannel: any = null;
+    let transactionsChannel: any = null;
     
     (async () => {
       const {
@@ -336,6 +345,31 @@ export default function CustomerPage() {
         )
         .subscribe();
 
+      // Subscribe to transactions changes for real-time wallet balance updates
+      const transactionsChannel = supabase
+        .channel("realtime:transactions:self")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${user.id}` },
+          async (payload: any) => {
+            try {
+              // Refresh wallet balance when transactions change
+              const walletRes = await fetch('/api/wallet/data', { cache: 'no-store' });
+              if (walletRes.ok) {
+                const walletData = await walletRes.json();
+                if (walletData.wallet) {
+                  setWalletNaira(Math.round(walletData.wallet.balance_kobo / 100));
+                  setWalletPulse(true);
+                  setTimeout(() => setWalletPulse(false), 600);
+                }
+              }
+            } catch (error) {
+              console.error('Error updating wallet balance:', error);
+            }
+          }
+        )
+        .subscribe();
+
       // Subscribe to notifications for settings updates (real-time updates)
       settingsChannel = supabase
         .channel("realtime:settings:notifications")
@@ -372,6 +406,7 @@ export default function CustomerPage() {
     return () => {
       if (contributionsChannel) supabase.removeChannel(contributionsChannel);
       if (settingsChannel) supabase.removeChannel(settingsChannel);
+      if (transactionsChannel) supabase.removeChannel(transactionsChannel);
     };
   }, [supabase]);
 
@@ -607,18 +642,18 @@ export default function CustomerPage() {
   return (
     <DashboardShell role="customer" title="Customer Dashboard">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
-        {/* Insights */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-            <div className="flex items-center justify-between">
-              <div className="text-sm opacity-70">Last 7 days</div>
+        {/* Insights - Enhanced Mobile Responsiveness */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-3 sm:p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="text-xs sm:text-sm opacity-70">Last 7 days</div>
               {isMockData && (
                 <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
                   Demo Data
                 </div>
               )}
             </div>
-            <div className="mt-1 text-2xl font-semibold">₦{last7Naira.toLocaleString()}</div>
+            <div className="mt-1 text-xl sm:text-2xl font-semibold">₦{last7Naira.toLocaleString()}</div>
             {(() => {
               const up = prev7Naira === 0 ? last7Naira > 0 : last7Naira >= prev7Naira;
               const pct = prev7Naira === 0 ? (last7Naira > 0 ? 100 : 0) : Math.round(((last7Naira - prev7Naira) / prev7Naira) * 100);
@@ -635,16 +670,16 @@ export default function CustomerPage() {
               </svg>
             )}
           </div>
-          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-            <div className="flex items-center justify-between">
-              <div className="text-sm opacity-70">Total contributions</div>
+          <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 p-3 sm:p-4 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="text-xs sm:text-sm opacity-70">Total contributions</div>
               {isMockData && (
                 <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
                   Demo Data
                 </div>
               )}
             </div>
-            <div className={`mt-1 text-2xl font-semibold ${walletPulse ? "animate-pulse" : ""}`}>₦{walletNaira.toLocaleString()}</div>
+            <div className={`mt-1 text-xl sm:text-2xl font-semibold ${walletPulse ? "animate-pulse" : ""}`}>₦{walletNaira.toLocaleString()}</div>
             <div className="mt-1 text-xs opacity-70">All time</div>
           </div>
         </div>
@@ -690,7 +725,7 @@ export default function CustomerPage() {
             {/* Connection Status */}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <motion.div 
             whileHover={{ y: -4, scale: 1.02 }} 
             transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}
@@ -701,26 +736,27 @@ export default function CustomerPage() {
               {/* African Patterns Background */}
               <AfricanPatterns />
               
-              <div className="relative z-10 p-6">
+              <div className="relative z-10 p-4 sm:p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <motion.div
                       className="relative"
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     >
-                      <div className="p-3 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-2xl backdrop-blur-sm border border-white/30 shadow-lg">
-                        <Wallet className="h-6 w-6 text-amber-600" />
+                      <div className="p-2 sm:p-3 bg-gradient-to-br from-amber-400/30 to-orange-400/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-white/30 shadow-lg">
+                        <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                       </div>
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                        <Gem className="h-1.5 w-1.5 text-white" />
+                      <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                        <Gem className="h-1 w-1 sm:h-1.5 sm:w-1.5 text-white" />
                       </div>
                     </motion.div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        Digital Wallet
-                        <Crown className="h-4 w-4 text-amber-500" />
+                      <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white flex items-center gap-1 sm:gap-2">
+                        <span className="hidden sm:inline">Digital Wallet</span>
+                        <span className="sm:hidden">Wallet</span>
+                        <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
                       </h3>
                       <p className="text-xs text-gray-600 dark:text-gray-300">
                         {walletType === 'ngn' ? 'Nigerian Naira' : 'Bitcoin & Crypto'}
@@ -794,17 +830,18 @@ export default function CustomerPage() {
                   </div>
                 </div>
 
-                {/* Balance Display */}
-                <div className="text-center mb-4">
+                {/* Balance Display with African Design - Mobile Responsive */}
+                <div className="text-center mb-4 sm:mb-6">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="mb-2"
+                    className="mb-2 sm:mb-3"
                   >
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                      <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">Available Balance</p>
+                    <div className="inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-white/30 to-white/20 rounded-xl sm:rounded-2xl backdrop-blur-xl border border-white/40 shadow-lg">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
+                      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 font-semibold">Available Balance</p>
+                      <div className="w-1 h-1 bg-orange-400 rounded-full"></div>
                     </div>
                   </motion.div>
                   
@@ -812,24 +849,42 @@ export default function CustomerPage() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                    className={`text-2xl font-bold transition-all ${walletPulse ? "animate-pulse" : ""} bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent`}
+                    className={`text-2xl sm:text-3xl lg:text-4xl font-black transition-all ${walletPulse ? "animate-pulse" : ""} bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 bg-clip-text text-transparent relative`}
                   >
                     {balanceVisible ? (
                       walletType === 'crypto' ? (
                         <>
-                          <div>0.00000000 BTC</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center justify-center gap-1">
-                            <TrendingUp className="h-3 w-3 text-green-500" />
+                          <div className="flex items-center justify-center gap-2">
+                            <span>0.00000000 BTC</span>
+                            <div className="w-6 h-6 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                              <span className="text-xs">₿</span>
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2 mt-1">
+                            <TrendingUp className="h-4 w-4 text-green-500" />
                             ≈ $0.00
-                            <span className="text-xs text-green-500">+2.5%</span>
+                            <span className="text-xs text-green-500 bg-green-100/20 px-2 py-1 rounded-full">+2.5%</span>
                           </div>
                         </>
                       ) : (
-                        `₦${walletNaira.toLocaleString()}`
+                        <div className="flex items-center justify-center gap-2 sm:gap-3">
+                          <span>₦{walletNaira.toLocaleString()}</span>
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-xs sm:text-sm">₦</span>
+                          </div>
+                        </div>
                       )
                     ) : (
-                      '••••••'
+                      <div className="flex items-center justify-center gap-2">
+                        <span>••••••</span>
+                        <div className="w-6 h-6 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center">
+                          <span className="text-xs">?</span>
+                        </div>
+                      </div>
                     )}
+                    
+                    {/* African pattern decoration */}
+                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 rounded-full opacity-60" />
                   </motion.div>
                 </div>
 
@@ -991,32 +1046,77 @@ export default function CustomerPage() {
             </motion.div>
           </TabsContent>
           <TabsContent value="calendar">
-            <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
-              <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
-                <CardHeader>
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle>Active Card • 30 days</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="secondary"
-                        className="h-8 px-2 text-xs"
-                        onClick={() => setWindowOffset((v) => v + 1)}
-                      >
-                        Prev
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        className="h-8 px-2 text-xs"
-                        onClick={() => setWindowOffset((v) => Math.max(0, v - 1))}
+            <motion.div 
+              whileHover={{ y: -4, scale: 1.01 }} 
+              transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}
+            >
+              {/* Neumorphism Card Design */}
+              <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-[20px_20px_60px_rgba(0,0,0,0.1),-20px_-20px_60px_rgba(255,255,255,0.7)] dark:shadow-[20px_20px_60px_rgba(0,0,0,0.3),-20px_-20px_60px_rgba(255,255,255,0.05)] border border-gray-200/50 dark:border-gray-700/50">
+                
+                {/* Glassmorphism Header */}
+                <div className="relative mb-6">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="relative">
+                      <h3 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
+                        Active Card • 30 days
+                        {windowOffset > 0 && (
+                          <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-2">
+                            (Period {windowOffset + 1})
+                          </span>
+                        )}
+                      </h3>
+                      <div className="absolute -inset-1 bg-gradient-to-r from-orange-400/20 to-red-500/20 rounded-lg blur-sm -z-10"></div>
+                    </div>
+                    
+                    {/* Navigation Buttons with Neumorphism */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        className={`relative px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                          windowOffset === 0 
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[5px_5px_15px_rgba(0,0,0,0.1),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(0,0,0,0.3),-5px_-5px_15px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_20px_rgba(0,0,0,0.15),-8px_-8px_20px_rgba(255,255,255,0.8)] dark:hover:shadow-[8px_8px_20px_rgba(0,0,0,0.4),-8px_-8px_20px_rgba(255,255,255,0.1)] active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.3),inset_-5px_-5px_15px_rgba(255,255,255,0.05)]'
+                        }`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Previous clicked, current offset:', windowOffset);
+                          if (windowOffset > 0) {
+                            setWindowOffset((v) => v - 1);
+                          }
+                        }}
                         disabled={windowOffset === 0}
                       >
+                        Previous
+                      </button>
+                      
+                      <button
+                        className="relative px-4 py-2 rounded-xl font-medium text-sm bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[5px_5px_15px_rgba(0,0,0,0.1),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(0,0,0,0.3),-5px_-5px_15px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_20px_rgba(0,0,0,0.15),-8px_-8px_20px_rgba(255,255,255,0.8)] dark:hover:shadow-[8px_8px_20px_rgba(0,0,0,0.4),-8px_-8px_20px_rgba(255,255,255,0.1)] active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.3),inset_-5px_-5px_15px_rgba(255,255,255,0.05)] transition-all duration-200"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Next clicked, current offset:', windowOffset);
+                          setWindowOffset((v) => v + 1);
+                        }}
+                      >
                         Next
-                      </Button>
-                      <Button variant="ghost" className="h-8 px-2 text-xs" onClick={() => setTab("history")}>View History</Button>
+                      </button>
+                      
+                      <button
+                        className="relative px-4 py-2 rounded-xl font-medium text-sm bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-700 dark:text-orange-200 shadow-[5px_5px_15px_rgba(251,146,60,0.2),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(251,146,60,0.1),-5px_-5px_15px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_20px_rgba(251,146,60,0.3),-8px_-8px_20px_rgba(255,255,255,0.8)] dark:hover:shadow-[8px_8px_20px_rgba(251,146,60,0.2),-8px_-8px_20px_rgba(255,255,255,0.1)] active:shadow-[inset_5px_5px_15px_rgba(251,146,60,0.2),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_5px_5px_15px_rgba(251,146,60,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.05)] transition-all duration-200"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Switching to history tab');
+                          setTab("history");
+                        }}
+                      >
+                        View History
+                      </button>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                {/* Calendar Grid Content with Neumorphism */}
+                <div className="space-y-6">
                   {(() => {
                     const today = new Date();
                     const end = new Date();
@@ -1036,47 +1136,99 @@ export default function CustomerPage() {
                     const contributedDays = days.reduce((acc, d) => acc + (d.didContribute ? 1 : 0), 0);
                     const pct = Math.round((contributedDays / 30) * 100);
                     return (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs opacity-80">
-                          <span>{contributedDays}/30 days contributed</span>
-                          <span>{pct}%</span>
+                      <div className="space-y-6">
+                        {/* Progress Section with Neumorphism */}
+                        <div className="relative p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-[10px_10px_30px_rgba(0,0,0,0.1),-10px_-10px_30px_rgba(255,255,255,0.7)] dark:shadow-[10px_10px_30px_rgba(0,0,0,0.3),-10px_-10px_30px_rgba(255,255,255,0.05)] border border-gray-200/50 dark:border-gray-700/50">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {contributedDays}/30 days contributed
+                            </span>
+                            <span className="text-lg font-bold text-gray-800 dark:text-white">
+                              {pct}%
+                            </span>
+                          </div>
+                          
+                          {/* Neumorphism Progress Bar */}
+                          <div className="relative h-4 w-full rounded-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 shadow-[inset_5px_5px_15px_rgba(0,0,0,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.3),inset_-5px_-5px_15px_rgba(255,255,255,0.05)] overflow-hidden">
+                            <motion.div 
+                              className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-600 shadow-[5px_5px_15px_rgba(16,185,129,0.3),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(16,185,129,0.2),-5px_-5px_15px_rgba(255,255,255,0.05)]"
+                              style={{ width: `${pct}%` }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pct}%` }}
+                              transition={{ duration: 1, delay: 0.5 }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-neutral-800 overflow-hidden">
-                          <div className="h-full bg-emerald-600" style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
+                        
+                        {/* Calendar Grid with Neumorphism */}
+                        <div className="grid grid-cols-5 sm:grid-cols-7 gap-3 sm:gap-4">
                           {days.map((d) => (
-                            <div
+                            <motion.div
                               key={d.iso}
-                              className={
-                                "relative h-10 rounded-md border text-sm grid place-items-center select-none transition-colors " +
-                                (d.didContribute
-                                  ? "bg-emerald-900/40 border-emerald-700 text-emerald-100"
-                                  : "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800/50") +
-                                (d.isToday ? " ring-1 ring-violet-500 cursor-pointer" : "") +
-                                (d.isToday && justMarked ? " ring-2 ring-emerald-500" : "")
-                              }
+                              className={`relative h-14 sm:h-16 rounded-2xl text-sm sm:text-base grid place-items-center select-none transition-all duration-300 group cursor-pointer ${
+                                d.didContribute
+                                  ? "bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-800 dark:to-emerald-900 text-emerald-800 dark:text-emerald-100 shadow-[8px_8px_20px_rgba(16,185,129,0.2),-8px_-8px_20px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_20px_rgba(16,185,129,0.3),-8px_-8px_20px_rgba(255,255,255,0.05)] hover:shadow-[12px_12px_25px_rgba(16,185,129,0.3),-12px_-12px_25px_rgba(255,255,255,0.8)] dark:hover:shadow-[12px_12px_25px_rgba(16,185,129,0.4),-12px_-12px_25px_rgba(255,255,255,0.1)] active:shadow-[inset_8px_8px_20px_rgba(16,185,129,0.2),inset_-8px_-8px_20px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_8px_8px_20px_rgba(16,185,129,0.3),inset_-8px_-8px_20px_rgba(255,255,255,0.05)]"
+                                  : "bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[8px_8px_20px_rgba(0,0,0,0.1),-8px_-8px_20px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_20px_rgba(0,0,0,0.3),-8px_-8px_20px_rgba(255,255,255,0.05)] hover:shadow-[12px_12px_25px_rgba(0,0,0,0.15),-12px_-12px_25px_rgba(255,255,255,0.8)] dark:hover:shadow-[12px_12px_25px_rgba(0,0,0,0.4),-12px_-12px_25px_rgba(255,255,255,0.1)] active:shadow-[inset_8px_8px_20px_rgba(0,0,0,0.1),inset_-8px_-8px_20px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_8px_8px_20px_rgba(0,0,0,0.3),inset_-8px_-8px_20px_rgba(255,255,255,0.05)]"
+                              } ${
+                                d.isToday ? "ring-2 ring-violet-400/60 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-800" : ""
+                              } ${
+                                d.isToday && justMarked ? "ring-4 ring-emerald-400/80 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-800" : ""
+                              }`}
                               title={`${d.iso}${d.didContribute ? " • contributed" : ""}`}
                               role={d.isToday ? "button" : undefined}
                               aria-pressed={d.isToday && d.didContribute ? true : undefined}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 if (!d.isToday) return;
                                 if (d.didContribute) return;
+                                console.log('Today clicked, opening confirmation');
                                 setConfirmOpen(true);
                               }}
+                              whileHover={{ scale: 1.05, y: -2 }}
+                              whileTap={{ scale: 0.95 }}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.1 }}
                             >
-                              {d.i}
-                              {d.isToday && justMarked && (
-                                <span className="pointer-events-none absolute inset-0 rounded-md animate-ping ring-2 ring-emerald-500/60" />
+                              <span className="font-bold text-lg">{d.i}</span>
+                              
+                              {/* Contribution indicator with Neumorphism */}
+                              {d.didContribute && (
+                                <motion.div
+                                  initial={{ scale: 0, rotate: -180 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-[4px_4px_8px_rgba(251,146,60,0.3),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(251,146,60,0.2),-4px_-4px_8px_rgba(255,255,255,0.05)]"
+                                >
+                                  <span className="text-xs">👑</span>
+                                </motion.div>
                               )}
-                            </div>
+                              
+                              {/* Today indicator with Neumorphism */}
+                              {d.isToday && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-gradient-to-r from-violet-400 to-purple-500 rounded-full shadow-[2px_2px_4px_rgba(139,92,246,0.3),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(139,92,246,0.2),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+                                />
+                              )}
+                              
+                              {/* Just marked animation with Glassmorphism */}
+                              {d.isToday && justMarked && (
+                                <motion.div
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  className="absolute inset-0 bg-gradient-to-br from-emerald-400/20 to-green-500/20 backdrop-blur-sm rounded-2xl"
+                                />
+                              )}
+                            </motion.div>
                           ))}
                         </div>
                       </div>
                     );
                   })()}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
           </TabsContent>
         </Tabs>

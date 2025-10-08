@@ -405,3 +405,5 @@ grant execute on function public.claim_reward to authenticated;
 grant execute on function public.process_daily_checkin to authenticated;
 grant execute on function public.process_goal_completion to authenticated;
 grant execute on function public.process_badge_earning to authenticated;
+
+
