@@ -36,12 +36,15 @@ import {
   ChevronRight,
   Sparkles,
   Crown,
-  Gem
+  Gem,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import DashboardShell from "@/components/dashboard/Shell";
 import { WalletModals } from "@/components/wallet/WalletModals";
+import { NotificationBell } from "@/components/Notifications/NotificationBell";
+import { NotificationSystem } from "@/components/Notifications/NotificationSystem";
 import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
 
 interface WalletData {
@@ -58,11 +61,13 @@ export default function WalletPage() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeWallet, setActiveWallet] = useState<'ngn' | 'crypto'>('ngn');
   const [cryptoBalance, setCryptoBalance] = useState(0.00234567);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [btcPrice, setBtcPrice] = useState<number | null>(45000);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
 
   // Calculate crypto value in NGN
   const cryptoValue = useMemo(() => {
@@ -82,9 +87,29 @@ export default function WalletPage() {
     loadWalletData();
   }, []);
 
+  useEffect(() => {
+    // Listen for notification bell clicks
+    const handleNotificationBellClick = () => {
+      setShowNotifications(true);
+    };
+
+    window.addEventListener('notificationBellClick', handleNotificationBellClick);
+    
+    return () => {
+      window.removeEventListener('notificationBellClick', handleNotificationBellClick);
+    };
+  }, []);
+
   const loadWalletData = async () => {
     try {
       setLoading(true);
+      
+      // Load user data
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        setUser({ id: authUser.id, email: authUser.email });
+      }
+      
       // Simulate loading wallet data
       setTimeout(() => {
         setWalletData({
@@ -195,19 +220,26 @@ export default function WalletPage() {
                   </p>
                 </div>
               </div>
-        <div className="flex items-center gap-3">
-                <AfricanButton
-                  variant="secondary"
-                  className="p-3"
+        <div className="flex items-center gap-2 sm:gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative p-2 sm:p-3 rounded-xl bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl border border-white/30 hover:from-white/30 hover:to-white/20 transition-all duration-300 shadow-lg"
                 >
-                  <Bell className="h-4 w-4" />
-                </AfricanButton>
-                <AfricanButton
-                  variant="secondary"
-                  className="p-3"
+                  <NotificationBell 
+                    userId={user?.id} 
+                    size="md" 
+                    variant="wallet"
+                    className="text-gray-700 dark:text-white"
+                  />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative p-2 sm:p-3 rounded-xl bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl border border-white/30 hover:from-white/30 hover:to-white/20 transition-all duration-300 shadow-lg"
                 >
-                  <Settings className="h-4 w-4" />
-                </AfricanButton>
+                  <Settings className="h-4 w-4 text-gray-700 dark:text-white" />
+                </motion.button>
               </div>
             </div>
 
@@ -507,6 +539,41 @@ export default function WalletPage() {
           setShowReceiveModal={setShowReceiveModal}
           activeWallet={activeWallet}
         />
+        
+        {/* Notification System Modal */}
+        <AnimatePresence>
+          {showNotifications && user?.id && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowNotifications(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="relative w-full max-w-sm sm:max-w-md max-h-[70vh] sm:max-h-[80vh] bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-white/20 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-7 h-7 sm:w-8 sm:h-8 bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-red-500/20"
+                >
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+                
+                {/* Notification System */}
+                <div className="p-4 sm:p-6">
+                  <NotificationSystem userId={user.id} />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
     </div>
     </DashboardShell>
   );

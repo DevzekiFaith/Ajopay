@@ -16,6 +16,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Bitcoin, Coins } from "lucide-react";
 import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
 import { WalletModals } from "@/components/wallet/WalletModals";
+import { NotificationBell } from "@/components/Notifications/NotificationBell";
+import { NotificationSystem } from "@/components/Notifications/NotificationSystem";
 
 interface Transaction {
   id: string;
@@ -41,6 +43,7 @@ export default function WalletDetailPage() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   
   // State declarations - moved to the top to avoid TDZ issues
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +55,7 @@ export default function WalletDetailPage() {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [amount, setAmount] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
   const [cryptoBalance, setCryptoBalance] = useState(0.00234567); // BTC balance
@@ -100,6 +104,10 @@ export default function WalletDetailPage() {
     try {
       setLoading(true);
       
+      // Load user data
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      
       // Fetch wallet data from API
       const response = await fetch('/api/wallet/data');
       if (!response.ok) {
@@ -126,6 +134,19 @@ export default function WalletDetailPage() {
 
   useEffect(() => {
     loadWalletData();
+  }, []);
+
+  useEffect(() => {
+    // Listen for notification bell clicks
+    const handleNotificationBellClick = () => {
+      setShowNotifications(true);
+    };
+
+    window.addEventListener('notificationBellClick', handleNotificationBellClick);
+    
+    return () => {
+      window.removeEventListener('notificationBellClick', handleNotificationBellClick);
+    };
   }, []);
 
   if (loading) {
@@ -185,7 +206,12 @@ export default function WalletDetailPage() {
                   variant="secondary"
                   className="p-2 sm:p-3"
                 >
-                  <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <NotificationBell 
+                    userId={user?.id} 
+                    size="sm" 
+                    variant="wallet"
+                    className="text-current"
+                  />
                 </AfricanButton>
                 <AfricanButton
                   variant="secondary"
@@ -622,6 +648,21 @@ export default function WalletDetailPage() {
             activeWallet={walletView}
             onWalletUpdate={loadWalletData}
           />
+          
+          {/* Notification System */}
+          {showNotifications && user?.id && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <div className="relative">
+                <NotificationSystem userId={user.id} />
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="absolute -top-4 -right-4 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </DashboardShell>

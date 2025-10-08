@@ -1051,16 +1051,17 @@ export default function CustomerPage() {
               transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}
             >
               {/* Neumorphism Card Design */}
-              <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-[20px_20px_60px_rgba(0,0,0,0.1),-20px_-20px_60px_rgba(255,255,255,0.7)] dark:shadow-[20px_20px_60px_rgba(0,0,0,0.3),-20px_-20px_60px_rgba(255,255,255,0.05)] border border-gray-200/50 dark:border-gray-700/50">
+              <div className="relative p-3 sm:p-4 md:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-[12px_12px_30px_rgba(0,0,0,0.08),-12px_-12px_30px_rgba(255,255,255,0.6)] dark:shadow-[12px_12px_30px_rgba(0,0,0,0.2),-12px_-12px_30px_rgba(255,255,255,0.03)] border border-gray-200/50 dark:border-gray-700/50">
                 
                 {/* Glassmorphism Header */}
-                <div className="relative mb-6">
-                  <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="relative mb-4 sm:mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div className="relative">
-                      <h3 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
-                        Active Card • 30 days
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
+                        <span className="block sm:inline">Active Card</span>
+                        <span className="block sm:inline sm:ml-1">• 30 days</span>
                         {windowOffset > 0 && (
-                          <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-2">
+                          <span className="block sm:inline text-xs sm:text-sm font-normal text-gray-600 dark:text-gray-400 sm:ml-2">
                             (Period {windowOffset + 1})
                           </span>
                         )}
@@ -1068,13 +1069,13 @@ export default function CustomerPage() {
                       <div className="absolute -inset-1 bg-gradient-to-r from-orange-400/20 to-red-500/20 rounded-lg blur-sm -z-10"></div>
                     </div>
                     
-                    {/* Navigation Buttons with Neumorphism */}
-                    <div className="flex items-center gap-3">
+                    {/* Navigation Buttons with Neumorphism - Mobile Responsive */}
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <button
-                        className={`relative px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                        className={`relative px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 ${
                           windowOffset === 0 
                             ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[5px_5px_15px_rgba(0,0,0,0.1),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(0,0,0,0.3),-5px_-5px_15px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_20px_rgba(0,0,0,0.15),-8px_-8px_20px_rgba(255,255,255,0.8)] dark:hover:shadow-[8px_8px_20px_rgba(0,0,0,0.4),-8px_-8px_20px_rgba(255,255,255,0.1)] active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.3),inset_-5px_-5px_15px_rgba(255,255,255,0.05)]'
+                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[3px_3px_8px_rgba(0,0,0,0.08),-3px_-3px_8px_rgba(255,255,255,0.6)] dark:shadow-[3px_3px_8px_rgba(0,0,0,0.2),-3px_-3px_8px_rgba(255,255,255,0.03)] hover:shadow-[5px_5px_12px_rgba(0,0,0,0.12),-5px_-5px_12px_rgba(255,255,255,0.7)] dark:hover:shadow-[5px_5px_12px_rgba(0,0,0,0.3),-5px_-5px_12px_rgba(255,255,255,0.05)] active:shadow-[inset_3px_3px_8px_rgba(0,0,0,0.08),inset_-3px_-3px_8px_rgba(255,255,255,0.6)] dark:active:shadow-[inset_3px_3px_8px_rgba(0,0,0,0.2),inset_-3px_-3px_8px_rgba(255,255,255,0.03)]'
                         }`}
                         onClick={(e) => {
                           e.preventDefault();
@@ -1090,7 +1091,7 @@ export default function CustomerPage() {
                       </button>
                       
                       <button
-                        className="relative px-4 py-2 rounded-xl font-medium text-sm bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[5px_5px_15px_rgba(0,0,0,0.1),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(0,0,0,0.3),-5px_-5px_15px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_20px_rgba(0,0,0,0.15),-8px_-8px_20px_rgba(255,255,255,0.8)] dark:hover:shadow-[8px_8px_20px_rgba(0,0,0,0.4),-8px_-8px_20px_rgba(255,255,255,0.1)] active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.3),inset_-5px_-5px_15px_rgba(255,255,255,0.05)] transition-all duration-200"
+                        className="relative px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[3px_3px_8px_rgba(0,0,0,0.08),-3px_-3px_8px_rgba(255,255,255,0.6)] dark:shadow-[3px_3px_8px_rgba(0,0,0,0.2),-3px_-3px_8px_rgba(255,255,255,0.03)] hover:shadow-[5px_5px_12px_rgba(0,0,0,0.12),-5px_-5px_12px_rgba(255,255,255,0.7)] dark:hover:shadow-[5px_5px_12px_rgba(0,0,0,0.3),-5px_-5px_12px_rgba(255,255,255,0.05)] active:shadow-[inset_3px_3px_8px_rgba(0,0,0,0.08),inset_-3px_-3px_8px_rgba(255,255,255,0.6)] dark:active:shadow-[inset_3px_3px_8px_rgba(0,0,0,0.2),inset_-3px_-3px_8px_rgba(255,255,255,0.03)] transition-all duration-200"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1102,7 +1103,7 @@ export default function CustomerPage() {
                       </button>
                       
                       <button
-                        className="relative px-4 py-2 rounded-xl font-medium text-sm bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-700 dark:text-orange-200 shadow-[5px_5px_15px_rgba(251,146,60,0.2),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(251,146,60,0.1),-5px_-5px_15px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_20px_rgba(251,146,60,0.3),-8px_-8px_20px_rgba(255,255,255,0.8)] dark:hover:shadow-[8px_8px_20px_rgba(251,146,60,0.2),-8px_-8px_20px_rgba(255,255,255,0.1)] active:shadow-[inset_5px_5px_15px_rgba(251,146,60,0.2),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_5px_5px_15px_rgba(251,146,60,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.05)] transition-all duration-200"
+                        className="relative px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-700 dark:text-orange-200 shadow-[3px_3px_8px_rgba(251,146,60,0.15),-3px_-3px_8px_rgba(255,255,255,0.6)] dark:shadow-[3px_3px_8px_rgba(251,146,60,0.08),-3px_-3px_8px_rgba(255,255,255,0.03)] hover:shadow-[5px_5px_12px_rgba(251,146,60,0.2),-5px_-5px_12px_rgba(255,255,255,0.7)] dark:hover:shadow-[5px_5px_12px_rgba(251,146,60,0.12),-5px_-5px_12px_rgba(255,255,255,0.05)] active:shadow-[inset_3px_3px_8px_rgba(251,146,60,0.15),inset_-3px_-3px_8px_rgba(255,255,255,0.6)] dark:active:shadow-[inset_3px_3px_8px_rgba(251,146,60,0.08),inset_-3px_-3px_8px_rgba(255,255,255,0.03)] transition-all duration-200"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1138,18 +1139,18 @@ export default function CustomerPage() {
                     return (
                       <div className="space-y-6">
                         {/* Progress Section with Neumorphism */}
-                        <div className="relative p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-[10px_10px_30px_rgba(0,0,0,0.1),-10px_-10px_30px_rgba(255,255,255,0.7)] dark:shadow-[10px_10px_30px_rgba(0,0,0,0.3),-10px_-10px_30px_rgba(255,255,255,0.05)] border border-gray-200/50 dark:border-gray-700/50">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <div className="relative p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-[8px_8px_20px_rgba(0,0,0,0.08),-8px_-8px_20px_rgba(255,255,255,0.6)] dark:shadow-[8px_8px_20px_rgba(0,0,0,0.2),-8px_-8px_20px_rgba(255,255,255,0.03)] border border-gray-200/50 dark:border-gray-700/50">
+                          <div className="flex items-center justify-between mb-2 sm:mb-3">
+                            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                               {contributedDays}/30 days contributed
                             </span>
-                            <span className="text-lg font-bold text-gray-800 dark:text-white">
+                            <span className="text-base sm:text-lg font-bold text-gray-800 dark:text-white">
                               {pct}%
                             </span>
                           </div>
                           
                           {/* Neumorphism Progress Bar */}
-                          <div className="relative h-4 w-full rounded-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 shadow-[inset_5px_5px_15px_rgba(0,0,0,0.1),inset_-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[inset_5px_5px_15px_rgba(0,0,0,0.3),inset_-5px_-5px_15px_rgba(255,255,255,0.05)] overflow-hidden">
+                          <div className="relative h-3 sm:h-4 w-full rounded-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 shadow-[inset_3px_3px_8px_rgba(0,0,0,0.08),inset_-3px_-3px_8px_rgba(255,255,255,0.6)] dark:shadow-[inset_3px_3px_8px_rgba(0,0,0,0.2),inset_-3px_-3px_8px_rgba(255,255,255,0.03)] overflow-hidden">
                             <motion.div 
                               className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-600 shadow-[5px_5px_15px_rgba(16,185,129,0.3),-5px_-5px_15px_rgba(255,255,255,0.7)] dark:shadow-[5px_5px_15px_rgba(16,185,129,0.2),-5px_-5px_15px_rgba(255,255,255,0.05)]"
                               style={{ width: `${pct}%` }}
@@ -1161,11 +1162,11 @@ export default function CustomerPage() {
                         </div>
                         
                         {/* Calendar Grid with Neumorphism */}
-                        <div className="grid grid-cols-5 sm:grid-cols-7 gap-3 sm:gap-4">
+                        <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 sm:gap-3 md:gap-4">
                           {days.map((d) => (
                             <motion.div
                               key={d.iso}
-                              className={`relative h-14 sm:h-16 rounded-2xl text-sm sm:text-base grid place-items-center select-none transition-all duration-300 group cursor-pointer ${
+                              className={`relative h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl text-xs sm:text-sm md:text-base grid place-items-center select-none transition-all duration-300 group cursor-pointer ${
                                 d.didContribute
                                   ? "bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-800 dark:to-emerald-900 text-emerald-800 dark:text-emerald-100 shadow-[8px_8px_20px_rgba(16,185,129,0.2),-8px_-8px_20px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_20px_rgba(16,185,129,0.3),-8px_-8px_20px_rgba(255,255,255,0.05)] hover:shadow-[12px_12px_25px_rgba(16,185,129,0.3),-12px_-12px_25px_rgba(255,255,255,0.8)] dark:hover:shadow-[12px_12px_25px_rgba(16,185,129,0.4),-12px_-12px_25px_rgba(255,255,255,0.1)] active:shadow-[inset_8px_8px_20px_rgba(16,185,129,0.2),inset_-8px_-8px_20px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_8px_8px_20px_rgba(16,185,129,0.3),inset_-8px_-8px_20px_rgba(255,255,255,0.05)]"
                                   : "bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 shadow-[8px_8px_20px_rgba(0,0,0,0.1),-8px_-8px_20px_rgba(255,255,255,0.7)] dark:shadow-[8px_8px_20px_rgba(0,0,0,0.3),-8px_-8px_20px_rgba(255,255,255,0.05)] hover:shadow-[12px_12px_25px_rgba(0,0,0,0.15),-12px_-12px_25px_rgba(255,255,255,0.8)] dark:hover:shadow-[12px_12px_25px_rgba(0,0,0,0.4),-12px_-12px_25px_rgba(255,255,255,0.1)] active:shadow-[inset_8px_8px_20px_rgba(0,0,0,0.1),inset_-8px_-8px_20px_rgba(255,255,255,0.7)] dark:active:shadow-[inset_8px_8px_20px_rgba(0,0,0,0.3),inset_-8px_-8px_20px_rgba(255,255,255,0.05)]"
@@ -1191,14 +1192,14 @@ export default function CustomerPage() {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.1 }}
                             >
-                              <span className="font-bold text-lg">{d.i}</span>
+                              <span className="font-bold text-sm sm:text-base md:text-lg">{d.i}</span>
                               
                               {/* Contribution indicator with Neumorphism */}
                               {d.didContribute && (
                                 <motion.div
                                   initial={{ scale: 0, rotate: -180 }}
                                   animate={{ scale: 1, rotate: 0 }}
-                                  className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-[4px_4px_8px_rgba(251,146,60,0.3),-4px_-4px_8px_rgba(255,255,255,0.7)] dark:shadow-[4px_4px_8px_rgba(251,146,60,0.2),-4px_-4px_8px_rgba(255,255,255,0.05)]"
+                                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-[2px_2px_4px_rgba(251,146,60,0.2),-2px_-2px_4px_rgba(255,255,255,0.6)] dark:shadow-[2px_2px_4px_rgba(251,146,60,0.15),-2px_-2px_4px_rgba(255,255,255,0.03)]"
                                 >
                                   <span className="text-xs">👑</span>
                                 </motion.div>
@@ -1209,7 +1210,7 @@ export default function CustomerPage() {
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-gradient-to-r from-violet-400 to-purple-500 rounded-full shadow-[2px_2px_4px_rgba(139,92,246,0.3),-2px_-2px_4px_rgba(255,255,255,0.7)] dark:shadow-[2px_2px_4px_rgba(139,92,246,0.2),-2px_-2px_4px_rgba(255,255,255,0.05)]"
+                                  className="absolute -bottom-0.5 sm:-bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-violet-400 to-purple-500 rounded-full shadow-[1px_1px_2px_rgba(139,92,246,0.2),-1px_-1px_2px_rgba(255,255,255,0.6)] dark:shadow-[1px_1px_2px_rgba(139,92,246,0.15),-1px_-1px_2px_rgba(255,255,255,0.03)]"
                                 />
                               )}
                               

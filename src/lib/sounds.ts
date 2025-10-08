@@ -4,11 +4,16 @@ class SoundManager {
   private audioContext: AudioContext | null = null;
   private sounds: Map<string, AudioBuffer> = new Map();
   private initialized = false;
+  private initAttempted = false;
 
   private constructor() {
     // Initialize audio context on user interaction
     if (typeof window !== 'undefined') {
-      window.addEventListener('click', this.init.bind(this), { once: true });
+      try {
+        window.addEventListener('click', this.init.bind(this), { once: true });
+      } catch (error) {
+        console.warn('Failed to add click listener for sound initialization:', error);
+      }
     }
   }
 
@@ -20,11 +25,18 @@ class SoundManager {
   }
 
   private async init() {
-    if (this.initialized) return;
+    if (this.initialized || this.initAttempted) return;
+    this.initAttempted = true;
     
     try {
+      // Check if AudioContext is available
+      const AudioContextClass = window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) {
+        throw new Error('AudioContext not supported in this browser');
+      }
+      
       // Create audio context
-      this.audioContext = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+      this.audioContext = new AudioContextClass();
       
       // Generate tones directly since we don't have sound files
       // This avoids 404 errors and provides consistent audio feedback
@@ -40,6 +52,8 @@ class SoundManager {
       this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize audio:', error);
+      this.initialized = false;
+      this.initAttempted = false; // Allow retry
     }
   }
 
@@ -169,66 +183,96 @@ class SoundManager {
   }
 
   public playSound(name: string, volume = 0.5): void {
-    if (!this.initialized || !this.audioContext || !this.sounds.has(name)) {
-      return;
-    }
-
     try {
+      if (!this.initialized || !this.audioContext || !this.sounds.has(name)) {
+        console.warn(`Sound system not ready or sound '${name}' not available`);
+        return;
+      }
+
       const source = this.audioContext.createBufferSource();
       const gainNode = this.audioContext.createGain();
       
       source.buffer = this.sounds.get(name) || null;
-      if (!source.buffer) return;
+      if (!source.buffer) {
+        console.warn(`No audio buffer available for sound '${name}'`);
+        return;
+      }
       
-      gainNode.gain.value = volume;
+      gainNode.gain.value = Math.max(0, Math.min(1, volume)); // Clamp volume between 0 and 1
       
       source.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
       
       source.start(0);
     } catch (error) {
-      console.error('Error playing sound:', error);
+      console.error(`Error playing sound '${name}':`, error);
     }
   }
 }
 
-export const soundManager = SoundManager.getInstance();
+// Create sound manager instance with error handling
+let soundManager: SoundManager;
+try {
+  soundManager = SoundManager.getInstance();
+} catch (error) {
+  console.error('Failed to create sound manager instance:', error);
+  // Create a fallback sound manager that does nothing
+  soundManager = {
+    playSound: () => {
+      console.warn('Sound system not available');
+    }
+  } as any;
+}
+
+export { soundManager };
 
 export function playTransactionSound(type: 'deposit' | 'withdrawal' | 'success' | 'error' | 'notification' = 'success') {
-  // Play different sounds based on transaction type
-  switch (type) {
-    case 'deposit':
-      soundManager.playSound('deposit', 0.7);
-      break;
-    case 'withdrawal':
-      soundManager.playSound('transaction');
-      break;
-    case 'success':
-      soundManager.playSound('success');
-      break;
-    case 'error':
-      soundManager.playSound('error');
-      break;
-    case 'notification':
-      soundManager.playSound('notification', 0.6);
-      break;
-    default:
-      soundManager.playSound('transaction');
+  try {
+    // Play different sounds based on transaction type
+    switch (type) {
+      case 'deposit':
+        soundManager.playSound('deposit', 0.7);
+        break;
+      case 'withdrawal':
+        soundManager.playSound('transaction');
+        break;
+      case 'success':
+        soundManager.playSound('success');
+        break;
+      case 'error':
+        soundManager.playSound('error');
+        break;
+      case 'notification':
+        soundManager.playSound('notification', 0.6);
+        break;
+      default:
+        soundManager.playSound('transaction');
+    }
+  } catch (error) {
+    console.error('Error in playTransactionSound:', error);
   }
 }
 
 // Enhanced function for wallet deposit notifications
 export function playDepositNotification(amount: number, isLargeDeposit = false) {
-  if (isLargeDeposit) {
-    // Play coin sound for large deposits
-    soundManager.playSound('coin', 0.8);
-  } else {
-    // Play deposit sound for regular deposits
-    soundManager.playSound('deposit', 0.7);
+  try {
+    if (isLargeDeposit) {
+      // Play coin sound for large deposits
+      soundManager.playSound('coin', 0.8);
+    } else {
+      // Play deposit sound for regular deposits
+      soundManager.playSound('deposit', 0.7);
+    }
+    
+    // Also play notification sound
+    setTimeout(() => {
+      try {
+        soundManager.playSound('notification', 0.5);
+      } catch (error) {
+        console.error('Error playing notification sound:', error);
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Error in playDepositNotification:', error);
   }
-  
-  // Also play notification sound
-  setTimeout(() => {
-    soundManager.playSound('notification', 0.5);
-  }, 200);
 }
