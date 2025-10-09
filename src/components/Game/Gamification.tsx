@@ -349,7 +349,7 @@ export function Gamification() {
       
       // Calculate streak
       let streak = 0;
-      const uniqueDays = new Set();
+      const uniqueDays = new Set<string>();
       contributions.forEach(c => {
         const day = new Date(c.created_at).toDateString();
         uniqueDays.add(day);
