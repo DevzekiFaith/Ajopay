@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
+interface Withdrawal {
+  id: string;
+  amount_kobo: number;
+  method: string;
+  status: string;
+  created_at: string;
+  processed_at: string | null;
+}
+
 export async function GET() {
   try {
     const supabase = getSupabaseServerClient();
@@ -12,14 +21,7 @@ export async function GET() {
     }
 
     // Try to get withdrawals from commission_payouts table
-    let withdrawals: Array<{
-      id: string;
-      amount_kobo: number;
-      method: string;
-      status: string;
-      created_at: string;
-      processed_at: string | null;
-    }> = [];
+    let withdrawals: Withdrawal[] = [];
     try {
       const { data: payoutData, error: payoutError } = await supabase
         .from('commission_payouts')
