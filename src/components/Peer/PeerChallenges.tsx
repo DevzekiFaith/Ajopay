@@ -13,8 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Users, Trophy, Plus, Send, Heart, MessageCircle, Share2, Crown, Target, Calendar, UserPlus, DollarSign, Flame, Award } from "lucide-react";
+import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { generateShortUrl } from "@/lib/url-shortener";
 
 interface Friend {
   id: string;
@@ -82,6 +84,8 @@ export function PeerChallenges() {
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [showShareAchievement, setShowShareAchievement] = useState(false);
   const [friendEmail, setFriendEmail] = useState('');
+  const [addFriendMethod, setAddFriendMethod] = useState<'email' | 'referral' | 'share'>('email');
+  const [referralCode, setReferralCode] = useState('');
   const [newPost, setNewPost] = useState('');
   const [achievementTitle, setAchievementTitle] = useState('');
   const [achievementDescription, setAchievementDescription] = useState('');
@@ -341,80 +345,6 @@ export function PeerChallenges() {
     loadData();
   }, []);
 
-  // Add sample data for testing if no data exists
-  const addSampleData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Add sample friends if none exist
-      if (friends.length === 0) {
-        const sampleFriends = [
-          {
-            id: 'sample-friend-1',
-            name: 'John Doe',
-            full_name: 'John Doe',
-            email: 'john@example.com',
-            avatar: '',
-            level: 5,
-            totalSaved: 50000,
-            streakDays: 15,
-            isOnline: true
-          },
-          {
-            id: 'sample-friend-2',
-            name: 'Jane Smith',
-            full_name: 'Jane Smith',
-            email: 'jane@example.com',
-            avatar: '',
-            level: 3,
-            totalSaved: 25000,
-            streakDays: 8,
-            isOnline: false
-          }
-        ];
-        setFriends(sampleFriends);
-      }
-
-      // Add sample posts if none exist
-      if (posts.length === 0) {
-        const samplePosts = [
-          {
-            id: 'sample-post-1',
-            userId: 'sample-user-1',
-            userName: 'John Doe',
-            userAvatar: '',
-            content: 'Just reached my savings goal of ₦50,000! 🎉',
-            type: 'achievement' as const,
-            timestamp: new Date().toISOString(),
-            likes: 5,
-            comments: 2,
-            isLiked: false,
-            achievement: {
-              title: 'Savings Goal Reached',
-              icon: '🎯',
-              amount: 50000
-            }
-          },
-          {
-            id: 'sample-post-2',
-            userId: 'sample-user-2',
-            userName: 'Jane Smith',
-            userAvatar: '',
-            content: 'Completed the 30-day savings challenge! 💪',
-            type: 'challenge' as const,
-            timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-            likes: 8,
-            comments: 3,
-            isLiked: true
-          }
-        ];
-        setPosts(samplePosts);
-      }
-    } catch (error) {
-      console.error('Error adding sample data:', error);
-    }
-  };
 
   const handleCreateChallenge = () => {
     if (!newChallengeTitle || !newChallengeTarget || !newChallengeDuration) {
@@ -594,6 +524,30 @@ export function PeerChallenges() {
         console.log("Friend request notification created for user:", targetUser.id);
       }
 
+      // Send email notification to the friend
+      try {
+        const emailResponse = await fetch('/api/notifications/send-friend-request', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: targetUser.email,
+            from_user_id: currentUserId,
+            friend_name: targetUser.full_name || 'AjoPay User',
+            app_url: window.location.origin
+          })
+        });
+
+        if (emailResponse.ok) {
+          console.log("Friend request email sent successfully");
+        } else {
+          console.log("Email sending failed, but friend request was created");
+        }
+      } catch (emailError) {
+        console.log("Email service unavailable, but friend request was created");
+      }
+
       toast.success(`Friend request sent to ${targetUser.full_name || targetUser.email || 'user'}! 📤`);
       setFriendEmail("");
       setShowAddFriend(false);
@@ -692,6 +646,63 @@ export function PeerChallenges() {
     } catch (error) {
       console.error("Error rejecting friend request:", error);
       toast.error("Failed to reject friend request");
+    }
+  };
+
+  const copyReferralCode = () => {
+    if (currentUserId) {
+      navigator.clipboard.writeText(currentUserId);
+      toast.success("Referral code copied to clipboard! 📋");
+    }
+  };
+
+  const generateReferralLink = async () => {
+    if (currentUserId) {
+      const referralLink = `${window.location.origin}/sign-up?ref=${currentUserId}`;
+      const result = await generateShortUrl(referralLink);
+      navigator.clipboard.writeText(result.shortUrl);
+      toast.success(`Short link copied! (via ${result.service}) 🔗`);
+    }
+  };
+
+
+  const shareToSocial = async (platform: 'whatsapp' | 'twitter' | 'facebook') => {
+    if (!currentUserId) return;
+    
+    const referralLink = `${window.location.origin}/sign-up?ref=${currentUserId}`;
+    
+    // Generate short URL for the referral link
+    const result = await generateShortUrl(referralLink);
+    const shortLink = result.shortUrl;
+    
+    const message = `🎉 Join me on AjoPay for amazing savings challenges! 
+
+💰 Save money with friends
+🏆 Compete in challenges  
+🎯 Reach your goals together
+💎 Earn rewards and bonuses
+
+Use my referral code: ${currentUserId}
+Sign up here: ${shortLink}
+
+#AjoPay #SavingsChallenge #FinancialFreedom`;
+    
+    let shareUrl = '';
+    switch (platform) {
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shortLink)}&quote=${encodeURIComponent('Join me on AjoPay for amazing savings challenges!')}`;
+        break;
+    }
+    
+    if (shareUrl) {
+      window.open(shareUrl, '_blank', 'width=600,height=400');
+      toast.success(`Sharing to ${platform} with short link (${result.service})... 📱`);
     }
   };
 
@@ -855,7 +866,7 @@ export function PeerChallenges() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <AjoPaySpinner size="md" showText text="Loading peer challenges..." />
       </div>
     );
   }
@@ -1231,26 +1242,6 @@ export function PeerChallenges() {
                   >
                     Add Friends
                   </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      console.log("Current friends state:", friends);
-                      console.log("Current user ID:", currentUserId);
-                      loadData();
-                    }}
-                    className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl text-sm"
-                  >
-                    Debug Friends
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={addSampleData}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-bold rounded-2xl shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] dark:shadow-[10px_10px_20px_#0f172a,-10px_-10px_20px_#334155] hover:shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff] dark:hover:shadow-[15px_15px_30px_#0f172a,-15px_-15px_30px_#334155] transition-all duration-300"
-                  >
-                    Load Sample Data
-                  </motion.button>
                 </div>
               </div>
             ) : (
@@ -1312,14 +1303,6 @@ export function PeerChallenges() {
                   >
                     Share Achievement
                   </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={addSampleData}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-bold rounded-2xl shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] dark:shadow-[10px_10px_20px_#0f172a,-10px_-10px_20px_#334155] hover:shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff] dark:hover:shadow-[15px_15px_30px_#0f172a,-15px_-15px_30px_#334155] transition-all duration-300"
-                  >
-                    Load Sample Data
-                  </motion.button>
                 </div>
               </div>
             ) : (
@@ -1371,51 +1354,384 @@ export function PeerChallenges() {
         )}
       </AnimatePresence>
 
-      {/* Add Friend Dialog - Moved to root level for proper z-index */}
+      {/* Glassmorphism Add Friend Dialog */}
       <Dialog open={showAddFriend} onOpenChange={setShowAddFriend}>
-        <DialogContent className="max-w-md bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl border-0 shadow-[30px_30px_60px_#d1d9e6,-30px_-30px_60px_#ffffff] dark:shadow-[30px_30px_60px_#0f172a,-30px_-30px_60px_#334155] rounded-3xl z-50">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">
-              👥 Add Friend
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 p-4">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UserPlus className="w-8 h-8 text-white" />
-              </div>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
-                Enter your friend's email address to send them a friend request
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-white/10 dark:bg-black/20 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl rounded-3xl z-50">
+          {/* Glassmorphism Header */}
+          <div className="relative bg-white/5 dark:bg-black/10 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-2xl p-6 -m-6 mb-6">
+            <DialogHeader className="relative">
+              <DialogTitle className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-2">
+                👥 Add Friends
+              </DialogTitle>
+              <p className="text-center text-gray-600 dark:text-gray-300 text-sm">
+                Connect with friends and start saving together
               </p>
+            </DialogHeader>
+          </div>
+
+          <div className="space-y-6 px-2">
+            {/* Glassmorphism Method Selection */}
+            <div className="relative">
+              <div className="flex gap-1 p-1 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-inner">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setAddFriendMethod('email')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all duration-300 relative ${
+                    addFriendMethod === 'email'
+                      ? 'bg-white/20 dark:bg-white/10 text-gray-800 dark:text-white shadow-lg backdrop-blur-sm border border-white/30 dark:border-white/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-sm">📧</span>
+                    <span>Email</span>
+                  </div>
+                  {addFriendMethod === 'email' && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 rounded-xl shadow-lg -z-10"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setAddFriendMethod('referral')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all duration-300 relative ${
+                    addFriendMethod === 'referral'
+                      ? 'bg-white/20 dark:bg-white/10 text-gray-800 dark:text-white shadow-lg backdrop-blur-sm border border-white/30 dark:border-white/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-sm">🔗</span>
+                    <span>Referral</span>
+                  </div>
+                  {addFriendMethod === 'referral' && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 rounded-xl shadow-lg -z-10"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setAddFriendMethod('share')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all duration-300 relative ${
+                    addFriendMethod === 'share'
+                      ? 'bg-white/20 dark:bg-white/10 text-gray-800 dark:text-white shadow-lg backdrop-blur-sm border border-white/30 dark:border-white/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-white/10 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-sm">📱</span>
+                    <span>Share</span>
+                  </div>
+                  {addFriendMethod === 'share' && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 rounded-xl shadow-lg -z-10"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                </motion.button>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Friend's Email</Label>
-              <Input
-                type="email"
-                value={friendEmail}
-                onChange={(e) => setFriendEmail(e.target.value)}
-                placeholder="friend@example.com"
-                className="bg-slate-100/50 dark:bg-slate-700/50 border-0 rounded-2xl shadow-[inset_8px_8px_16px_#d1d9e6,inset_-8px_-8px_16px_#ffffff] dark:shadow-[inset_8px_8px_16px_#0f172a,inset_-8px_-8px_16px_#334155] focus:shadow-[inset_10px_10px_20px_#d1d9e6,inset_-10px_-10px_20px_#ffffff] dark:focus:shadow-[inset_10px_10px_20px_#0f172a,inset_-10px_-10px_20px_#334155] transition-all duration-300 py-4 px-6 text-slate-700 dark:text-slate-200"
-              />
-            </div>
+            {/* Email Method */}
+            <AnimatePresence mode="wait">
+              {addFriendMethod === 'email' && (
+                <motion.div
+                  key="email"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                      <UserPlus className="w-6 h-6 text-gray-800 dark:text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
+                      Send Email Invitation
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-xs">
+                      Enter your friend's email address
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 dark:text-gray-300 font-semibold text-sm">
+                        Friend's Email Address
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="email"
+                          value={friendEmail}
+                          onChange={(e) => setFriendEmail(e.target.value)}
+                          placeholder="Enter your friend's email..."
+                          className="w-full py-3 px-4 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl shadow-lg focus:shadow-xl focus:border-white/40 dark:focus:border-white/20 transition-all duration-300 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <span className="text-gray-500 dark:text-gray-400">📧</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white/5 dark:bg-black/10 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="w-6 h-6 bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-gray-800 dark:text-white text-xs">💡</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800 dark:text-white text-xs mb-1">
+                            What happens next?
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-300 text-xs">
+                            Your friend will receive an email invitation with your referral code.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={sendFriendRequest}
+                    disabled={!friendEmail.trim()}
+                    className="w-full py-3 bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 dark:border-white/20 hover:bg-white/30 dark:hover:bg-white/20 disabled:bg-white/5 dark:disabled:bg-black/10 disabled:border-white/10 dark:disabled:border-white/5 text-gray-800 dark:text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl disabled:shadow-none transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send Friend Request
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <div className="flex gap-3">
+            {/* Referral Method */}
+            <AnimatePresence mode="wait">
+              {addFriendMethod === 'referral' && (
+                <motion.div
+                  key="referral"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                      <Share2 className="w-6 h-6 text-gray-800 dark:text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
+                      Share Your Referral
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-xs">
+                      Copy your referral code or generate a short link
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Referral Code */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 dark:text-gray-300 font-semibold text-sm">
+                        Your Referral Code
+                      </Label>
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <Input
+                            value={currentUserId || ''}
+                            readOnly
+                            className="w-full py-3 px-4 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl shadow-lg text-gray-800 dark:text-white font-mono text-center font-bold text-sm"
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <span className="text-gray-500 dark:text-gray-400">🎯</span>
+                          </div>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={copyReferralCode}
+                          className="px-4 py-3 bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 dark:border-white/20 hover:bg-white/30 dark:hover:bg-white/20 text-gray-800 dark:text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-1"
+                        >
+                          <span className="text-sm">📋</span>
+                          <span className="text-xs font-medium">Copy</span>
+                        </motion.button>
+                      </div>
+                    </div>
+                    
+                    {/* Short Link */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 dark:text-gray-300 font-semibold text-sm">
+                        Short Referral Link
+                      </Label>
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <Input
+                            value={currentUserId ? `Click generate to create short link...` : ''}
+                            readOnly
+                            className="w-full py-3 px-4 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl shadow-lg text-gray-800 dark:text-white text-xs"
+                            id="referral-link-input"
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <span className="text-gray-500 dark:text-gray-400">🔗</span>
+                          </div>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={async () => {
+                            if (currentUserId) {
+                              const referralLink = `${window.location.origin}/sign-up?ref=${currentUserId}`;
+                              const result = await generateShortUrl(referralLink);
+                              const input = document.getElementById('referral-link-input') as HTMLInputElement;
+                              if (input) input.value = result.shortUrl;
+                              navigator.clipboard.writeText(result.shortUrl);
+                              toast.success(`Short link generated and copied! (via ${result.service}) 🔗`);
+                            }
+                          }}
+                          className="px-4 py-3 bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 dark:border-white/20 hover:bg-white/30 dark:hover:bg-white/20 text-gray-800 dark:text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-1"
+                        >
+                          <span className="text-sm">⚡</span>
+                          <span className="text-xs font-medium">Generate</span>
+                        </motion.button>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Generate a short, shareable URL that redirects to AjoPay signup
+                      </p>
+                    </div>
+                    
+                    {/* Benefits */}
+                    <div className="bg-white/5 dark:bg-black/10 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="w-6 h-6 bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-gray-800 dark:text-white text-xs">🎁</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800 dark:text-white text-xs mb-1">
+                            Earn Rewards Together
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-300 text-xs">
+                            When your friends sign up using your referral, you both earn bonus rewards!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Share Method */}
+            <AnimatePresence mode="wait">
+              {addFriendMethod === 'share' && (
+                <motion.div
+                  key="share"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                      <Share2 className="w-6 h-6 text-gray-800 dark:text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
+                      Share on Social Media
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-xs">
+                      Share AjoPay with your friends on social media
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Social Media Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <motion.button
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => shareToSocial('whatsapp')}
+                        className="group relative overflow-hidden py-4 px-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 text-gray-800 dark:text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        <div className="relative z-10">
+                          <div className="text-2xl mb-1 group-hover:scale-110 transition-transform duration-300">📱</div>
+                          <div className="text-xs font-semibold">WhatsApp</div>
+                          <div className="text-xs opacity-90">Share with contacts</div>
+                        </div>
+                        <div className="absolute inset-0 bg-white/10 dark:bg-white/5 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                      </motion.button>
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => shareToSocial('twitter')}
+                        className="group relative overflow-hidden py-4 px-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 text-gray-800 dark:text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        <div className="relative z-10">
+                          <div className="text-2xl mb-1 group-hover:scale-110 transition-transform duration-300">🐦</div>
+                          <div className="text-xs font-semibold">Twitter</div>
+                          <div className="text-xs opacity-90">Tweet to followers</div>
+                        </div>
+                        <div className="absolute inset-0 bg-white/10 dark:bg-white/5 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                      </motion.button>
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => shareToSocial('facebook')}
+                        className="group relative overflow-hidden py-4 px-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 text-gray-800 dark:text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        <div className="relative z-10">
+                          <div className="text-2xl mb-1 group-hover:scale-110 transition-transform duration-300">📘</div>
+                          <div className="text-xs font-semibold">Facebook</div>
+                          <div className="text-xs opacity-90">Post to timeline</div>
+                        </div>
+                        <div className="absolute inset-0 bg-white/10 dark:bg-white/5 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                      </motion.button>
+                    </div>
+                    
+                    {/* Share Preview */}
+                    <div className="bg-white/5 dark:bg-black/10 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="w-6 h-6 bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-gray-800 dark:text-white text-xs">📢</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800 dark:text-white text-xs mb-1">
+                            What gets shared?
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-300 text-xs">
+                            A message with your referral code, short link, and AjoPay features will be shared automatically.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Close Button */}
+            <div className="pt-3 border-t border-white/10 dark:border-white/5">
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowAddFriend(false)}
-                className="flex-1 py-4 bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 font-bold text-lg rounded-2xl shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff] dark:shadow-[15px_15px_30px_#0f172a,-15px_-15px_30px_#334155] hover:shadow-[20px_20px_40px_#d1d9e6,-20px_-20px_40px_#ffffff] dark:hover:shadow-[20px_20px_40px_#0f172a,-20px_-20px_40px_#334155] transition-all duration-500"
+                className="w-full py-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 text-gray-800 dark:text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
               >
-                Cancel
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={sendFriendRequest}
-                className="flex-1 py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-bold text-lg rounded-2xl shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff] dark:shadow-[15px_15px_30px_#0f172a,-15px_-15px_30px_#334155] hover:shadow-[20px_20px_40px_#d1d9e6,-20px_-20px_40px_#ffffff] dark:hover:shadow-[20px_20px_40px_#0f172a,-20px_-20px_40px_#334155] transition-all duration-500"
-              >
-                Send Request
+                <span>✕</span>
+                <span>Close</span>
               </motion.button>
             </div>
           </div>

@@ -18,6 +18,7 @@ import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/comp
 import { WalletModals } from "@/components/wallet/WalletModals";
 import { NotificationBell } from "@/components/Notifications/NotificationBell";
 import { NotificationSystem } from "@/components/Notifications/NotificationSystem";
+import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 
 interface Transaction {
   id: string;
@@ -153,7 +154,7 @@ export default function WalletDetailPage() {
     return (
       <DashboardShell role="customer" title="Loading...">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <AjoPaySpinner size="lg" showText text="Loading wallet data..." />
         </div>
       </DashboardShell>
     );
@@ -534,7 +535,7 @@ export default function WalletDetailPage() {
               <CardContent>
                   {loading ? (
                     <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <AjoPaySpinner size="md" showText text="Loading transactions..." />
                     </div>
                   ) : transactions.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">

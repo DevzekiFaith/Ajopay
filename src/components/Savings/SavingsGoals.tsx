@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Target, Calendar, Trash2, Edit3, Trophy, Shield, Plane, Smartphone, GraduationCap, Home, Car, Briefcase, DollarSign } from "lucide-react";
+import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -278,7 +279,7 @@ export function SavingsGoals() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <AjoPaySpinner size="md" showText text="Loading savings goals..." />
       </div>
     );
   }

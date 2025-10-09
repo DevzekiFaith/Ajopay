@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { AjoPaySpinnerCompact } from "@/components/ui/AjoPaySpinner";
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
@@ -164,7 +165,7 @@ export default function PaymentPage() {
         >
           {isLoading ? (
             <div className="flex items-center justify-center gap-2">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <AjoPaySpinnerCompact size="sm" className="text-white" />
               <span>Processing...</span>
             </div>
           ) : (

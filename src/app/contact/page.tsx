@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { contactInfo } from "@/lib/contact-info";
+import { AjoPaySpinnerCompact } from "@/components/ui/AjoPaySpinner";
 import { 
   Mail, 
   Phone, 
@@ -50,33 +52,33 @@ export default function Contact() {
     }));
   };
 
-  const contactInfo = [
+  const contactDetails = [
     {
       icon: Mail,
       title: "Email Us",
       description: "Get in touch via email",
-      value: "hello@ajopay.com",
-      action: "mailto:hello@ajopay.com"
+      value: contactInfo.email,
+      action: `mailto:${contactInfo.email}`
     },
     {
       icon: Phone,
       title: "Call Us",
       description: "Speak with our team",
-      value: "+234 (0) 123 456 7890",
-      action: "tel:+2341234567890"
+      value: contactInfo.phoneFormatted,
+      action: `tel:${contactInfo.phone.replace(/\s/g, '')}`
     },
     {
       icon: MapPin,
       title: "Visit Us",
       description: "Our office location",
-      value: "Lagos, Nigeria",
+      value: contactInfo.address,
       action: "#"
     },
     {
       icon: Clock,
       title: "Business Hours",
       description: "When we're available",
-      value: "Mon-Fri, 9AM-6PM WAT",
+      value: contactInfo.businessHours,
       action: "#"
     }
   ];
@@ -285,11 +287,7 @@ export default function Contact() {
                       </>
                     ) : isSubmitting ? (
                       <>
-                        <motion.div
-                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
+                        <AjoPaySpinnerCompact size="sm" className="text-white" />
                         Sending...
                       </>
                     ) : (
@@ -310,7 +308,7 @@ export default function Contact() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.8, duration: 0.8 }}
             >
-              {contactInfo.map((info, index) => (
+              {contactDetails.map((info, index) => (
                 <motion.a
                   key={info.title}
                   href={info.action}
