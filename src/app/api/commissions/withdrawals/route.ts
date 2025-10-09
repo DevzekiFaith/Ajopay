@@ -12,7 +12,14 @@ export async function GET() {
     }
 
     // Try to get withdrawals from commission_payouts table
-    let withdrawals = [];
+    let withdrawals: Array<{
+      id: string;
+      amount_kobo: number;
+      method: string;
+      status: string;
+      created_at: string;
+      processed_at: string | null;
+    }> = [];
     try {
       const { data: payoutData, error: payoutError } = await supabase
         .from('commission_payouts')
