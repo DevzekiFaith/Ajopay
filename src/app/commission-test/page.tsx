@@ -103,6 +103,7 @@ export default function CommissionTestPage() {
 
       // Create a test savings goal
       const testGoal = {
+        id: `test-goal-${Date.now()}`, // Add ID for testing
         user_id: user.id,
         title: 'Test Commission Goal',
         target_amount: 50000, // ₦500
