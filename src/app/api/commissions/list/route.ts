@@ -77,11 +77,11 @@ export async function GET(request: Request) {
             totalPaid: totalPaid,
             totalPending: totalEarned - totalPaid,
             totalAvailable: totalEarned - totalPaid,
-            byType: commissionTransactions.reduce((acc, commission) => {
+            byType: commissionTransactions.reduce((acc: Record<string, number>, commission) => {
               const type = commission.commission_type;
               acc[type] = (acc[type] || 0) + commission.amount_kobo;
               return acc;
-            }, {})
+            }, {} as Record<string, number>)
           },
           pagination: {
             limit,
@@ -195,11 +195,11 @@ export async function GET(request: Request) {
         `)
         .eq('user_id', user.id);
 
-      const byType = typeStats?.reduce((acc: any, commission: any) => {
+      const byType = typeStats?.reduce((acc: Record<string, number>, commission: any) => {
         const type = commission.commission_types.type_code;
         acc[type] = (acc[type] || 0) + commission.amount_kobo;
         return acc;
-      }, {}) || {};
+      }, {} as Record<string, number>) || {};
 
       return NextResponse.json({
         commissions: commissions?.map((c: any) => ({
