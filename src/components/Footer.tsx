@@ -15,9 +15,14 @@ import {
   Sparkles
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { contactInfo, companyInfo } from "@/lib/contact-info";
+import { AjoPaySpinnerCompact } from "@/components/ui/AjoPaySpinner";
 
 export function Footer() {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +34,62 @@ export function Footer() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubscribing(true);
+    
+    try {
+      // Call the newsletter subscription API
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <div className="font-semibold">Welcome to the AjoPay Family! 🎉</div>
+              <div className="text-sm opacity-80">You'll receive updates about our latest features and African success stories</div>
+            </div>
+          </div>,
+          {
+            duration: 5000,
+            className: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
+          }
+        );
+        
+        setEmail("");
+      } else {
+        toast.error(data.error || "Something went wrong. Please try again.");
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const footerLinks = {
@@ -59,9 +120,9 @@ export function Footer() {
   };
 
   const socialLinks = [
-    { icon: Twitter, href: "https://twitter.com/ajopay", label: "Twitter" },
-    { icon: Linkedin, href: "https://linkedin.com/company/ajopay", label: "LinkedIn" },
-    { icon: Github, href: "https://github.com/ajopay", label: "GitHub" }
+    { icon: Twitter, href: contactInfo.social.twitter, label: "Twitter" },
+    { icon: Linkedin, href: contactInfo.social.linkedin, label: "LinkedIn" },
+    { icon: Github, href: contactInfo.social.github, label: "GitHub" }
   ];
 
   return (
@@ -126,38 +187,37 @@ export function Footer() {
                     />
                   </div>
                   <span className="text-2xl font-bold bg-gradient-to-r from-white via-amber-200 to-orange-200 bg-clip-text text-transparent">
-                    AjoPay
+                    {companyInfo.name}
                   </span>
                 </div>
                 <p className="text-white/70 dark:text-white/70 leading-relaxed mb-6 max-w-sm">
-                  From the heart of Africa we rise,<br/>
-                  Building wealth before your eyes.<br/>
-                  Save with pride, grow with grace,<br/>
-                  AjoPay brings financial embrace.
+                  {companyInfo.description}
                 </p>
 
                 {/* Contact info */}
                 <div className="space-y-3">
-                  <motion.div
+                  <motion.a
+                    href={`mailto:${contactInfo.email}`}
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
                     <Mail className="w-4 h-4 group-hover:text-amber-400 transition-colors" />
-                    <span className="text-sm">hello@ajopay.com</span>
-                  </motion.div>
-                  <motion.div
+                    <span className="text-sm">{contactInfo.email}</span>
+                  </motion.a>
+                  <motion.a
+                    href={`tel:${contactInfo.phone.replace(/\s/g, '')}`}
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
                     <Phone className="w-4 h-4 group-hover:text-amber-400 transition-colors" />
-                    <span className="text-sm">+234 7014441418</span>
-                  </motion.div>
+                    <span className="text-sm">{contactInfo.phoneFormatted}</span>
+                  </motion.a>
                   <motion.div
                     className="flex items-center gap-3 text-white/60 hover:text-white/90 transition-colors group cursor-pointer"
                     whileHover={{ x: 4 }}
                   >
                     <MapPin className="w-4 h-4 group-hover:text-amber-400 transition-colors" />
-                    <span className="text-sm">Lagos, Nigeria 🇳🇬</span>
+                    <span className="text-sm">{contactInfo.address}</span>
                   </motion.div>
                 </div>
               </motion.div>
@@ -219,7 +279,8 @@ export function Footer() {
                 </div>
 
                 {/* Newsletter signup */}
-                <motion.div
+                <motion.form
+                  onSubmit={handleNewsletterSubscribe}
                   className="flex items-center gap-3"
                   initial={{ opacity: 0, x: 20 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -228,17 +289,32 @@ export function Footer() {
                 >
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="Join our African family"
                     className="px-4 py-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all duration-300"
+                    disabled={isSubscribing}
                   />
                   <motion.button
-                    className="px-6 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    type="submit"
+                    disabled={isSubscribing}
+                    className="px-6 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    whileHover={{ scale: isSubscribing ? 1 : 1.05 }}
+                    whileTap={{ scale: isSubscribing ? 1 : 0.95 }}
                   >
-                    Join Us
+                    {isSubscribing ? (
+                      <>
+                        <AjoPaySpinnerCompact size="sm" className="text-white" />
+                        Joining...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Join Us
+                      </>
+                    )}
                   </motion.button>
-                </motion.div>
+                </motion.form>
               </div>
             </motion.div>
           </div>
@@ -255,7 +331,7 @@ export function Footer() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2 text-white/60 text-sm">
-                <span>© 2025 AjoPay. Made with</span>
+                <span>© 2025 {companyInfo.name}. Made with</span>
                 <motion.div
                   animate={{ scale: [1, 1.2] }}
                   transition={{ 
@@ -267,13 +343,13 @@ export function Footer() {
                 >
                   <Heart className="w-4 h-4 text-red-400 fill-current" />
                 </motion.div>
-                <span>in Nigeria 🇳🇬</span>
+                <span>in {companyInfo.location} 🇳🇬</span>
               </div>
 
               <div className="flex items-center gap-4 text-white/60 text-sm">
-                <span>Empowering Africa's Future</span>
+                <span>{companyInfo.tagline}</span>
                 <div className="w-1 h-1 rounded-full bg-white/40" />
-                <span>v2.0.1</span>
+                <span>{companyInfo.version}</span>
               </div>
             </div>
           </div>

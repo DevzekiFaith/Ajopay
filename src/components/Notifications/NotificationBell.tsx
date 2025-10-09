@@ -107,6 +107,19 @@ export function NotificationBell({
       detail: { userId, unreadCount } 
     });
     window.dispatchEvent(event);
+    
+    // Also show a toast with notification summary
+    if (unreadCount > 0) {
+      toast.info(`You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`, {
+        duration: 3000,
+        className: "bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20",
+      });
+    } else {
+      toast.success("All caught up! No new notifications", {
+        duration: 2000,
+        className: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20",
+      });
+    }
   };
 
   return (
@@ -122,7 +135,7 @@ export function NotificationBell({
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className={`absolute ${badgePositionClasses[size]} ${badgeSizeClasses[size]} bg-red-500 rounded-full flex items-center justify-center text-white font-bold z-50 shadow-lg`}
+          className={`absolute ${badgePositionClasses[size]} ${badgeSizeClasses[size]} bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold z-50 shadow-lg border border-white/20`}
         >
           {unreadCount > 9 ? "9+" : unreadCount}
         </motion.div>
@@ -132,7 +145,7 @@ export function NotificationBell({
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className={`absolute ${badgePositionClasses[size]} ${size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-2.5 h-2.5' : 'w-3 h-3'} bg-green-500 rounded-full z-50 shadow-sm`}
+          className={`absolute ${badgePositionClasses[size]} ${size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-2.5 h-2.5' : 'w-3 h-3'} bg-gradient-to-r from-green-500 to-emerald-500 rounded-full z-50 shadow-sm border border-white/20`}
         />
       )}
     </motion.button>

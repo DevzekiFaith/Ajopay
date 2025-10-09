@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -9,7 +10,7 @@ interface LoadingSpinnerProps {
 
 export function LoadingSpinner({ size = "md", className, text }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: "w-4 h-4",
+    sm: "w-6 h-6",
     md: "w-8 h-8", 
     lg: "w-12 h-12",
     xl: "w-16 h-16"
@@ -19,22 +20,58 @@ export function LoadingSpinner({ size = "md", className, text }: LoadingSpinnerP
     <div className={cn("flex flex-col items-center justify-center space-y-4", className)}>
       <motion.div
         className={cn(
-          "border-4 border-gray-200 border-t-blue-600 rounded-full",
+          "relative rounded-full overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg",
           sizeClasses[size]
         )}
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 1,
-          repeat: Infinity,
-          ease: "linear"
+        animate={{ 
+          rotate: 360,
+          scale: [1, 1.1, 1]
         }}
-      />
+        transition={{
+          rotate: {
+            duration: 2,
+            repeat: Infinity,
+            ease: "linear"
+          },
+          scale: {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }
+        }}
+      >
+        <Image
+          src="/aj1.png"
+          alt="AjoPay Loading"
+          fill
+          className="object-contain p-1"
+          sizes={`${size === 'sm' ? '24px' : size === 'md' ? '32px' : size === 'lg' ? '48px' : '64px'}`}
+        />
+        
+        {/* Glowing effect */}
+        <motion.div
+          className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-400/20 to-orange-400/20"
+          animate={{
+            opacity: [0.3, 0.8, 0.3]
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      </motion.div>
       {text && (
         <motion.p
-          className="text-sm text-gray-600 dark:text-gray-400"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          className="text-sm text-gray-600 dark:text-gray-400 font-medium"
+          animate={{
+            opacity: [0.5, 1, 0.5]
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
         >
           {text}
         </motion.p>
@@ -43,20 +80,34 @@ export function LoadingSpinner({ size = "md", className, text }: LoadingSpinnerP
   );
 }
 
-// Advanced loading spinner with multiple elements
+// Advanced loading spinner with AjoPay logo and rings
 export function AdvancedLoadingSpinner({ className, text, size = "lg" }: { className?: string; text?: string; size?: "sm" | "md" | "lg" | "xl" }) {
+  const logoSize = {
+    sm: "w-6 h-6",
+    md: "w-8 h-8", 
+    lg: "w-12 h-12",
+    xl: "w-16 h-16"
+  };
+
+  const ringSize = {
+    sm: "w-12 h-12",
+    md: "w-16 h-16", 
+    lg: "w-20 h-20",
+    xl: "w-24 h-24"
+  };
+
   return (
     <div className={cn("flex flex-col items-center justify-center space-y-6", className)}>
       <div className="relative">
         {/* Outer ring */}
         <motion.div
           className={cn(
-            "border-4 border-gray-200 border-t-blue-600 rounded-full",
-            size === "sm" ? "w-8 h-8" : size === "md" ? "w-12 h-12" : size === "lg" ? "w-16 h-16" : "w-20 h-20"
+            "border-2 border-amber-200/30 border-t-amber-500 rounded-full",
+            ringSize[size]
           )}
           animate={{ rotate: 360 }}
           transition={{
-            duration: 2,
+            duration: 3,
             repeat: Infinity,
             ease: "linear"
           }}
@@ -64,32 +115,47 @@ export function AdvancedLoadingSpinner({ className, text, size = "lg" }: { class
         {/* Inner ring */}
         <motion.div
           className={cn(
-            "absolute border-4 border-gray-200 border-r-purple-600 rounded-full",
-            size === "sm" ? "top-1 left-1 w-6 h-6" : size === "md" ? "top-1.5 left-1.5 w-9 h-9" : size === "lg" ? "top-2 left-2 w-12 h-12" : "top-2.5 left-2.5 w-15 h-15"
+            "absolute border-2 border-orange-200/30 border-r-orange-500 rounded-full",
+            size === "sm" ? "top-1 left-1 w-10 h-10" : size === "md" ? "top-1.5 left-1.5 w-13 h-13" : size === "lg" ? "top-2 left-2 w-16 h-16" : "top-2.5 left-2.5 w-19 h-19"
           )}
           animate={{ rotate: -360 }}
           transition={{
-            duration: 1.5,
+            duration: 2,
             repeat: Infinity,
             ease: "linear"
           }}
         />
-        {/* Center dot */}
+        {/* AjoPay Logo Center */}
         <motion.div
           className={cn(
-            "absolute top-1/2 left-1/2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full transform -translate-x-1/2 -translate-y-1/2",
-            size === "sm" ? "w-1.5 h-1.5" : size === "md" ? "w-2 h-2" : size === "lg" ? "w-3 h-3" : "w-4 h-4"
+            "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg",
+            logoSize[size]
           )}
           animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.7, 1, 0.7]
+            scale: [1, 1.1, 1],
+            rotate: [0, 180, 360]
           }}
           transition={{
-            duration: 1,
-            repeat: Infinity,
-            ease: "easeInOut"
+            scale: {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            },
+            rotate: {
+              duration: 4,
+              repeat: Infinity,
+              ease: "linear"
+            }
           }}
-        />
+        >
+          <Image
+            src="/aj1.png"
+            alt="AjoPay Loading"
+            fill
+            className="object-contain p-1"
+            sizes={`${size === 'sm' ? '24px' : size === 'md' ? '32px' : size === 'lg' ? '48px' : '64px'}`}
+          />
+        </motion.div>
       </div>
       
       {text && (

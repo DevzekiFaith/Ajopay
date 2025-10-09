@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { Search, Filter, Download, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { AjoPaySpinnerCompact } from '@/components/ui/AjoPaySpinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -231,7 +232,7 @@ export function TransactionHistory({ userId, isCrypto = false }: TransactionHist
           
           <Button variant="outline" onClick={handleExport} disabled={exporting}>
             {exporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <AjoPaySpinnerCompact size="sm" className="mr-2" />
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}

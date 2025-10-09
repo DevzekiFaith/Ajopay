@@ -8,7 +8,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { MorphModal } from "@/components/ui/morph-modal";
 import { LayoutDashboard, UserRound, BadgePercent, Shield, LogIn } from "lucide-react";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Nav } from "@/components/nav";
+import { ConditionalNav } from "@/components/ConditionalNav";
 import { Footer } from "@/components/Footer";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
@@ -205,9 +205,9 @@ export default async function RootLayout({
       </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Nav />
+          <ConditionalNav />
           <BackButton />
-          <main className="pt-12 sm:pt-14 font-sans antialiased">
+          <main className="font-sans antialiased">
             {children}
           </main>
           {/* Mobile floating morph modal trigger - show always; contents depend on auth */}
@@ -253,9 +253,7 @@ export default async function RootLayout({
               </div>
             </MorphModal>
           </div>
-          {user && (
-            <Footer />
-          )}
+          <Footer />
           <Toaster richColors position="top-right" closeButton />
           <SpeedInsights />
           <Analytics />

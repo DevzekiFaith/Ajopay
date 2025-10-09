@@ -3,7 +3,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 interface RealtimeEvent {
-  type: 'goal_completed' | 'goal_created' | 'goal_progress' | 'badge_earned' | 'challenge_joined' | 'challenge_created' | 'challenge_completed' | 'circle_updated' | 'circle_created' | 'circle_joined' | 'circle_contribution' | 'level_up' | 'streak_updated';
+  type: 'goal_completed' | 'goal_created' | 'goal_progress' | 'badge_earned' | 'challenge_joined' | 'challenge_created' | 'challenge_completed' | 'circle_updated' | 'circle_created' | 'circle_joined' | 'circle_contribution' | 'level_up' | 'streak_updated' | 'transaction_made' | 'withdrawal_requested' | 'withdrawal_updated';
   data: Record<string, unknown>;
   userId: string;
   timestamp: string;
@@ -188,6 +188,66 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
+      .on("broadcast", { event: "transaction_made" }, (payload) => {
+        const event = payload.payload as RealtimeEvent;
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">💰</div>
+            <div>
+              <div className="font-bold">Transaction Completed!</div>
+              <div className="text-sm">₦{Number(event.data.amount || 0).toLocaleString()} {String(event.data.type)}</div>
+            </div>
+          </div>,
+          { duration: 3000 }
+        );
+        setLastUpdate(new Date());
+      })
+      .on("broadcast", { event: "streak_updated" }, (payload) => {
+        const event = payload.payload as RealtimeEvent;
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">🔥</div>
+            <div>
+              <div className="font-bold">Streak Updated!</div>
+              <div className="text-sm">{String(event.data.streakDays)} day streak!</div>
+            </div>
+          </div>,
+          { duration: 3000 }
+        );
+        setLastUpdate(new Date());
+      })
+      .on("broadcast", { event: "withdrawal_requested" }, (payload) => {
+        const event = payload.payload as RealtimeEvent;
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">💰</div>
+            <div>
+              <div className="font-bold">Withdrawal Requested!</div>
+              <div className="text-sm">₦{Number(event.data.amount || 0).toLocaleString()} via {String(event.data.method)}</div>
+            </div>
+          </div>,
+          { duration: 4000 }
+        );
+        setLastUpdate(new Date());
+      })
+      .on("broadcast", { event: "withdrawal_updated" }, (payload) => {
+        const event = payload.payload as RealtimeEvent;
+        const status = String(event.data.status);
+        const isCompleted = status === 'completed';
+        const isFailed = status === 'failed';
+        
+        toast[isCompleted ? 'success' : isFailed ? 'error' : 'info'](
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">{isCompleted ? '✅' : isFailed ? '❌' : '🔄'}</div>
+            <div>
+              <div className="font-bold">Withdrawal {status.charAt(0).toUpperCase() + status.slice(1)}!</div>
+              <div className="text-sm">₦{Number(event.data.amount || 0).toLocaleString()} via {String(event.data.method)}</div>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+        setLastUpdate(new Date());
+      })
       .subscribe((status) => {
         setIsConnected(status === "SUBSCRIBED");
       });
@@ -247,12 +307,42 @@ export function useRealtimeUpdates(userId?: string) {
       )
       .subscribe();
 
+    // Listen to transactions for real-time achievement updates
+    const transactionsChannel = supabase
+      .channel("user_transactions")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "transactions",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const transaction = payload.new;
+          console.log('Transaction detected for real-time updates:', transaction);
+          
+          // Trigger transaction-based updates
+          if (transaction.type === 'deposit' || transaction.type === 'contribution') {
+            triggerUpdate('transaction_made', {
+              amount: transaction.amount,
+              type: transaction.type,
+              description: transaction.description
+            });
+          }
+          
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(userChannel);
       supabase.removeChannel(goalsChannel);
       supabase.removeChannel(challengesChannel);
       supabase.removeChannel(circlesChannel);
       supabase.removeChannel(gamificationChannel);
+      supabase.removeChannel(transactionsChannel);
       setIsConnected(false);
     };
   }, [userId, supabase]);

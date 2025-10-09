@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { AjoPaySpinnerCompact } from '@/components/ui/AjoPaySpinner';
 import { getSupabaseBrowserClient, TransactionType, TransactionStatus } from '@/lib/supabase';
 
 interface TransactionNotificationProps {
@@ -75,7 +76,7 @@ export function TransactionNotification({
       case 'cancelled':
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'pending':
-        return <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />;
+        return <AjoPaySpinnerCompact size="sm" className="text-amber-500" />;
       default:
         return <Clock className="h-5 w-5 text-blue-500" />;
     }

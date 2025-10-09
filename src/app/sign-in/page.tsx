@@ -218,7 +218,7 @@ export default function SignInPage() {
     }
   };
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 bg-gradient-to-br from-gray-100 via-purple-50 to-white dark:from-[#181824] dark:via-[#23233a] dark:to-[#181824]">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 pt-20 bg-gradient-to-br from-gray-100 via-purple-50 to-white dark:from-[#181824] dark:via-[#23233a] dark:to-[#181824]">
       <div className="relative w-full max-w-2xl h-32 sm:h-40 md:h-48 mb-6">
         <Image src="/aj2.png" alt="Ajopay" fill sizes="(max-width:768px) 100vw, 720px" className="object-contain drop-shadow-xl" priority />
       </div>
@@ -227,7 +227,9 @@ export default function SignInPage() {
         <div aria-hidden className="pointer-events-none absolute inset-0 rounded-3xl [mask-image:radial-gradient(120%_60%_at_50%_0%,#000_40%,transparent_60%)]">
           <div className="absolute -top-8 left-0 right-0 h-24 bg-gradient-to-b from-white/40 to-transparent dark:from-white/10" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white drop-shadow-sm">Sign in</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white drop-shadow-sm">
+          {isSignup ? "Sign up" : "Sign in"}
+        </h1>
         {reauth && (
           <div className="text-xs p-2 rounded-xl border border-yellow-500/40 bg-yellow-500/10 shadow-inner">
             For security, please sign in again to continue.

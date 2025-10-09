@@ -21,6 +21,9 @@ import {
   Trophy,
   DollarSign
 } from "lucide-react";
+import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
+import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface Commission {
   id: string;
@@ -57,6 +60,20 @@ interface ReferralStats {
   referralCode: string;
 }
 
+interface Withdrawal {
+  id: string;
+  amount_kobo: number;
+  method: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  created_at: string;
+  processed_at?: string;
+  account_details?: {
+    accountNumber: string;
+    bankName: string;
+    accountName: string;
+  };
+}
+
 export function UserCommissionDashboard() {
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -72,12 +89,18 @@ export function UserCommissionDashboard() {
     totalEarned: 0,
     referralCode: ''
   });
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('bank_transfer');
   const [withdrawing, setWithdrawing] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Real-time updates
+  const supabase = getSupabaseBrowserClient();
+  const { isConnected, lastUpdate, triggerUpdate } = useRealtimeUpdates(currentUserId || undefined);
 
   const loadCommissionData = async () => {
     try {
@@ -133,6 +156,21 @@ export function UserCommissionDashboard() {
         setReferralStats(referralData);
       } else {
         console.error('Referral API error:', referralData);
+      }
+
+      // Load withdrawal history
+      const withdrawalsRes = await fetch('/api/commissions/withdrawals', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      const withdrawalsData = await withdrawalsRes.json();
+      
+      if (withdrawalsRes.ok) {
+        setWithdrawals(withdrawalsData.withdrawals || []);
+      } else {
+        console.error('Withdrawals API error:', withdrawalsData);
       }
 
     } catch (error) {
@@ -271,14 +309,138 @@ export function UserCommissionDashboard() {
     }
   };
 
+  const getWithdrawalStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'processing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  // Load user ID and initial data
   useEffect(() => {
-    loadCommissionData();
+    const loadUserAndData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserId(user.id);
+        }
+        await loadCommissionData();
+      } catch (error) {
+        console.error('Error loading user or commission data:', error);
+      }
+    };
+    
+    loadUserAndData();
   }, []);
+
+  // Reload data when real-time updates occur
+  useEffect(() => {
+    if (lastUpdate) {
+      loadCommissionData();
+    }
+  }, [lastUpdate]);
+
+  // Add real-time listeners for commission-related changes
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    // Listen to commission changes
+    const commissionsChannel = supabase
+      .channel("user_commissions")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "commissions",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        (payload) => {
+          console.log('Commission change detected:', payload);
+          // Reload commission data
+          setTimeout(() => loadCommissionData(), 1000);
+        }
+      )
+      .subscribe();
+
+    // Listen to transaction changes that might generate commissions
+    const transactionsChannel = supabase
+      .channel("user_transactions_commission")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "transactions",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        (payload) => {
+          console.log('Transaction detected for commission check:', payload);
+          // Check if this transaction should generate a commission
+          const transaction = payload.new;
+          if (transaction.type === 'deposit' || transaction.type === 'contribution') {
+            // Trigger commission check
+            triggerUpdate('transaction_made', {
+              amount: transaction.amount,
+              type: transaction.type,
+              description: 'New transaction - checking for commissions'
+            });
+            // Reload commission data after a delay
+            setTimeout(() => loadCommissionData(), 2000);
+          }
+        }
+      )
+      .subscribe();
+
+    // Listen to withdrawal/payout changes
+    const withdrawalsChannel = supabase
+      .channel("user_withdrawals")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "commission_payouts",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        (payload) => {
+          console.log('Withdrawal change detected:', payload);
+          // Reload commission data to update withdrawal history
+          setTimeout(() => loadCommissionData(), 1000);
+          
+          // Trigger withdrawal update notification
+          if (payload.eventType === 'INSERT') {
+            triggerUpdate('withdrawal_requested', {
+              amount: payload.new.total_amount_kobo,
+              method: payload.new.payout_method,
+              status: payload.new.status
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            triggerUpdate('withdrawal_updated', {
+              amount: payload.new.total_amount_kobo,
+              method: payload.new.payout_method,
+              status: payload.new.status,
+              previousStatus: payload.old.status
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(commissionsChannel);
+      supabase.removeChannel(transactionsChannel);
+      supabase.removeChannel(withdrawalsChannel);
+    };
+  }, [currentUserId, supabase, triggerUpdate]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        <AjoPaySpinner size="md" showText text="Loading commission data..." />
       </div>
     );
   }
@@ -287,9 +449,17 @@ export function UserCommissionDashboard() {
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-4">
       {/* Header - Mobile Responsive */}
       <div className="text-center">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-white mb-2">
-          💰 Commission Dashboard
-        </h2>
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-white">
+            💰 Commission Dashboard
+          </h2>
+          {isConnected && (
+            <div className="flex items-center gap-2 text-xs text-green-600 bg-green-500/10 px-2 py-1 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              Live
+            </div>
+          )}
+        </div>
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 px-4">
           Earn real money by using AjoPay! Check in daily, complete goals, and refer friends.
         </p>
@@ -373,30 +543,57 @@ export function UserCommissionDashboard() {
         </motion.div>
       </div>
 
-      {/* Daily Check-in */}
+      {/* Daily Check-in - Enhanced Responsiveness */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-200">
-                  Daily Check-in Bonus
-                </h3>
-                <p className="text-sm text-orange-600 dark:text-orange-400">
+        <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200/50 dark:border-orange-800/30">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 dark:bg-orange-900/50 rounded-full flex items-center justify-center">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold text-orange-800 dark:text-orange-200">
+                    Daily Check-in Bonus
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 mb-2 sm:mb-0">
                   Earn ₦50-₦500 daily just for checking in!
                 </p>
+                <div className="flex items-center gap-2 text-xs text-orange-500 dark:text-orange-300">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  <span>Streak bonus increases daily</span>
+                </div>
               </div>
-              <Button 
-                onClick={handleDailyCheckin}
-                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-              >
-                <Star className="w-4 h-4 mr-2" />
-                Check In Today
-              </Button>
+              <div className="flex-shrink-0">
+                <Button 
+                  onClick={handleDailyCheckin}
+                  className="w-full sm:w-auto bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-medium py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  size="sm"
+                >
+                  <Star className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Check In Today</span>
+                  <span className="sm:hidden">Check In</span>
+                </Button>
+              </div>
+            </div>
+            
+            {/* Mobile-friendly bonus info */}
+            <div className="mt-4 sm:hidden">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-2 text-center">
+                  <div className="font-semibold text-orange-800 dark:text-orange-200">Base</div>
+                  <div className="text-orange-600 dark:text-orange-400">₦50</div>
+                </div>
+                <div className="bg-red-100 dark:bg-red-900/30 rounded-lg p-2 text-center">
+                  <div className="font-semibold text-red-800 dark:text-red-200">Max</div>
+                  <div className="text-red-600 dark:text-red-400">₦500</div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -404,7 +601,7 @@ export function UserCommissionDashboard() {
 
       {/* Tabs - Mobile Responsive */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
           <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 sm:py-3">
             <span className="hidden sm:inline">Overview</span>
             <span className="sm:hidden">Overview</span>
@@ -412,6 +609,10 @@ export function UserCommissionDashboard() {
           <TabsTrigger value="commissions" className="text-xs sm:text-sm py-2 sm:py-3">
             <span className="hidden sm:inline">Commissions</span>
             <span className="sm:hidden">Earnings</span>
+          </TabsTrigger>
+          <TabsTrigger value="withdrawals" className="text-xs sm:text-sm py-2 sm:py-3">
+            <span className="hidden sm:inline">Withdrawals</span>
+            <span className="sm:hidden">Withdraw</span>
           </TabsTrigger>
           <TabsTrigger value="rewards" className="text-xs sm:text-sm py-2 sm:py-3">
             <span className="hidden sm:inline">Rewards</span>
@@ -452,18 +653,20 @@ export function UserCommissionDashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
+            {/* Quick Actions - Enhanced Responsiveness */}
+            <Card className="border border-blue-200/50 dark:border-blue-800/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center">
+                    <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
                   Quick Actions
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 sm:space-y-3">
                 <Button 
                   onClick={handleDailyCheckin}
-                  className="w-full justify-start text-sm sm:text-base py-2 sm:py-3"
+                  className="w-full justify-start text-sm sm:text-base py-3 sm:py-4 bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 dark:from-orange-900/20 dark:to-red-900/20 dark:hover:from-orange-900/30 dark:hover:to-red-900/30 border border-orange-200 dark:border-orange-800/30 text-orange-700 dark:text-orange-300 hover:text-orange-800 dark:hover:text-orange-200 transition-all duration-200"
                   variant="outline"
                 >
                   <Clock className="w-4 h-4 mr-2" />
@@ -472,7 +675,7 @@ export function UserCommissionDashboard() {
                 </Button>
                 <Button 
                   onClick={copyReferralCode}
-                  className="w-full justify-start text-sm sm:text-base py-2 sm:py-3"
+                  className="w-full justify-start text-sm sm:text-base py-3 sm:py-4 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 border border-green-200 dark:border-green-800/30 text-green-700 dark:text-green-300 hover:text-green-800 dark:hover:text-green-200 transition-all duration-200"
                   variant="outline"
                 >
                   <Users className="w-4 h-4 mr-2" />
@@ -481,7 +684,7 @@ export function UserCommissionDashboard() {
                 </Button>
                 <Button 
                   onClick={() => setActiveTab('rewards')}
-                  className="w-full justify-start text-sm sm:text-base py-2 sm:py-3"
+                  className="w-full justify-start text-sm sm:text-base py-3 sm:py-4 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 border border-purple-200 dark:border-purple-800/30 text-purple-700 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-200 transition-all duration-200"
                   variant="outline"
                 >
                   <Gift className="w-4 h-4 mr-2" />
@@ -532,6 +735,77 @@ export function UserCommissionDashboard() {
                   ))}
                 </AnimatePresence>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="withdrawals" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                Withdrawal History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {withdrawals.length === 0 ? (
+                <div className="text-center py-8">
+                  <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">No withdrawals yet</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                    Your withdrawal history will appear here
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {withdrawals.map((withdrawal) => (
+                    <motion.div
+                      key={withdrawal.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          {withdrawal.method === 'bank_transfer' ? (
+                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                              <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                              <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            ₦{(withdrawal.amount_kobo / 100).toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {withdrawal.method === 'bank_transfer' ? 'Bank Transfer' : 'Mobile Money'}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {new Date(withdrawal.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge 
+                          className={getWithdrawalStatusColor(withdrawal.status)}
+                          variant="secondary"
+                        >
+                          {withdrawal.status}
+                        </Badge>
+                        {withdrawal.processed_at && (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            Processed: {new Date(withdrawal.processed_at).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

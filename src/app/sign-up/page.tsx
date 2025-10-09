@@ -31,7 +31,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gradient-to-br from-purple-50 to-white dark:from-[#0a0218] dark:to-[#0b0614] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 pt-20 bg-gradient-to-br from-purple-50 to-white dark:from-[#0a0218] dark:to-[#0b0614] relative overflow-hidden">
       <div aria-hidden className="pointer-events-none absolute -top-24 -right-20 h-72 w-72 rounded-full bg-violet-400/30 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-fuchsia-400/20 blur-3xl" />
 

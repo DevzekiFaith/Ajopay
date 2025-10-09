@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Trophy, Star, Flame, Target, Gift, Crown, Zap, Award, TrendingUp } from "lucide-react";
+import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -239,6 +240,53 @@ export function Gamification() {
     loadUserData();
   }, []);
 
+  // Add transaction listeners for real-time achievements
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    // Listen to transaction changes for real-time achievements
+    const transactionsChannel = supabase
+      .channel("user_transactions_gamification")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "transactions",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          console.log('New transaction detected for achievements:', payload.new);
+          const transaction = payload.new;
+          
+          // Check for achievements based on transaction
+          await checkTransactionAchievements(transaction);
+          
+          // Reload user data to update stats
+          setTimeout(() => loadUserData(), 1000);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "savings_goals",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          console.log('New savings goal detected:', payload.new);
+          // Check for goal-related achievements
+          setTimeout(() => checkAndAwardBadges(), 1000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(transactionsChannel);
+    };
+  }, [currentUserId, supabase]);
+
   const claimReward = async (rewardId: string) => {
     toast.success("Reward claimed! 🎉", {
       description: "Your reward has been added to your account",
@@ -280,6 +328,173 @@ export function Gamification() {
       }
     }
     return 1;
+  };
+
+  // Check achievements based on transaction
+  const checkTransactionAchievements = async (transaction: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get current user stats
+      const { data: contributions } = await supabase
+        .from('contributions')
+        .select('amount_kobo, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!contributions) return;
+
+      const totalSaved = contributions.reduce((sum, c) => sum + (c.amount_kobo / 100), 0);
+      
+      // Calculate streak
+      let streak = 0;
+      const uniqueDays = new Set();
+      contributions.forEach(c => {
+        const day = new Date(c.created_at).toDateString();
+        uniqueDays.add(day);
+      });
+      
+      const sortedDays = Array.from(uniqueDays).sort().reverse();
+      for (let i = 0; i < sortedDays.length; i++) {
+        const day = new Date(sortedDays[i]);
+        const expectedDay = new Date(Date.now() - (i * 86400000));
+        if (day.toDateString() === expectedDay.toDateString()) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+
+      // Check for new achievements
+      const newAchievements = [];
+      
+      // First save achievement
+      if (totalSaved > 0 && !userBadges.find(b => b.id === 'first_save')?.earned) {
+        newAchievements.push({
+          id: 'first_save',
+          name: 'First Steps',
+          icon: '🎯',
+          message: 'Made your first savings contribution!'
+        });
+      }
+
+      // Week warrior achievement
+      if (streak >= 7 && !userBadges.find(b => b.id === 'week_streak')?.earned) {
+        newAchievements.push({
+          id: 'week_streak',
+          name: 'Week Warrior',
+          icon: '🔥',
+          message: '7-day savings streak achieved!'
+        });
+      }
+
+      // Month master achievement
+      if (streak >= 30 && !userBadges.find(b => b.id === 'month_streak')?.earned) {
+        newAchievements.push({
+          id: 'month_streak',
+          name: 'Month Master',
+          icon: '👑',
+          message: '30-day savings streak achieved!'
+        });
+      }
+
+      // Big saver achievement
+      if (totalSaved >= 100000 && !userBadges.find(b => b.id === 'big_saver')?.earned) {
+        newAchievements.push({
+          id: 'big_saver',
+          name: 'Big Saver',
+          icon: '🏆',
+          message: 'Saved ₦100,000+! You\'re a savings legend!'
+        });
+      }
+
+      // Legend achievement
+      if (streak >= 100 && !userBadges.find(b => b.id === 'legend')?.earned) {
+        newAchievements.push({
+          id: 'legend',
+          name: 'Legend',
+          icon: '👑',
+          message: '100-day savings streak! You\'re a legend!'
+        });
+      }
+
+      // Trigger achievements
+      newAchievements.forEach(achievement => {
+        triggerUpdate('badge_earned', { 
+          badgeName: achievement.name, 
+          badgeId: achievement.id,
+          message: achievement.message 
+        });
+      });
+
+      // Trigger streak update if streak changed
+      if (streak !== userStats.streakDays) {
+        triggerUpdate('streak_updated', {
+          streakDays: streak,
+          previousStreak: userStats.streakDays
+        });
+      }
+
+      // Check for level up
+      const newLevel = Math.floor(totalSaved / 2000) + 1;
+      if (newLevel > userStats.level) {
+        triggerUpdate('level_up', { 
+          newLevel: newLevel,
+          totalSaved: totalSaved 
+        });
+      }
+
+      // Check for streak achievements
+      if (streak >= 3 && !userBadges.find(b => b.id === 'streak_starter')?.earned) {
+        newAchievements.push({
+          id: 'streak_starter',
+          name: 'Streak Starter',
+          icon: '🔥',
+          message: '3-day savings streak! You\'re on fire!'
+        });
+      }
+
+      if (streak >= 14 && !userBadges.find(b => b.id === 'streak_master')?.earned) {
+        newAchievements.push({
+          id: 'streak_master',
+          name: 'Streak Master',
+          icon: '⚡',
+          message: '14-day savings streak! You\'re unstoppable!'
+        });
+      }
+
+      // Check for savings amount achievements
+      if (totalSaved >= 5000 && !userBadges.find(b => b.id === 'savings_starter')?.earned) {
+        newAchievements.push({
+          id: 'savings_starter',
+          name: 'Savings Starter',
+          icon: '💎',
+          message: 'Saved ₦5,000+! Great start!'
+        });
+      }
+
+      if (totalSaved >= 25000 && !userBadges.find(b => b.id === 'savings_pro')?.earned) {
+        newAchievements.push({
+          id: 'savings_pro',
+          name: 'Savings Pro',
+          icon: '💎',
+          message: 'Saved ₦25,000+! You\'re a savings pro!'
+        });
+      }
+
+      if (totalSaved >= 50000 && !userBadges.find(b => b.id === 'savings_expert')?.earned) {
+        newAchievements.push({
+          id: 'savings_expert',
+          name: 'Savings Expert',
+          icon: '💎',
+          message: 'Saved ₦50,000+! You\'re a savings expert!'
+        });
+      }
+
+    } catch (error) {
+      console.error('Error checking transaction achievements:', error);
+    }
   };
 
   const checkAndAwardBadges = async () => {
@@ -406,7 +621,7 @@ export function Gamification() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <AjoPaySpinner size="md" showText text="Loading gamification..." />
       </div>
     );
   }

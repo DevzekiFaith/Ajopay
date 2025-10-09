@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Users, TrendingUp, Calendar, Copy, Check } from "lucide-react";
+import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { toast } from "sonner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 
@@ -184,7 +185,7 @@ export function CommissionTracking() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <AjoPaySpinner size="md" showText text="Loading commission tracking..." />
       </div>
     );
   }

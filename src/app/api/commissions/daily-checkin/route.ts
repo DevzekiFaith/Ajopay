@@ -194,29 +194,69 @@ export async function POST() {
       const streakBonus = Math.min(currentStreak * 1000, 5000);
       const totalAmount = baseAmount + streakBonus;
 
-      const { data: commissionType } = await supabase
-        .from('commission_types')
-        .select('id')
-        .eq('type_code', 'daily_checkin')
-        .single();
-
-      if (commissionType) {
-        const { data: commission, error: commissionError } = await supabase
-          .from('user_commissions')
-          .insert({
-            user_id: user.id,
-            commission_type_id: commissionType.id,
-            amount_kobo: totalAmount,
-            description: `Daily check-in bonus - Day ${currentStreak}`,
-            status: 'paid',
-            source_type: 'checkin',
-            metadata: { streak: currentStreak, date: today }
-          })
-          .select()
+      // Try to create commission record in user_commissions table
+      let commissionCreated = false;
+      try {
+        const { data: commissionType } = await supabase
+          .from('commission_types')
+          .select('id')
+          .eq('type_code', 'daily_checkin')
           .single();
 
-        if (commissionError) {
-          console.error('Commission error:', commissionError);
+        if (commissionType) {
+          const { data: commission, error: commissionError } = await supabase
+            .from('user_commissions')
+            .insert({
+              user_id: user.id,
+              commission_type_id: commissionType.id,
+              amount_kobo: totalAmount,
+              description: `Daily check-in bonus - Day ${currentStreak}`,
+              status: 'paid',
+              source_type: 'checkin',
+              metadata: { streak: currentStreak, date: today }
+            })
+            .select()
+            .single();
+
+          if (!commissionError) {
+            commissionCreated = true;
+            console.log('Commission created successfully:', commission);
+          } else {
+            console.error('Commission error:', commissionError);
+          }
+        }
+      } catch (error) {
+        console.log('Commission table not available, using fallback');
+      }
+
+      // Fallback: Create commission record in transactions table if user_commissions doesn't exist
+      if (!commissionCreated) {
+        try {
+          const { data: transaction, error: transactionError } = await supabase
+            .from('transactions')
+            .insert({
+              user_id: user.id,
+              amount_kobo: totalAmount,
+              type: 'commission',
+              description: `Daily check-in bonus - Day ${currentStreak}`,
+              status: 'completed',
+              metadata: { 
+                commission_type: 'daily_checkin',
+                streak: currentStreak,
+                date: today,
+                source: 'checkin'
+              }
+            })
+            .select()
+            .single();
+
+          if (!transactionError) {
+            console.log('Commission recorded in transactions table:', transaction);
+          } else {
+            console.error('Transaction commission error:', transactionError);
+          }
+        } catch (error) {
+          console.log('Transactions table not available either');
         }
       }
 

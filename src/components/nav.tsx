@@ -6,7 +6,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
-import { NotificationSystem } from "@/components/Notifications/NotificationSystem";
+import { NotificationBell } from "@/components/Notifications/NotificationBell";
+import { AjoPaySpinnerCompact } from "@/components/ui/AjoPaySpinner";
 
 export function Nav() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -126,7 +127,14 @@ export function Nav() {
             </span>
           </button>
           {!isLoading && user && user.id ? (
-            <NotificationSystem userId={user.id} />
+            <div className="relative">
+              <NotificationBell 
+                userId={user.id} 
+                size="md" 
+                variant="default"
+                className="p-2 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-900 dark:text-white/90 transition-colors shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+              />
+            </div>
           ) : null}
           {!isLoading && user && user.id ? (
             <button
@@ -152,7 +160,8 @@ export function Nav() {
               </Link>
             </>
           ) : (
-            <div className="px-3 h-8 inline-flex items-center rounded-lg border border-white/30 dark:border-white/10 bg-white/10 dark:bg-white/5 text-sm text-zinc-900 dark:text-white/90">
+            <div className="px-3 h-8 inline-flex items-center gap-2 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 dark:bg-white/5 text-sm text-zinc-900 dark:text-white/90">
+              <AjoPaySpinnerCompact size="sm" />
               Loading...
             </div>
           )}
@@ -160,6 +169,16 @@ export function Nav() {
 
         {/* Mobile actions */}
         <div className="sm:hidden flex items-center gap-2">
+          {!isLoading && user && user.id ? (
+            <div className="relative">
+              <NotificationBell 
+                userId={user.id} 
+                size="sm" 
+                variant="default"
+                className="p-1.5 rounded-lg border border-white/30 dark:border-white/10 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-900 dark:text-white/90 transition-colors shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+              />
+            </div>
+          ) : null}
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
