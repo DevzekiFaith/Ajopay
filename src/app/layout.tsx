@@ -258,11 +258,12 @@ export default async function RootLayout({
           <SpeedInsights />
           <Analytics />
         </ThemeProvider>
-        {/* Register Service Worker */}
+        {/* Service Worker temporarily disabled to fix caching issues */}
         <Script id="sw-register" strategy="afterInteractive">{
           `if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-              navigator.serviceWorker.register('/sw.js').catch(() => {});
+            // Temporarily disable service worker to fix caching issues
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+              registrations.forEach(registration => registration.unregister());
             });
           }`
         }</Script>
