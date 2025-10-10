@@ -27,8 +27,29 @@ export default function SignInPage() {
     return isSignup ? base && fullName.trim().length >= 2 : base;
   }, [isEmailValid, password, isSignup, confirmPassword, fullName]);
 
+  // Clear service worker cache to ensure fresh content
+  const clearServiceWorkerCache = async () => {
+    if ('serviceWorker' in navigator && 'caches' in window) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration && registration.active) {
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = () => {
+            console.log('Service worker cache cleared');
+          };
+          registration.active.postMessage({ type: 'CLEAR_CACHE' }, [messageChannel.port2]);
+        }
+      } catch (error) {
+        console.log('Could not clear service worker cache:', error);
+      }
+    }
+  };
+
   // Prefill from localStorage and check for payment success
   useEffect(() => {
+    // Clear cache on page load to ensure fresh content
+    clearServiceWorkerCache();
+    
     try {
       const lastEmail = localStorage.getItem("ajopay_last_email");
       if (lastEmail) setEmail(lastEmail);

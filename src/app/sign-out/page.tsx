@@ -6,11 +6,32 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function SignOutPage() {
   const router = useRouter();
+  
+  // Clear service worker cache on sign out
+  const clearServiceWorkerCache = async () => {
+    if ('serviceWorker' in navigator && 'caches' in window) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration && registration.active) {
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = () => {
+            console.log('Service worker cache cleared on sign out');
+          };
+          registration.active.postMessage({ type: 'CLEAR_CACHE' }, [messageChannel.port2]);
+        }
+      } catch (error) {
+        console.log('Could not clear service worker cache:', error);
+      }
+    }
+  };
+
   useEffect(() => {
     const run = async () => {
       const supabase = getSupabaseBrowserClient();
       try {
         await supabase.auth.signOut();
+        // Clear cache after sign out
+        await clearServiceWorkerCache();
       } finally {
         router.replace("/");
       }
