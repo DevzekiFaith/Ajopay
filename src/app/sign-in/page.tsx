@@ -27,20 +27,30 @@ export default function SignInPage() {
     return isSignup ? base && fullName.trim().length >= 2 : base;
   }, [isEmailValid, password, isSignup, confirmPassword, fullName]);
 
-  // Clear service worker cache to ensure fresh content
-  const clearServiceWorkerCache = async () => {
+  // Aggressively clear all caches to ensure fresh content
+  const clearAllCaches = async () => {
     if ('serviceWorker' in navigator && 'caches' in window) {
       try {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration && registration.active) {
-          const messageChannel = new MessageChannel();
-          messageChannel.port1.onmessage = () => {
-            console.log('Service worker cache cleared');
-          };
-          registration.active.postMessage({ type: 'CLEAR_CACHE' }, [messageChannel.port2]);
+        // Unregister all service workers
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+          console.log('Service worker unregistered');
+        }
+        
+        // Clear all caches
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        console.log('All caches cleared');
+        
+        // Force reload to get fresh content
+        if (window.location.search.includes('payment=success')) {
+          window.location.reload();
         }
       } catch (error) {
-        console.log('Could not clear service worker cache:', error);
+        console.log('Could not clear caches:', error);
       }
     }
   };
@@ -48,7 +58,7 @@ export default function SignInPage() {
   // Prefill from localStorage and check for payment success
   useEffect(() => {
     // Clear cache on page load to ensure fresh content
-    clearServiceWorkerCache();
+    clearAllCaches();
     
     try {
       const lastEmail = localStorage.getItem("ajopay_last_email");
