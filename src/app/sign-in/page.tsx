@@ -70,8 +70,7 @@ export default function SignInPage() {
         setReferralCode(qs.get("ref") || "");
       }
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    }, []);
 
   // Email/password: sign up
   const signUpWithPassword = async (e?: React.SyntheticEvent) => {
@@ -224,7 +223,7 @@ export default function SignInPage() {
     }
   };
 
-  // Forgot password: send reset email
+  // Forgot password: send reset email (currently unused)
   const sendResetPasswordEmail = async (e?: React.SyntheticEvent) => {
     e?.preventDefault?.();
     setSending(true);

@@ -5,7 +5,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import DashboardShell from "@/components/dashboard/Shell";
 import Image from "next/image";
-import Link from "next/link";
+// Removed unused import: Link
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ContributionSchema } from "@/lib/validators/contribution";
@@ -35,14 +35,11 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
-import { SavingsGoals } from "@/components/Savings/SavingsGoals";
-import { Gamification } from "@/components/Game/Gamification";
-import { PeerChallenges } from "@/components/Peer/PeerChallenges";
-import { SavingsCircles } from "@/components/Circle/SavingsCircle";
+// Removed unused imports: SavingsGoals, Gamification, PeerChallenges, SavingsCircles
 import { PersonalHealthDashboard } from "@/components/Monitoring/PersonalHealthDashboard";
 import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
+import { AfricanPatterns, AfricanGlassmorphismCard } from "@/components/wallet/AfricanPatterns";
 import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
 
 export default function CustomerPage() {
@@ -65,13 +62,10 @@ export default function CustomerPage() {
   const [windowOffset, setWindowOffset] = useState(0); // 0 = last 30 days ending today, 1 = previous 30-day window, etc.
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [justMarked, setJustMarked] = useState(false);
-  const [confirmAmount, setConfirmAmount] = useState<number>(200);
-  const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [profileSettings, setProfileSettings] = useState<Record<string, any> | null>(null);
   const [autoBusy, setAutoBusy] = useState<boolean>(false);
   const [savingSettings, setSavingSettings] = useState<boolean>(false);
-  const [activeFeatureTab, setActiveFeatureTab] = useState("overview");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [walletType, setWalletType] = useState<'ngn' | 'crypto'>('ngn');
   const [balanceVisible, setBalanceVisible] = useState(true);
   const router = useRouter();
@@ -257,20 +251,15 @@ export default function CustomerPage() {
       const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (globalThis as any)?.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       const USER_BUCKET = process.env.NEXT_PUBLIC_USER_SETTINGS_BUCKET || (globalThis as any)?.NEXT_PUBLIC_USER_SETTINGS_BUCKET;
 
-      // eslint-disable-next-line no-console
       console.info('DEBUG: NEXT_PUBLIC_SUPABASE_URL =', SUPABASE_URL);
       if (ANON_KEY) {
-        // eslint-disable-next-line no-console
         console.info('DEBUG: NEXT_PUBLIC_SUPABASE_ANON_KEY length =', (ANON_KEY as string).length,
           'preview =', (ANON_KEY as string).slice(0,6) + '...' + (ANON_KEY as string).slice(-6));
       } else {
-        // eslint-disable-next-line no-console
         console.info('DEBUG: NEXT_PUBLIC_SUPABASE_ANON_KEY = <missing>');
       }
-      // eslint-disable-next-line no-console
       console.info('DEBUG: USER_SETTINGS_BUCKET =', USER_BUCKET);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('DEBUG: failed to read envs', err);
     }
   }, []);

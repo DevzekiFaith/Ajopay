@@ -7,7 +7,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SavingsGoals } from "@/components/Savings/SavingsGoals";
 import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
@@ -119,6 +118,35 @@ function CustomerSection() {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let contribChannel: ReturnType<typeof supabase.channel> | null = null;
     let featuresChannel: ReturnType<typeof supabase.channel> | null = null;
+    let walletUpdateTimeout: NodeJS.Timeout | null = null;
+
+    const debouncedWalletUpdate = () => {
+      if (walletUpdateTimeout) {
+        clearTimeout(walletUpdateTimeout);
+      }
+      walletUpdateTimeout = setTimeout(async () => {
+        try {
+          // Use wallet API endpoint to get real balance including commissions and withdrawals
+          const res = await fetch('/api/wallet/data', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.wallet) {
+              setWalletTotalNaira(Math.round(data.wallet.balance_kobo / 100));
+              setTodayNaira(data.todayNaira || 0);
+              setWalletPulse(true);
+              setTimeout(() => setWalletPulse(false), 600);
+
+              // Update advanced features when wallet changes
+              const { data: ures } = await supabase.auth.getUser();
+              const uid = ures?.user?.id;
+              if (uid) {
+                await loadAdvancedFeaturesData(uid);
+              }
+            }
+          }
+        } catch { }
+      }, 1500); // 1.5 second debounce
+    };
 
     (async () => {
       const { data: ures } = await supabase.auth.getUser();
@@ -176,32 +204,6 @@ function CustomerSection() {
           .subscribe();
 
         // Realtime: update wallet when contributions or transactions change for this user (with debouncing)
-        let walletUpdateTimeout: NodeJS.Timeout | null = null;
-        
-        const debouncedWalletUpdate = () => {
-          if (walletUpdateTimeout) {
-            clearTimeout(walletUpdateTimeout);
-          }
-          walletUpdateTimeout = setTimeout(async () => {
-            try {
-              // Use wallet API endpoint to get real balance including commissions and withdrawals
-              const res = await fetch('/api/wallet/data', { cache: 'no-store' });
-              if (res.ok) {
-                const data = await res.json();
-                if (data.wallet) {
-                  setWalletTotalNaira(Math.round(data.wallet.balance_kobo / 100));
-                  setTodayNaira(data.todayNaira || 0);
-                  setWalletPulse(true);
-                  setTimeout(() => setWalletPulse(false), 600);
-
-                  // Update advanced features when wallet changes
-                  await loadAdvancedFeaturesData(uid);
-                }
-              }
-            } catch { }
-          }, 1500); // 1.5 second debounce
-        };
-
         contribChannel = supabase
           .channel("realtime:contributions:self:landing")
           .on(
