@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { AjoPaySpinnerCompact } from "@/components/ui/AjoPaySpinner";
+import { clearCachesOnly } from "@/lib/cache-clear";
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
@@ -49,6 +50,15 @@ export default function PaymentPage() {
   };
 
   const currentPlan = planDetails[plan as keyof typeof planDetails] || planDetails.king;
+
+  // Clear caches when payment page loads to ensure fresh data
+  useEffect(() => {
+    const clearCachesOnLoad = async () => {
+      console.log('💳 Payment page loaded, clearing caches to ensure fresh data');
+      await clearCachesOnly();
+    };
+    clearCachesOnLoad();
+  }, []);
 
   const handlePayment = async () => {
     setIsLoading(true);

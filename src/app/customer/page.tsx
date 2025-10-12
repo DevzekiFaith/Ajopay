@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import DashboardShell from "@/components/dashboard/Shell";
-import { clearCachesOnPaymentSuccess } from "@/lib/cache-clear";
+import { clearCachesOnPaymentSuccess, clearCachesOnly } from "@/lib/cache-clear";
 import Image from "next/image";
 // Removed unused import: Link
 import { useForm } from "react-hook-form";
@@ -241,8 +241,25 @@ export default function CustomerPage() {
   };
 
   useEffect(() => {
-    // Clear caches if payment success is detected
-    clearCachesOnPaymentSuccess();
+    // Clear caches if payment success is detected (without reload)
+    const checkAndClearCaches = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isPaymentSuccess = urlParams.get('payment') === 'success';
+      
+      if (isPaymentSuccess) {
+        console.log('💰 Payment success detected on customer page, clearing caches (no reload)...');
+        await clearCachesOnly();
+        // Remove the payment success parameter from URL to prevent repeated clearing
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('payment');
+        newUrl.searchParams.delete('redirectTo');
+        window.history.replaceState({}, '', newUrl.toString());
+      } else {
+        clearCachesOnPaymentSuccess();
+      }
+    };
+    
+    checkAndClearCaches();
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

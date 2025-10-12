@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import Image from "next/image";
-import { clearCachesOnPaymentSuccess } from "@/lib/cache-clear";
+import { clearCachesAndRedirect } from "@/lib/cache-clear";
 
 export default function SignInPage() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -32,8 +32,7 @@ export default function SignInPage() {
 
   // Prefill from localStorage and check for payment success
   useEffect(() => {
-    // Only clear cache when payment success is detected
-    clearCachesOnPaymentSuccess();
+    // Note: Cache clearing is handled in the sign-in logic, not here to prevent multiple refreshes
     
     try {
       const lastEmail = localStorage.getItem("ajopay_last_email");
@@ -190,6 +189,22 @@ export default function SignInPage() {
       const params = new URLSearchParams(window.location.search);
       const redirectTo = params.get('redirectTo') || '/dashboard';
       const isNewUser = params.get('newUser') === 'true';
+      const isPaymentSuccess = params.get('payment') === 'success';
+      
+      // If it's a payment success, clear caches and redirect (single redirect)
+      if (isPaymentSuccess) {
+        console.log('💰 Payment success detected during sign-in, clearing caches before redirect');
+        await clearCachesAndRedirect(redirectTo);
+        return;
+      }
+      
+      // If it's a subscription payment redirect, clear caches before going to payment page
+      const isSubscriptionRedirect = params.get('plan') && params.get('amount') && params.get('redirectTo') === '/payment';
+      if (isSubscriptionRedirect) {
+        console.log('💳 Subscription payment redirect detected, clearing caches before payment');
+        await clearCachesAndRedirect(redirectTo);
+        return;
+      }
       
       // If it's a new user and no specific redirect, send them to home page to choose plan
       if (isNewUser && !params.get('redirectTo')) {

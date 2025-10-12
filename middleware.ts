@@ -32,6 +32,16 @@ export async function middleware(request: NextRequest) {
 
     // Create a response object that we can modify
     const response = NextResponse.next();
+    
+    // Check if this is a payment success request and add cache clearing headers
+    const isPaymentSuccess = request.nextUrl.searchParams.get('payment') === 'success';
+    if (isPaymentSuccess) {
+      console.log('💰 Payment success detected in middleware, adding cache clearing headers');
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('Surrogate-Control', 'no-store');
+    }
 
     // Create a Supabase client configured to use cookies
     const supabase = createServerClient(

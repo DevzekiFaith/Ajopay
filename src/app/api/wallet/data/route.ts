@@ -88,11 +88,13 @@ export async function GET() {
           isNewWallet: true
         });
         
-        // Add cache control headers to prevent caching of wallet data
-        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        // Add aggressive cache control headers to prevent caching of wallet data
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
         response.headers.set('Pragma', 'no-cache');
         response.headers.set('Expires', '0');
         response.headers.set('Surrogate-Control', 'no-store');
+        response.headers.set('Last-Modified', new Date().toUTCString());
+        response.headers.set('ETag', `"${Date.now()}"`);
         
         return response;
       } else {
@@ -138,11 +140,13 @@ export async function GET() {
         isNewWallet: false
       });
       
-      // Add cache control headers to prevent caching of wallet data
-      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      // Add aggressive cache control headers to prevent caching of wallet data
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
       response.headers.set('Surrogate-Control', 'no-store');
+      response.headers.set('Last-Modified', new Date().toUTCString());
+      response.headers.set('ETag', `"${Date.now()}"`);
       
       return response;
     }

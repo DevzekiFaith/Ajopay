@@ -1,17 +1,28 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { clearCachesOnly } from "@/lib/cache-clear";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = getSupabaseBrowserClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Clear caches when sign-up page loads (especially for subscription flow)
+  useEffect(() => {
+    const clearCachesOnLoad = async () => {
+      console.log('📝 Sign-up page loaded, clearing caches to ensure fresh data');
+      await clearCachesOnly();
+    };
+    clearCachesOnLoad();
+  }, []);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -25,8 +36,19 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message);
     } else {
-      // Redirect new users to subscription plan selection
-      router.push("/?newUser=true");
+      // Check if this is a subscription sign-up
+      const plan = searchParams.get('plan');
+      const amount = searchParams.get('amount');
+      const redirectTo = searchParams.get('redirectTo');
+      
+      if (plan && amount && redirectTo === '/payment') {
+        // This is a subscription sign-up, redirect to payment page
+        console.log('💳 Subscription sign-up completed, redirecting to payment');
+        router.push(`/payment?plan=${plan}&amount=${amount}&amount_kobo=${parseInt(amount) * 100}`);
+      } else {
+        // Regular sign-up, redirect to plan selection
+        router.push("/?newUser=true");
+      }
     }
   };
 

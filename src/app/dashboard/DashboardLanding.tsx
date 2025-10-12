@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { clearCachesOnPaymentSuccess } from "@/lib/cache-clear";
+import { clearCachesOnPaymentSuccess, clearCachesOnly } from "@/lib/cache-clear";
 import { SavingsGoals } from "@/components/Savings/SavingsGoals";
 import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
@@ -116,8 +116,25 @@ function CustomerSection() {
 
   // Load current user and profile, then subscribe for live updates
   useEffect(() => {
-    // Clear caches if payment success is detected
-    clearCachesOnPaymentSuccess();
+    // Clear caches if payment success is detected (without reload)
+    const checkAndClearCaches = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isPaymentSuccess = urlParams.get('payment') === 'success';
+      
+      if (isPaymentSuccess) {
+        console.log('💰 Payment success detected on dashboard, clearing caches (no reload)...');
+        await clearCachesOnly();
+        // Remove the payment success parameter from URL to prevent repeated clearing
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('payment');
+        newUrl.searchParams.delete('redirectTo');
+        window.history.replaceState({}, '', newUrl.toString());
+      } else {
+        clearCachesOnPaymentSuccess();
+      }
+    };
+    
+    checkAndClearCaches();
     
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let contribChannel: ReturnType<typeof supabase.channel> | null = null;

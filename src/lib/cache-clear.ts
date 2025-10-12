@@ -92,11 +92,33 @@ export const clearCachesAndReload = async (): Promise<void> => {
 };
 
 /**
- * Check if payment success is detected in URL and clear caches if so
+ * Check if payment success is detected in URL and clear caches if so (without reload)
  */
 export const clearCachesOnPaymentSuccess = async (): Promise<void> => {
   if (typeof window !== 'undefined' && window.location.search.includes('payment=success')) {
-    console.log('💰 Payment success detected, clearing all caches...');
-    await clearCachesAndReload();
+    console.log('💰 Payment success detected, clearing caches (no reload)...');
+    await clearAllCaches();
   }
+};
+
+/**
+ * Clear caches and redirect to a specific URL after payment success (single redirect)
+ */
+export const clearCachesAndRedirect = async (redirectUrl: string): Promise<void> => {
+  console.log('🔄 Clearing caches before redirect to:', redirectUrl);
+  await clearAllCaches();
+  
+  // Add a small delay to ensure cache clearing is complete
+  setTimeout(() => {
+    console.log('✅ Cache clearing complete, redirecting to:', redirectUrl);
+    window.location.href = redirectUrl;
+  }, 100);
+};
+
+/**
+ * Clear caches without any reload or redirect (for use on destination pages)
+ */
+export const clearCachesOnly = async (): Promise<void> => {
+  console.log('🔄 Clearing caches only (no reload/redirect)...');
+  await clearAllCaches();
 };
