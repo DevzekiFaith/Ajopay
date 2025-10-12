@@ -27,38 +27,31 @@ export default function SignInPage() {
     return isSignup ? base && fullName.trim().length >= 2 : base;
   }, [isEmailValid, password, isSignup, confirmPassword, fullName]);
 
-  // Aggressively clear all caches to ensure fresh content
-  const clearAllCaches = async () => {
-    if ('serviceWorker' in navigator && 'caches' in window) {
-      try {
-        // Unregister all service workers
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (let registration of registrations) {
-          await registration.unregister();
-          console.log('Service worker unregistered');
-        }
-        
-        // Clear all caches
-        const cacheNames = await caches.keys();
-        await Promise.all(
-          cacheNames.map(cacheName => caches.delete(cacheName))
-        );
-        console.log('All caches cleared');
-        
-        // Force reload to get fresh content
-        if (window.location.search.includes('payment=success')) {
+  // Clear caches only when payment success is detected
+  const clearCachesOnPaymentSuccess = async () => {
+    if (window.location.search.includes('payment=success')) {
+      if ('serviceWorker' in navigator && 'caches' in window) {
+        try {
+          // Only clear caches when payment success is detected
+          const cacheNames = await caches.keys();
+          await Promise.all(
+            cacheNames.map(cacheName => caches.delete(cacheName))
+          );
+          console.log('Caches cleared after payment success');
+          
+          // Force reload to get fresh content
           window.location.reload();
+        } catch (error) {
+          console.log('Could not clear caches:', error);
         }
-      } catch (error) {
-        console.log('Could not clear caches:', error);
       }
     }
   };
 
   // Prefill from localStorage and check for payment success
   useEffect(() => {
-    // Clear cache on page load to ensure fresh content
-    clearAllCaches();
+    // Only clear cache when payment success is detected
+    clearCachesOnPaymentSuccess();
     
     try {
       const lastEmail = localStorage.getItem("ajopay_last_email");

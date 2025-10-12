@@ -88,33 +88,38 @@ export default function MonitoringDashboard() {
     loadMetrics();
   }, [timeRange]);
 
-  // Add real-time updates
+  // Add real-time updates with proper debouncing
   useEffect(() => {
+    let refreshTimeout: NodeJS.Timeout | null = null;
+    
+    const debouncedRefresh = () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      refreshTimeout = setTimeout(() => {
+        loadMetrics();
+      }, 3000); // 3 second debounce for monitoring data
+    };
+
     const channel = supabase
       .channel("monitoring-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "contributions" },
-        () => {
-          // Debounce the refresh to avoid too many updates
-          setTimeout(() => {
-            loadMetrics();
-          }, 1000);
-        }
+        debouncedRefresh
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "profiles" },
-        () => {
-          setTimeout(() => {
-            loadMetrics();
-          }, 1000);
-        }
+        debouncedRefresh
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
     };
   }, [timeRange]);
 

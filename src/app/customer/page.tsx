@@ -275,11 +275,43 @@ export default function CustomerPage() {
     }
   }, []);
 
-  // Realtime: refresh data when contributions for this user change
+  // Realtime: refresh data when contributions for this user change (with debouncing)
   useEffect(() => {
     let contributionsChannel: any = null;
     let settingsChannel: any = null;
     let transactionsChannel: any = null;
+    let refreshTimeout: NodeJS.Timeout | null = null;
+    let walletUpdateTimeout: NodeJS.Timeout | null = null;
+    
+    const debouncedRefresh = () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      refreshTimeout = setTimeout(async () => {
+        await loadData();
+      }, 2000); // 2 second debounce
+    };
+
+    const debouncedWalletUpdate = () => {
+      if (walletUpdateTimeout) {
+        clearTimeout(walletUpdateTimeout);
+      }
+      walletUpdateTimeout = setTimeout(async () => {
+        try {
+          const walletRes = await fetch('/api/wallet/data', { cache: 'no-store' });
+          if (walletRes.ok) {
+            const walletData = await walletRes.json();
+            if (walletData.wallet) {
+              setWalletNaira(Math.round(walletData.wallet.balance_kobo / 100));
+              setWalletPulse(true);
+              setTimeout(() => setWalletPulse(false), 600);
+            }
+          }
+        } catch (error) {
+          console.error('Error updating wallet balance:', error);
+        }
+      }, 1000); // 1 second debounce for wallet updates
+    };
     
     (async () => {
       const {
@@ -287,7 +319,7 @@ export default function CustomerPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
       
-      // Subscribe to contributions changes
+      // Subscribe to contributions changes with debouncing
       contributionsChannel = supabase
         .channel("realtime:contributions:self")
         .on(
@@ -317,56 +349,35 @@ export default function CustomerPage() {
                     } catch {}
                     setJustMarked(true);
                     setTimeout(() => setJustMarked(false), 900);
+                    
+                    // Show toast immediately for new contributions
+                    toast.success("Contribution recorded");
                   }
                 }
               }
             } catch { }
 
-            // Refresh data only for non-insert events to avoid potential policy recursion on immediate re-read
+            // Use debounced refresh for non-insert events
             if (payload?.eventType !== "INSERT") {
-              await loadData();
+              debouncedRefresh();
             }
+            
             // Pulse wallet subtly
             try {
               setWalletPulse(true);
               setTimeout(() => setWalletPulse(false), 600);
             } catch { }
-            // Toast if today's contribution was recorded
-            try {
-              if (payload?.eventType === "INSERT") {
-                const contributedAt = payload?.new?.contributed_at as string | undefined;
-                const todayStr = new Date().toISOString().slice(0, 10);
-                if (contributedAt === todayStr) {
-                  toast.success("Contribution recorded");
-                }
-              }
-            } catch { }
           }
         )
         .subscribe();
 
-      // Subscribe to transactions changes for real-time wallet balance updates
-      const transactionsChannel = supabase
+      // Subscribe to transactions changes with debouncing
+      transactionsChannel = supabase
         .channel("realtime:transactions:self")
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${user.id}` },
-          async (payload: any) => {
-            try {
-              // Refresh wallet balance when transactions change
-              const walletRes = await fetch('/api/wallet/data', { cache: 'no-store' });
-              if (walletRes.ok) {
-                const walletData = await walletRes.json();
-                if (walletData.wallet) {
-                  setWalletNaira(Math.round(walletData.wallet.balance_kobo / 100));
-                  setWalletPulse(true);
-                  setTimeout(() => setWalletPulse(false), 600);
-                }
-              }
-            } catch (error) {
-              console.error('Error updating wallet balance:', error);
-            }
-          }
+          debouncedWalletUpdate
         )
         .subscribe();
 
@@ -407,6 +418,10 @@ export default function CustomerPage() {
       if (contributionsChannel) supabase.removeChannel(contributionsChannel);
       if (settingsChannel) supabase.removeChannel(settingsChannel);
       if (transactionsChannel) supabase.removeChannel(transactionsChannel);
+      
+      // Clear any pending timeouts
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      if (walletUpdateTimeout) clearTimeout(walletUpdateTimeout);
     };
   }, [supabase]);
 

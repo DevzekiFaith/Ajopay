@@ -63,24 +63,33 @@ export function PersonalHealthDashboard() {
     loadPersonalMetrics();
   }, []);
 
-  // Add real-time updates for personal metrics
+  // Add real-time updates for personal metrics with proper debouncing
   useEffect(() => {
+    let refreshTimeout: NodeJS.Timeout | null = null;
+    
+    const debouncedRefresh = () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      refreshTimeout = setTimeout(() => {
+        loadPersonalMetrics();
+      }, 2000); // 2 second debounce for personal metrics
+    };
+
     const channel = supabase
       .channel("personal-health-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "contributions" },
-        () => {
-          // Debounce the refresh to avoid too many updates
-          setTimeout(() => {
-            loadPersonalMetrics();
-          }, 1000);
-        }
+        debouncedRefresh
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
     };
   }, []);
 

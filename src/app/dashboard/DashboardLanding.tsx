@@ -175,52 +175,44 @@ function CustomerSection() {
           )
           .subscribe();
 
-        // Realtime: update wallet when contributions or transactions change for this user
+        // Realtime: update wallet when contributions or transactions change for this user (with debouncing)
+        let walletUpdateTimeout: NodeJS.Timeout | null = null;
+        
+        const debouncedWalletUpdate = () => {
+          if (walletUpdateTimeout) {
+            clearTimeout(walletUpdateTimeout);
+          }
+          walletUpdateTimeout = setTimeout(async () => {
+            try {
+              // Use wallet API endpoint to get real balance including commissions and withdrawals
+              const res = await fetch('/api/wallet/data', { cache: 'no-store' });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.wallet) {
+                  setWalletTotalNaira(Math.round(data.wallet.balance_kobo / 100));
+                  setTodayNaira(data.todayNaira || 0);
+                  setWalletPulse(true);
+                  setTimeout(() => setWalletPulse(false), 600);
+
+                  // Update advanced features when wallet changes
+                  await loadAdvancedFeaturesData(uid);
+                }
+              }
+            } catch { }
+          }, 1500); // 1.5 second debounce
+        };
+
         contribChannel = supabase
           .channel("realtime:contributions:self:landing")
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "contributions", filter: `user_id=eq.${uid}` },
-            async (payload) => {
-              try {
-                // Use wallet API endpoint to get real balance including commissions and withdrawals
-                const res = await fetch('/api/wallet/data', { cache: 'no-store' });
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data.wallet) {
-                    setWalletTotalNaira(Math.round(data.wallet.balance_kobo / 100));
-                    setTodayNaira(data.todayNaira || 0);
-                    setWalletPulse(true);
-                    setTimeout(() => setWalletPulse(false), 600);
-
-                    // Update advanced features when wallet changes
-                    await loadAdvancedFeaturesData(uid);
-                  }
-                }
-              } catch { }
-            }
+            debouncedWalletUpdate
           )
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${uid}` },
-            async (payload) => {
-              try {
-                // Use wallet API endpoint to get real balance including commissions and withdrawals
-                const res = await fetch('/api/wallet/data', { cache: 'no-store' });
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data.wallet) {
-                    setWalletTotalNaira(Math.round(data.wallet.balance_kobo / 100));
-                    setTodayNaira(data.todayNaira || 0);
-                    setWalletPulse(true);
-                    setTimeout(() => setWalletPulse(false), 600);
-
-                    // Update advanced features when wallet changes
-                    await loadAdvancedFeaturesData(uid);
-                  }
-                }
-              } catch { }
-            }
+            debouncedWalletUpdate
           )
           .subscribe();
 
@@ -264,6 +256,11 @@ function CustomerSection() {
       }
       if (featuresChannel) {
         supabase.removeChannel(featuresChannel);
+      }
+      
+      // Clear any pending wallet update timeout
+      if (walletUpdateTimeout) {
+        clearTimeout(walletUpdateTimeout);
       }
     };
   }, [supabase]);
