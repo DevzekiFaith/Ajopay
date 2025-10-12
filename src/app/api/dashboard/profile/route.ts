@@ -43,11 +43,19 @@ export async function GET() {
       .reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
     const todayNaira = Math.round(todayKobo / 100);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       profile: profile || null,
       walletTotalNaira,
       todayNaira,
     });
+    
+    // Add cache control headers to prevent caching of profile data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
+    
+    return response;
   } catch (error: any) {
     console.error("Server error:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });

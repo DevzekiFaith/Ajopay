@@ -76,7 +76,7 @@ export async function GET() {
           return NextResponse.json({ error: createError.message }, { status: 500 });
         }
 
-        return NextResponse.json({
+        const response = NextResponse.json({
           wallet: {
             ...newWallet,
             total_contributed_kobo: totalDeposited,
@@ -87,6 +87,14 @@ export async function GET() {
           totalContributions,
           isNewWallet: true
         });
+        
+        // Add cache control headers to prevent caching of wallet data
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        response.headers.set('Expires', '0');
+        response.headers.set('Surrogate-Control', 'no-store');
+        
+        return response;
       } else {
         console.error('Error fetching wallet:', walletError);
         return NextResponse.json({ error: walletError.message }, { status: 500 });
@@ -116,8 +124,8 @@ export async function GET() {
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
 
-      // Return updated wallet data
-      return NextResponse.json({
+      // Return updated wallet data with no-cache headers
+      const response = NextResponse.json({
         wallet: {
           ...walletData,
           balance_kobo: actualBalance,
@@ -129,6 +137,14 @@ export async function GET() {
         totalContributions,
         isNewWallet: false
       });
+      
+      // Add cache control headers to prevent caching of wallet data
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('Surrogate-Control', 'no-store');
+      
+      return response;
     }
 
     return NextResponse.json({ error: "No wallet data found" }, { status: 404 });

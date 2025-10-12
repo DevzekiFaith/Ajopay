@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { clearCachesOnPaymentSuccess } from "@/lib/cache-clear";
 import { SavingsGoals } from "@/components/Savings/SavingsGoals";
 import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
@@ -115,6 +116,9 @@ function CustomerSection() {
 
   // Load current user and profile, then subscribe for live updates
   useEffect(() => {
+    // Clear caches if payment success is detected
+    clearCachesOnPaymentSuccess();
+    
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let contribChannel: ReturnType<typeof supabase.channel> | null = null;
     let featuresChannel: ReturnType<typeof supabase.channel> | null = null;

@@ -238,7 +238,7 @@ export async function GET() {
     }
     const streak = s;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       walletNaira,
       history: hist ?? [],
       last7Naira,
@@ -246,6 +246,14 @@ export async function GET() {
       sparkPoints,
       streak,
     });
+    
+    // Add cache control headers to prevent caching of customer data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
+    
+    return response;
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });
   }

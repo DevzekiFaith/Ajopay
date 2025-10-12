@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import Image from "next/image";
+import { clearCachesOnPaymentSuccess } from "@/lib/cache-clear";
 
 export default function SignInPage() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -27,26 +28,7 @@ export default function SignInPage() {
     return isSignup ? base && fullName.trim().length >= 2 : base;
   }, [isEmailValid, password, isSignup, confirmPassword, fullName]);
 
-  // Clear caches only when payment success is detected
-  const clearCachesOnPaymentSuccess = async () => {
-    if (window.location.search.includes('payment=success')) {
-      if ('serviceWorker' in navigator && 'caches' in window) {
-        try {
-          // Only clear caches when payment success is detected
-          const cacheNames = await caches.keys();
-          await Promise.all(
-            cacheNames.map(cacheName => caches.delete(cacheName))
-          );
-          console.log('Caches cleared after payment success');
-          
-          // Force reload to get fresh content
-          window.location.reload();
-        } catch (error) {
-          console.log('Could not clear caches:', error);
-        }
-      }
-    }
-  };
+  // Use the comprehensive cache clearing utility
 
   // Prefill from localStorage and check for payment success
   useEffect(() => {
