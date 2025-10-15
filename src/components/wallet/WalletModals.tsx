@@ -8,21 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
   X, 
-  Send, 
-  Download, 
-  Upload, 
-  ArrowUpRight, 
   QrCode, 
   Copy, 
   CreditCard,
   Smartphone,
   Banknote,
-  Globe,
   Shield,
-  CheckCircle,
-  AlertCircle,
-  Bitcoin,
-  Coins
+  Bitcoin
 } from "lucide-react";
 import { toast } from "sonner";
 

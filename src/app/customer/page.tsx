@@ -1053,7 +1053,7 @@ export default function CustomerPage() {
         <Tabs value={tab} onValueChange={(v) => {
           setTab(v as any);
           if (v === 'analytics') {
-            trackFeatureUsed('analytics_dashboard', { userId });
+            trackFeatureUsed('analytics_dashboard', userId || undefined);
           }
         }} className="w-full">
           <TabsList className="flex flex-wrap gap-2 w-full">
@@ -1288,7 +1288,7 @@ export default function CustomerPage() {
                 </CardHeader>
                 <CardContent>
                   <LiveAnalyticsDashboard 
-                    userId={userId}
+                    userId={userId || undefined}
                     walletNaira={walletNaira}
                     history={history}
                     streak={streak}
