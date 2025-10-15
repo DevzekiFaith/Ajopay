@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import BackButton from "@/components/BackButton";
 import Script from "next/script";
@@ -12,19 +11,11 @@ import { ConditionalNav } from "@/components/ConditionalNav";
 import { Footer } from "@/components/Footer";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import Chatbot from "@/components/AI/Chatbot";
 
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
+// Using system fonts to avoid Google Fonts loading issues
+const fontClasses = "font-sans";
 
 export const metadata: Metadata = {
   title: {
@@ -134,8 +125,6 @@ export default async function RootLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  
-  const fontClasses = [inter.variable, jetbrainsMono.variable].filter(Boolean).join(' ');
   
   return (
     <html lang="en" className={fontClasses}>
@@ -257,6 +246,8 @@ export default async function RootLayout({
           <Toaster richColors position="top-right" closeButton />
           <SpeedInsights />
           <Analytics />
+          {/* AI Chatbot - only show for authenticated users */}
+          {user && <Chatbot userId={user.id} />}
         </ThemeProvider>
         {/* Service Worker temporarily disabled to fix caching issues */}
         <Script id="sw-register" strategy="afterInteractive">{

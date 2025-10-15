@@ -8,12 +8,13 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { clearCachesOnPaymentSuccess, clearCachesOnly } from "@/lib/cache-clear";
+import { trackPageView, trackAppOpened } from "@/lib/analytics";
 import { SavingsGoals } from "@/components/Savings/SavingsGoals";
 import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
 import { SavingsCircles } from "@/components/Circle/SavingsCircle";
 import { UserCommissionDashboard } from "@/components/Commission/UserCommissionDashboard";
-import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart } from "lucide-react";
+import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart, Bell, Brain } from "lucide-react";
 
 type Role = "customer" | "admin";
 
@@ -134,9 +135,13 @@ function CustomerSection() {
       }
     };
     
-    checkAndClearCaches();
-    
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+           checkAndClearCaches();
+           
+           // Track page view and app opened
+           trackPageView('/dashboard');
+           trackAppOpened();
+           
+           let channel: ReturnType<typeof supabase.channel> | null = null;
     let contribChannel: ReturnType<typeof supabase.channel> | null = null;
     let featuresChannel: ReturnType<typeof supabase.channel> | null = null;
     let walletUpdateTimeout: NodeJS.Timeout | null = null;

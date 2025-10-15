@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       amount: amount_kobo, // paystack expects kobo
       currency: "NGN",
       metadata: { user_id },
-      callback_url: publicUrl ? `${publicUrl}/sign-in?payment=success&redirectTo=/customer` : undefined,
+      callback_url: publicUrl ? `${publicUrl}/sign-up?payment=success&redirectTo=/customer` : undefined,
     };
     
     console.log("Paystack payload:", JSON.stringify(paystackPayload, null, 2));

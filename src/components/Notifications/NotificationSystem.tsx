@@ -31,19 +31,39 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   useEffect(() => {
     if (!userId) return;
 
-    // Load existing notifications
+    // Load existing notifications from both tables
     const loadNotifications = async () => {
-      const { data } = await supabase
+      // Load from regular notifications table
+      const { data: regularNotifications } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (data) {
-        setNotifications(data as Notification[]);
-        setUnreadCount((data as Notification[]).filter(n => !n.read).length);
-      }
+      // Load from smart notifications table
+      const { data: smartNotifications } = await supabase
+        .from("smart_notifications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      // Combine and sort notifications
+      const allNotifications = [
+        ...(regularNotifications || []).map(n => ({
+          ...n,
+          read: n.read || false // Ensure read field exists
+        })),
+        ...(smartNotifications || []).map(n => ({
+          ...n,
+          read: false // Smart notifications don't have read field, default to false
+        }))
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+       .slice(0, 20);
+
+      setNotifications(allNotifications as Notification[]);
+      setUnreadCount(allNotifications.filter(n => !n.read).length);
     };
 
     loadNotifications();
@@ -118,6 +138,40 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
       }
     );
     notificationsChannel.subscribe();
+
+    // Listen for smart notifications
+    const smartNotificationsChannel = supabase.channel("smart-notifications");
+    smartNotificationsChannel.on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "smart_notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload: any) => {
+        const newNotification = payload.new as Notification;
+
+        // Add to notifications list
+        setNotifications(prev => [newNotification, ...prev.slice(0, 19)]);
+        setUnreadCount(prev => prev + 1);
+
+        // Show toast notification for smart notifications
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10">
+              {getNotificationIcon(newNotification.type)}
+            </div>
+            <div>
+              <div className="font-medium">{newNotification.title}</div>
+              {newNotification.message && <div className="text-sm opacity-80">{newNotification.message}</div>}
+            </div>
+          </div>,
+          { duration: 4000 }
+        );
+      }
+    );
+    smartNotificationsChannel.subscribe();
 
     // Listen for transaction changes
     const transactionsChannel = supabase.channel("transactions");
@@ -226,16 +280,31 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
     return () => {
       // cleanup channels
       try { supabase.removeChannel(notificationsChannel); } catch { /* ignore */ }
+      try { supabase.removeChannel(smartNotificationsChannel); } catch { /* ignore */ }
       try { supabase.removeChannel(transactionsChannel); } catch { /* ignore */ }
       try { supabase.removeChannel(walletChannel); } catch { /* ignore */ }
     };
   }, [userId, supabase]);
 
   const markAsRead = async (notificationId: string) => {
-    await supabase
+    // Try to update in regular notifications table first
+    const { error: regularError } = await supabase
       .from("notifications")
       .update({ read: true })
       .eq("id", notificationId);
+
+    // If not found in regular notifications, try smart notifications
+    if (regularError) {
+      const { error: smartError } = await supabase
+        .from("smart_notifications")
+        .update({ sent: true, sent_at: new Date().toISOString() })
+        .eq("id", notificationId);
+      
+      if (smartError) {
+        console.error("Failed to mark notification as read:", smartError);
+        return;
+      }
+    }
 
     setNotifications(prev =>
       prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -246,11 +315,19 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
   const markAllAsRead = async () => {
     if (!userId) return;
 
+    // Mark all regular notifications as read
     await supabase
       .from("notifications")
       .update({ read: true })
       .eq("user_id", userId)
       .eq("read", false);
+
+    // Mark all smart notifications as sent
+    await supabase
+      .from("smart_notifications")
+      .update({ sent: true, sent_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("sent", false);
 
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadCount(0);
@@ -269,6 +346,16 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
       case "commission":
         return <CreditCard className="w-4 h-4 text-purple-500" />;
       case "success":
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "savings_reminder":
+        return <Plus className="w-4 h-4 text-blue-500" />;
+      case "goal_progress":
+        return <TrendingUp className="w-4 h-4 text-purple-500" />;
+      case "low_activity":
+        return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+      case "milestone_reached":
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "payment_success":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       default:
         return <AlertCircle className="w-4 h-4 text-blue-500" />;

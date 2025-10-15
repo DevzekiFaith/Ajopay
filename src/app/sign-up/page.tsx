@@ -24,6 +24,23 @@ export default function SignUpPage() {
     clearCachesOnLoad();
   }, []);
 
+  // Handle payment success redirect
+  useEffect(() => {
+    const handlePaymentSuccess = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isPaymentSuccess = urlParams.get('payment') === 'success';
+      const redirectTo = urlParams.get('redirectTo');
+      
+      if (isPaymentSuccess && redirectTo) {
+        console.log('💰 Payment success detected on sign-up page, will redirect after sign-up');
+        // Store the redirect info for after successful sign-up
+        sessionStorage.setItem('payment_success_redirect', redirectTo);
+      }
+    };
+    
+    handlePaymentSuccess();
+  }, []);
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -36,6 +53,17 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message);
     } else {
+      // Check if this is a payment success sign-up
+      const paymentSuccessRedirect = sessionStorage.getItem('payment_success_redirect');
+      if (paymentSuccessRedirect) {
+        console.log('💰 Payment success sign-up completed, redirecting to:', paymentSuccessRedirect);
+        sessionStorage.removeItem('payment_success_redirect');
+        // Clear caches before redirecting to ensure fresh data
+        await clearCachesOnly();
+        router.push(paymentSuccessRedirect);
+        return;
+      }
+      
       // Check if this is a subscription sign-up
       const plan = searchParams.get('plan');
       const amount = searchParams.get('amount');
@@ -63,7 +91,12 @@ export default function SignUpPage() {
           <div className="absolute -top-8 left-0 right-0 h-24 bg-gradient-to-b from-white/40 to-transparent dark:from-white/8" />
         </div>
         <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-purple-700 to-violet-500 bg-clip-text text-transparent">Create your account</h1>
-        <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300 text-center">Start digitizing microfinance contributions with Ajopay.</p>
+        <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300 text-center">
+          {searchParams.get('payment') === 'success' 
+            ? '🎉 Payment successful! Complete your account setup to access your dashboard.' 
+            : 'Start digitizing microfinance contributions with Ajopay.'
+          }
+        </p>
 
         <div className="mt-8 space-y-5">
           <div>

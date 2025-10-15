@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { AjoPaySpinnerCompact } from "@/components/ui/AjoPaySpinner";
 import { clearCachesOnly } from "@/lib/cache-clear";
+import { trackPageView, trackPaymentInitiated } from "@/lib/analytics";
 
 export default function PaymentPage() {
   const searchParams = useSearchParams();
@@ -51,14 +52,17 @@ export default function PaymentPage() {
 
   const currentPlan = planDetails[plan as keyof typeof planDetails] || planDetails.king;
 
-  // Clear caches when payment page loads to ensure fresh data
-  useEffect(() => {
-    const clearCachesOnLoad = async () => {
-      console.log('💳 Payment page loaded, clearing caches to ensure fresh data');
-      await clearCachesOnly();
-    };
-    clearCachesOnLoad();
-  }, []);
+         // Clear caches when payment page loads to ensure fresh data
+         useEffect(() => {
+           const clearCachesOnLoad = async () => {
+             console.log('💳 Payment page loaded, clearing caches to ensure fresh data');
+             await clearCachesOnly();
+           };
+           clearCachesOnLoad();
+           
+           // Track page view
+           trackPageView('/payment');
+         }, []);
 
   const handlePayment = async () => {
     setIsLoading(true);
@@ -68,13 +72,16 @@ export default function PaymentPage() {
       // First, check if user is authenticated
       const userResponse = await fetch('/api/auth/me');
       if (!userResponse.ok) {
-        // User not authenticated, redirect to sign-in with payment info
-        const redirectUrl = `/sign-in?plan=${plan}&amount=${amount}&amount_kobo=${amountKobo}&redirectTo=/payment&newUser=true`;
+        // User not authenticated, redirect to sign-up with payment info for new users
+        const redirectUrl = `/sign-up?plan=${plan}&amount=${amount}&amount_kobo=${amountKobo}&redirectTo=/payment&newUser=true`;
         router.push(redirectUrl);
         return;
       }
 
       const user = await userResponse.json();
+      
+      // Track payment initiation
+      trackPaymentInitiated(parseInt(amountKobo || '50000') / 100, user.id);
       
       // Initialize payment
       const response = await fetch('/api/payments/initialize', {

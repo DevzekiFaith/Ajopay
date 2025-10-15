@@ -5,6 +5,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import DashboardShell from "@/components/dashboard/Shell";
 import { clearCachesOnPaymentSuccess, clearCachesOnly } from "@/lib/cache-clear";
+import { trackPageView, trackAppOpened, trackFeatureUsed } from "@/lib/analytics";
 import Image from "next/image";
 // Removed unused import: Link
 import { useForm } from "react-hook-form";
@@ -38,7 +39,8 @@ import {
 } from "@/components/ui/alert-dialog";
 // Removed unused imports: SavingsGoals, Gamification, PeerChallenges, SavingsCircles
 import { PersonalHealthDashboard } from "@/components/Monitoring/PersonalHealthDashboard";
-import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff } from "lucide-react";
+import LiveAnalyticsDashboard from "@/components/AI/LiveAnalyticsDashboard";
+import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AfricanPatterns, AfricanGlassmorphismCard } from "@/components/wallet/AfricanPatterns";
 import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
@@ -69,6 +71,7 @@ export default function CustomerPage() {
   const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [walletType, setWalletType] = useState<'ngn' | 'crypto'>('ngn');
   const [balanceVisible, setBalanceVisible] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
   const autoMarkFiredRef = useRef<string | null>(null);
 
@@ -115,6 +118,7 @@ export default function CustomerPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setUserId(user.id);
       // Try Supabase Storage first (with proper error handling)
       try {
         const fileName = `${user.id}/settings.json`;
@@ -259,8 +263,13 @@ export default function CustomerPage() {
       }
     };
     
-    checkAndClearCaches();
-    loadData();
+           checkAndClearCaches();
+           
+           // Track page view and app opened
+           trackPageView('/customer');
+           trackAppOpened();
+           
+           loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1041,10 +1050,19 @@ export default function CustomerPage() {
           </Card>
         </motion.div>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
+        <Tabs value={tab} onValueChange={(v) => {
+          setTab(v as any);
+          if (v === 'analytics') {
+            trackFeatureUsed('analytics_dashboard', { userId });
+          }
+        }} className="w-full">
           <TabsList className="flex flex-wrap gap-2 w-full">
             <TabsTrigger value="history" className="flex-1 sm:flex-none">History</TabsTrigger>
             <TabsTrigger value="calendar" className="flex-1 sm:flex-none">Card Grid</TabsTrigger>
+            <TabsTrigger value="analytics" className="flex-1 sm:flex-none">
+              <BarChart3 className="h-4 w-4 mr-1" />
+              AI Insights
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="history">
             <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
@@ -1254,6 +1272,32 @@ export default function CustomerPage() {
                   })()}
                 </div>
               </div>
+            </motion.div>
+          </TabsContent>
+          <TabsContent value="analytics">
+            <motion.div 
+              whileHover={{ y: -2 }} 
+              transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}
+            >
+              <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-blue-500" />
+                    AI-Powered Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <LiveAnalyticsDashboard 
+                    userId={userId}
+                    walletNaira={walletNaira}
+                    history={history}
+                    streak={streak}
+                    last7Naira={last7Naira}
+                    prev7Naira={prev7Naira}
+                    sparkPoints={sparkPoints}
+                  />
+                </CardContent>
+              </Card>
             </motion.div>
           </TabsContent>
         </Tabs>

@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import { trackPaymentCompleted } from "@/lib/analytics";
 
 // POST /api/payments/webhook (Paystack)
 export async function POST(req: NextRequest) {
   try {
     console.log("Paystack webhook received");
+    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
     
     const secret = process.env.PAYSTACK_SECRET_KEY as string;
     console.log("Environment check:");
     console.log("- PAYSTACK_SECRET_KEY exists:", !!secret);
     console.log("- PAYSTACK_SECRET_KEY length:", secret ? secret.length : 0);
+    console.log("- PAYSTACK_SECRET_KEY prefix:", secret ? secret.substring(0, 10) + "..." : "N/A");
     
     if (!secret) {
       console.error("PAYSTACK_SECRET_KEY is missing from environment variables");
@@ -31,6 +34,9 @@ export async function POST(req: NextRequest) {
     const evt = JSON.parse(raw);
     const event = evt?.event as string;
     const data = evt?.data || {};
+    
+    console.log("Webhook event:", event);
+    console.log("Webhook data:", JSON.stringify(data, null, 2));
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
@@ -86,6 +92,9 @@ export async function POST(req: NextRequest) {
       }
 
       console.log(`✅ Wallet topup recorded: ${topupResult.id}`);
+
+      // Track payment completion in analytics
+      trackPaymentCompleted(amount_naira, String(provider_txn_id), user_id);
 
       // Create enhanced real-time notification entry
       const isLargeDeposit = amount_naira >= 500; // 500 NGN or more

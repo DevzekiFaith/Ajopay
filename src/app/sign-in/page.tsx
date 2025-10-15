@@ -206,6 +206,14 @@ export default function SignInPage() {
         return;
       }
       
+      // If it's a payment success redirect, clear caches before going to customer page
+      const isPaymentSuccessRedirect = params.get('payment') === 'success' && params.get('redirectTo') === '/customer';
+      if (isPaymentSuccessRedirect) {
+        console.log('💰 Payment success redirect detected, clearing caches before customer page');
+        await clearCachesAndRedirect(redirectTo);
+        return;
+      }
+      
       // If it's a new user and no specific redirect, send them to home page to choose plan
       if (isNewUser && !params.get('redirectTo')) {
         window.location.href = '/?newUser=true';
