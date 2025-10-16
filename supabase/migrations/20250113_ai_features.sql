@@ -88,3 +88,5 @@ GRANT ALL ON user_analytics TO anon, authenticated;
 GRANT ALL ON smart_notifications TO anon, authenticated;
 
 
+
+

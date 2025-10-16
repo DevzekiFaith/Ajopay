@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import DashboardShell from "@/components/dashboard/Shell";
 import { clearCachesOnPaymentSuccess, clearCachesOnly } from "@/lib/cache-clear";
 import { trackPageView, trackAppOpened, trackFeatureUsed } from "@/lib/analytics";
+import { useSubscription } from "@/hooks/useSubscription";
+import { TrialRestriction } from "@/components/TrialRestriction";
 import Image from "next/image";
 // Removed unused import: Link
 import { useForm } from "react-hook-form";
@@ -73,7 +75,25 @@ export default function CustomerPage() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
+  
+  // Subscription and trial management
+  const { subscriptionStatus, hasActiveAccess, checkActionPermission } = useSubscription();
+  const [showTrialRestriction, setShowTrialRestriction] = useState(false);
+  const [restrictedAction, setRestrictedAction] = useState<string | null>(null);
   const autoMarkFiredRef = useRef<string | null>(null);
+
+  // Check trial restrictions before allowing actions
+  const checkTrialRestriction = async (actionType: string) => {
+    if (!userId) return false;
+    
+    const permission = await checkActionPermission(actionType);
+    if (!permission.allowed) {
+      setRestrictedAction(actionType);
+      setShowTrialRestriction(true);
+      return false;
+    }
+    return true;
+  };
 
   // Use schema INPUT type to align with zodResolver typing (coerce.number input is unknown)
   type ContributionFormValues = z.input<typeof ContributionSchema>;
@@ -1310,6 +1330,15 @@ export default function CustomerPage() {
         >
           <PersonalHealthDashboard />
         </motion.div>
+
+        {/* Trial Restriction Modal */}
+        {showTrialRestriction && userId && (
+          <TrialRestriction
+            userId={userId}
+            onUpgrade={() => window.location.href = '/api/payments/initialize?plan=king&amount=1200'}
+            onClose={() => setShowTrialRestriction(false)}
+          />
+        )}
 
         {/* Confirm mark dialog */}
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

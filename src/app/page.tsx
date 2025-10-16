@@ -540,282 +540,154 @@ export default function Home() {
         </motion.div>
 
 
-        {/* Enhanced Subscription Pricing Section */}
+        {/* African-Inspired Minimalist Subscription Section */}
+        
         <motion.div
-          className="max-w-7xl mx-auto mb-16 sm:mb-20 md:mb-24 px-2 sm:px-4"
+          className="max-w-4xl mx-auto mb-12 sm:mb-16 px-4 sm:px-6"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2.2, duration: 0.8 }}
         >
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 dark:text-gray-100 mb-2 sm:mb-3 md:mb-4">
-              Choose Your <span className="text-orange-600 dark:text-orange-400">Wealth Plan</span>
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
+              Start Your Wealth Journey
             </h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl max-w-3xl mx-auto px-2">
-              Start your empire today! Pay once, build forever. No hidden fees, no surprises!
+            <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg md:text-xl lg:text-2xl px-2">
+              Join the African wealth-building revolution
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-4xl mx-auto px-2 sm:px-4">
-            {/* Free Plan */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center">
+            {/* African Image */}
             <motion.div
-              className="relative p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl bg-white/80 backdrop-blur-sm border border-white/30 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.8)] hover:shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.9)] transition-all duration-300"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-lg overflow-hidden shadow-lg order-2 lg:order-1"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 2.3, duration: 0.8 }}
+            >
+              <Image
+                src="/A2.jpg"
+                alt="African wealth building"
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+              <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 text-white">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2">African Excellence</h3>
+                <p className="text-sm sm:text-base md:text-lg opacity-90">Building wealth, one step at a time</p>
+              </div>
+            </motion.div>
+
+            {/* Minimalist Card */}
+            <motion.div
+              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 md:p-8 shadow-sm order-1 lg:order-2"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 2.4, duration: 0.6 }}
-              whileHover={{ y: -5, scale: 1.02 }}
+              whileHover={{ y: -2 }}
             >
-              <div className="text-center">
-                <div className="text-5xl mb-4">FREE</div>
-                <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Foundation</h3>
-                <div className="text-5xl font-black text-gray-800 dark:text-gray-100 mb-2">₦0</div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Perfect for beginners</p>
-
-                {/* Feature List */}
-                <div className="space-y-3 mb-8 text-left">
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Basic savings wallet</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Daily contribution streaks</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Basic savings goals (3 goals)</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Join savings circles</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Basic gamification</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Email support</span>
-                  </div>
+              {/* Header */}
+              <div className="text-center mb-4 sm:mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  King Elite
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
+                  Ultimate African wealth building experience
+                </p>
+              </div>
+              
+              {/* Pricing */}
+              <div className="text-center mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  FREE
                 </div>
+                <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  for 4 days
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                  Then ₦1,200 one-time
+                </div>
+              </div>
 
+              {/* Features */}
+              <div className="mb-4 sm:mb-6">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-center text-sm sm:text-base">
+                  What's included
+                </h4>
+                <div className="space-y-2">
+                  {[
+                    "Unlimited savings goals",
+                    "Advanced analytics",
+                    "Peer challenges",
+                    "Savings circles"
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                      <div className="w-1 h-1 bg-gray-400 rounded-full mr-2 sm:mr-3 flex-shrink-0"></div>
+                      <span className="leading-relaxed">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div className="text-center">
                 <motion.a
-                  href="/sign-in"
-                  className="block w-full px-6 py-4 bg-gray-100 text-gray-700 font-semibold rounded-2xl hover:bg-gray-200 transition-colors duration-300"
+                  href="/sign-up?plan=king_elite_trial"
+                  className="inline-block w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors text-sm sm:text-base"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Start Free Now
+                  Start Free Trial
                 </motion.a>
-              </div>
-            </motion.div>
-
-
-            {/* King Plan - Most Popular */}
-            <motion.div
-              className="relative p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-orange-100/80 to-red-200/80 backdrop-blur-sm border border-orange-300/50 shadow-[12px_12px_24px_rgba(234,88,12,0.2),-12px_-12px_24px_rgba(255,255,255,0.8)] hover:shadow-[16px_16px_32px_rgba(234,88,12,0.3),-16px_-16px_32px_rgba(255,255,255,0.9)] transition-all duration-300 scale-105"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2.5, duration: 0.6 }}
-              whileHover={{ y: -8, scale: 1.08 }}
-            >
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-2 rounded-full text-sm font-bold">
-                  MOST POPULAR!
-                </span>
-              </div>
-              <div className="text-center">
-                <div className="text-5xl mb-4">KING</div>
-                <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Royal Elite</h3>
-                <div className="text-5xl font-black text-orange-600 dark:text-orange-400 mb-2">₦1,200</div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">One-time payment</p>
-
-                {/* Feature List */}
-                <div className="space-y-3 mb-8 text-left">
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700 font-medium">Everything in Free</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Unlimited savings goals</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Advanced gamification & badges</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Peer challenges & competitions</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Create & manage savings circles</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Personal health dashboard</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Advanced analytics & insights</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Crypto wallet integration</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Real-time notifications & sounds</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Priority customer support</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500 text-lg">✓</span>
-                    <span className="text-gray-700">Export data & reports</span>
-                  </div>
-                </div>
-
-                <motion.a
-                  href="/api/payments/initialize?plan=king&amount=1200"
-                  className="block w-full px-6 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-2xl hover:shadow-lg transition-all duration-300"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Pay ₦1,200 & Become King
-                </motion.a>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 sm:mt-3">
+                  No credit card required
+                </p>
               </div>
             </motion.div>
           </div>
-
-          {/* Payment Security & Benefits - Enhanced UI */}
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {/* Secure Payments - Glassmorphism */}
-            <motion.div
-              className="group relative p-8 rounded-3xl backdrop-blur-xl bg-white/30 border border-white/40 shadow-[0_8px_32px_rgba(34,197,94,0.1)] hover:shadow-[0_12px_40px_rgba(34,197,94,0.2)] transition-all duration-300 overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2.7, duration: 0.6 }}
-              whileHover={{ y: -8, scale: 1.02 }}
-            >
-              {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-green-100/20 to-emerald-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              {/* Icon with neumorphism */}
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 shadow-[8px_8px_16px_rgba(34,197,94,0.3),-8px_-8px_16px_rgba(255,255,255,0.8)] group-hover:shadow-[12px_12px_24px_rgba(34,197,94,0.4),-12px_-12px_24px_rgba(255,255,255,0.9)] transition-all duration-300 flex items-center justify-center">
-                  <span className="text-2xl">🔒</span>
-                </div>
-                <h4 className="font-bold text-gray-800 mb-3 text-lg">Secure Payments</h4>
-                <p className="text-gray-600 text-sm leading-relaxed">Bank-level security for all transactions</p>
-              </div>
-            </motion.div>
-
-            {/* Instant Access - Neumorphism */}
-            <motion.div
-              className="group relative p-8 rounded-3xl bg-white/80 backdrop-blur-sm border border-white/30 shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.8)] hover:shadow-[12px_12px_24px_rgba(0,0,0,0.15),-12px_-12px_24px_rgba(255,255,255,0.9)] transition-all duration-300"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2.8, duration: 0.6 }}
-              whileHover={{ y: -8, scale: 1.02 }}
-            >
-              {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-100/20 to-yellow-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl" />
-
-              {/* Icon with neumorphism */}
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-400 to-yellow-500 shadow-[8px_8px_16px_rgba(251,146,60,0.3),-8px_-8px_16px_rgba(255,255,255,0.8)] group-hover:shadow-[12px_12px_24px_rgba(251,146,60,0.4),-12px_-12px_24px_rgba(255,255,255,0.9)] transition-all duration-300 flex items-center justify-center">
-                  <span className="text-2xl">⚡</span>
-                </div>
-                <h4 className="font-bold text-gray-800 mb-3 text-lg">Instant Access</h4>
-                <p className="text-gray-600 text-sm leading-relaxed">Features unlock immediately after payment</p>
-              </div>
-            </motion.div>
-
-            {/* Lifetime Access - Glassmorphism */}
-            <motion.div
-              className="group relative p-8 rounded-3xl backdrop-blur-xl bg-white/30 border border-white/40 shadow-[0_8px_32px_rgba(168,85,247,0.1)] hover:shadow-[0_12px_40px_rgba(168,85,247,0.2)] transition-all duration-300 overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2.9, duration: 0.6 }}
-              whileHover={{ y: -8, scale: 1.02 }}
-            >
-              {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-100/20 to-violet-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              {/* Icon with neumorphism */}
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-400 to-violet-500 shadow-[8px_8px_16px_rgba(168,85,247,0.3),-8px_-8px_16px_rgba(255,255,255,0.8)] group-hover:shadow-[12px_12px_24px_rgba(168,85,247,0.4),-12px_-12px_24px_rgba(255,255,255,0.9)] transition-all duration-300 flex items-center justify-center">
-                  <span className="text-2xl">💎</span>
-                </div>
-                <h4 className="font-bold text-gray-800 mb-3 text-lg">Lifetime Access</h4>
-                <p className="text-gray-600 text-sm leading-relaxed">Pay once, enjoy forever - no recurring fees</p>
-              </div>
-              </motion.div>
-          </div>
-
-          <motion.div
-            className="text-center mt-12 p-6 rounded-2xl backdrop-blur-sm bg-white/20 border border-white/30 shadow-[0_4px_16px_rgba(0,0,0,0.1)]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 3.0, duration: 0.6 }}
-          >
-            <p className="text-gray-600 text-base sm:text-lg">
-              <span className="inline-block w-6 h-6 rounded-full bg-gradient-to-r from-orange-400 to-red-500 text-white text-sm flex items-center justify-center mr-2">💡</span>
-              <strong>Pro Tip:</strong> Start free, upgrade when you're ready! All payments are secure and instant!
-            </p>
-          </motion.div>
         </motion.div>
 
-        {/* Enhanced Final CTA */}
+
+        {/* African-Inspired Final CTA - Mobile Responsive */}
         <motion.div
-          className="text-center max-w-4xl mx-auto"
+          className="text-center max-w-4xl mx-auto px-4 sm:px-6"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2.8, duration: 0.8 }}
         >
-          <div className="relative p-12 rounded-3xl backdrop-blur-xl bg-white/30 border border-white/40 shadow-[0_25px_50px_-12px_rgba(147,51,234,0.15)]">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-800 dark:text-gray-100 mb-6">
-              Ready to Rise?
-          </h2>
-            <p className="text-gray-600 dark:text-gray-300 text-xl mb-10">
-              Join thousands building their empires!
-          </p>
-          
-          <motion.a
-            href="/sign-in"
-              className="group relative inline-block px-14 py-6 bg-gradient-to-r from-orange-600 to-red-600 rounded-3xl text-white font-bold text-2xl shadow-2xl hover:shadow-orange-900/30 transition-all duration-300 border border-orange-600/20"
-              whileHover={{ scale: 1.05, y: -3 }}
-            whileTap={{ scale: 0.95 }}
-          >
-              <span className="relative z-10 flex items-center gap-3">
-                Build Your Empire
-                <motion.span
-                  className="text-xl"
-                  animate={{ x: [0, 8, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+          <div className="relative overflow-hidden rounded-2xl shadow-xl h-64 sm:h-80 md:h-96 lg:h-[500px]">
+            {/* Background Image */}
+            <div className="absolute inset-0">
+              <Image
+                src="/fl9.jpg"
+                alt="African success and prosperity"
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 80vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-6 sm:p-8 lg:p-12 text-white h-full flex flex-col justify-center items-center">
+              <div className="max-w-2xl mx-auto text-center">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
+                  Ready to build your empire?
+                </h2>
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 opacity-90 leading-relaxed px-2">
+                  Join thousands of Africans building their wealth and creating lasting legacies
+                </p>
+                
+                <motion.a
+                  href="/sign-in"
+                  className="inline-block bg-white text-gray-900 font-bold px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 rounded-lg hover:bg-gray-100 transition-colors text-sm sm:text-base shadow-lg"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  →
-                </motion.span>
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </motion.a>
-          
-            <div className="mt-8 flex flex-wrap justify-center gap-6 text-gray-500 text-lg">
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Free to start!
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                No commitment!
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                Just build!
-              </span>
+                  Get Started Now
+                </motion.a>
+              </div>
             </div>
           </div>
         </motion.div>

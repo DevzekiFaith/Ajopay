@@ -19,23 +19,10 @@ export default function PaymentPage() {
   const amountKobo = searchParams.get('amount_kobo');
 
   const planDetails = {
-    free: { 
-      name: "Foundation", 
-      price: "₦0", 
-      features: [
-        "Basic savings wallet",
-        "Daily contribution streaks", 
-        "Basic savings goals (3 goals limit)",
-        "Join savings circles",
-        "Basic gamification",
-        "Email support"
-      ] 
-    },
     king: { 
-      name: "Royal Elite", 
+      name: "King Elite", 
       price: "₦1,200", 
       features: [
-        "Everything in Free",
         "Unlimited savings goals",
         "Advanced gamification & badges",
         "Peer challenges & competitions", 

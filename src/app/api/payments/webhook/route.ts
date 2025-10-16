@@ -173,6 +173,31 @@ export async function POST(req: NextRequest) {
         console.log(`💳 Wallet transaction record created for real-time updates`);
       }
 
+      // Convert trial to paid subscription if this is a subscription payment
+      if (amount_naira === 1200) { // King Elite subscription amount
+        try {
+          const { error: convertError } = await supabase
+            .from('user_subscriptions')
+            .update({
+              status: 'active',
+              subscription_started_at: new Date().toISOString(),
+              payment_reference: String(provider_txn_id),
+              amount_paid_kobo: amount_kobo,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user_id)
+            .eq('status', 'trial');
+
+          if (convertError) {
+            console.error('❌ Failed to convert trial to paid:', convertError);
+          } else {
+            console.log('✅ Trial converted to paid subscription for user:', user_id);
+          }
+        } catch (error) {
+          console.error('❌ Error converting trial:', error);
+        }
+      }
+
       // Optional: Auto-mark today's contribution if enabled
       const auto = (profile as any)?.settings?.customer_auto_mark === true;
       if (auto) {

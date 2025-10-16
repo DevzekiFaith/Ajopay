@@ -45,7 +45,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -64,12 +64,35 @@ export default function SignUpPage() {
         return;
       }
       
-      // Check if this is a subscription sign-up
+      // Check if this is a trial sign-up
       const plan = searchParams.get('plan');
       const amount = searchParams.get('amount');
       const redirectTo = searchParams.get('redirectTo');
       
-      if (plan && amount && redirectTo === '/payment') {
+      if (plan === 'king_elite_trial' && data.user) {
+        // This is a trial sign-up, create trial subscription and redirect to dashboard
+        console.log('🎯 Trial sign-up completed, creating trial subscription');
+        
+        // Create trial subscription
+        try {
+          const response = await fetch('/api/subscription/create-trial', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: data.user.id })
+          });
+          
+          if (response.ok) {
+            console.log('✅ Trial subscription created successfully');
+            router.push('/dashboard?trial=true');
+          } else {
+            console.error('❌ Failed to create trial subscription');
+            router.push('/dashboard');
+          }
+        } catch (error) {
+          console.error('❌ Error creating trial subscription:', error);
+          router.push('/dashboard');
+        }
+      } else if (plan && amount && redirectTo === '/payment') {
         // This is a subscription sign-up, redirect to payment page
         console.log('💳 Subscription sign-up completed, redirecting to payment');
         router.push(`/payment?plan=${plan}&amount=${amount}&amount_kobo=${parseInt(amount) * 100}`);
