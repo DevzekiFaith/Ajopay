@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get subscription status using the database function
+    console.log('📊 Getting subscription status from database');
     const { data, error } = await supabase.rpc('get_user_subscription_status', {
       user_uuid: userId
     });
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest) {
           subscription_started_at: fallbackData?.subscription_started_at || null
         };
 
+        console.log('✅ Returning fallback subscription status:', defaultStatus);
         return NextResponse.json({ 
           success: true, 
           subscription: defaultStatus 
@@ -74,6 +76,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    console.log('✅ Returning subscription status from database:', data);
     return NextResponse.json({ 
       success: true, 
       subscription: data 
