@@ -164,7 +164,7 @@ export default function SignUpPage() {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <Image
-              src="/logo.png"
+              src="/aj2.png"
               alt="Ajopay Logo"
               width={60}
               height={60}
