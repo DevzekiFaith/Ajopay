@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Copy, Eye, EyeOff, CreditCard, TrendingUp, TrendingDown, Wallet, RefreshCw, Crown, Gem, Sparkles, Send, Download, Upload, ArrowUpRight, Shield, Star, History, Settings, Bell } from "lucide-react";
+import { ArrowLeft, Copy, Eye, EyeOff, CreditCard, TrendingUp, TrendingDown, Wallet, RefreshCw, Crown, Gem, Sparkles, Send, Download, Upload, ArrowUpRight, Shield, Settings } from "lucide-react";
 import { toast } from "sonner";
 import DashboardShell from "@/components/dashboard/Shell";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Bitcoin, Coins } from "lucide-react";
 import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
 import { WalletModals } from "@/components/wallet/WalletModals";
@@ -48,7 +47,6 @@ export default function WalletDetailPage() {
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [walletView, setWalletView] = useState<'ngn' | 'crypto'>(params.type as 'ngn' | 'crypto');
@@ -57,14 +55,8 @@ export default function WalletDetailPage() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
-  const [cryptoBalance, setCryptoBalance] = useState(0.00234567); // BTC balance
-  const [btcPrice, setBtcPrice] = useState<number | null>(45000); // Default price in USD
-  const [isDepositing, setIsDepositing] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [isReceiving, setIsReceiving] = useState(false);
+  const [cryptoBalance, setCryptoBalance] = useState(0); // Real BTC balance
+  const [btcPrice, setBtcPrice] = useState<number | null>(null); // Real BTC price
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Calculate crypto value in NGN
@@ -106,28 +98,64 @@ export default function WalletDetailPage() {
       setLoading(true);
       
       // Load user data
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      // Fetch wallet data from API
-      const response = await fetch('/api/wallet/data');
-      if (!response.ok) {
-        throw new Error('Failed to fetch wallet data');
-      }
+      if (user) {
+        setUser({ id: user.id, email: user.email });
+        
+        // Fetch real wallet data using the wallet balance API
+        const response = await fetch('/api/wallet/balance', {
+          credentials: 'include' // Ensure cookies are included
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+
+        if (data.success && data.wallet) {
+          setWalletData(data.wallet);
+        } else {
+          // Create empty wallet if none exists
+          const emptyWallet = {
+            balance_kobo: 0,
+            total_contributed_kobo: 0,
+            total_withdrawn_kobo: 0,
+            last_activity_at: new Date().toISOString()
+          };
+          setWalletData(emptyWallet);
+        }
       
-      const data = await response.json();
-      setWalletData(data.wallet);
-      
-      // Load transactions
-      const txResponse = await fetch('/api/wallet/transactions');
-      if (txResponse.ok) {
-        const txData = await txResponse.json();
-        setTransactions(txData.transactions || []);
+        // Load transactions
+        const txResponse = await fetch('/api/wallet/transactions', {
+          credentials: 'include' // Ensure cookies are included
+        });
+        if (txResponse.ok) {
+          const txData = await txResponse.json();
+          setTransactions(txData.transactions || []);
+        } else {
+          console.error('Failed to load transactions:', txResponse.status);
+        }
+      } else {
+        const emptyWallet = {
+          balance_kobo: 0,
+          total_contributed_kobo: 0,
+          total_withdrawn_kobo: 0,
+          last_activity_at: new Date().toISOString()
+        };
+        setWalletData(emptyWallet);
       }
       
     } catch (error) {
       console.error('Error loading wallet data:', error);
-      toast.error('Failed to load wallet data');
+      const emptyWallet = {
+        balance_kobo: 0,
+        total_contributed_kobo: 0,
+        total_withdrawn_kobo: 0,
+        last_activity_at: new Date().toISOString()
+      };
+      setWalletData(emptyWallet);
     } finally {
       setLoading(false);
     }
@@ -136,6 +164,52 @@ export default function WalletDetailPage() {
   useEffect(() => {
     loadWalletData();
   }, []);
+
+  // Real-time updates for wallet data
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const supabase = getSupabaseBrowserClient();
+    
+    // Listen to wallet balance changes
+    const walletChannel = supabase
+      .channel('wallet_balance_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'wallets',
+          filter: `profile_id=eq.${user.id}`,
+        },
+        (payload) => {
+          loadWalletData(); // Reload wallet data
+        }
+      )
+      .subscribe();
+
+    // Listen to transaction changes
+    const transactionChannel = supabase
+      .channel('wallet_transaction_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          loadWalletData(); // Reload wallet data
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(walletChannel);
+      supabase.removeChannel(transactionChannel);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     // Listen for notification bell clicks
@@ -377,6 +451,7 @@ export default function WalletDetailPage() {
                         '••••••'
                       )}
                     </motion.div>
+                    
                 </div>
 
                   {/* Quick Actions */}
@@ -477,6 +552,7 @@ export default function WalletDetailPage() {
             </CardContent>
             </AfricanGlassmorphismCard>
           </motion.div>
+
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -647,7 +723,9 @@ export default function WalletDetailPage() {
             showReceiveModal={showReceiveModal}
             setShowReceiveModal={setShowReceiveModal}
             activeWallet={walletView}
+            walletBalance={(walletData?.balance_kobo || 0) / 100}
             onWalletUpdate={loadWalletData}
+            user={user}
           />
           
           {/* Notification System */}

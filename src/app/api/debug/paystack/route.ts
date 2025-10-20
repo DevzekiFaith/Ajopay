@@ -5,10 +5,18 @@ export async function GET() {
     console.log("Paystack debug endpoint called");
     
     // Check environment variables
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+    const isPlaceholderSecret = secretKey === 'sk_live_your_live_secret_key_here';
+    const isPlaceholderPublic = publicKey === 'pk_live_your_live_public_key_here';
+    
     const envCheck = {
-      hasPaystackSecretKey: !!process.env.PAYSTACK_SECRET_KEY,
-      paystackSecretKeyLength: process.env.PAYSTACK_SECRET_KEY ? process.env.PAYSTACK_SECRET_KEY.length : 0,
-      paystackSecretKeyPrefix: process.env.PAYSTACK_SECRET_KEY ? process.env.PAYSTACK_SECRET_KEY.substring(0, 10) + "..." : "N/A",
+      hasPaystackSecretKey: !!secretKey && !isPlaceholderSecret,
+      hasPaystackPublicKey: !!publicKey && !isPlaceholderPublic,
+      paystackSecretKeyLength: secretKey ? secretKey.length : 0,
+      paystackSecretKeyPrefix: secretKey ? secretKey.substring(0, 10) + "..." : "N/A",
+      isPlaceholderSecret,
+      isPlaceholderPublic,
       hasPublicUrl: !!process.env.NEXT_PUBLIC_APP_URL,
       publicUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "Not set",
       nodeEnv: process.env.NODE_ENV,
@@ -19,12 +27,12 @@ export async function GET() {
 
     // Test Paystack API connection
     let paystackTest: { success: boolean; error: string | null; data: string | null } = { success: false, error: null, data: null };
-    if (process.env.PAYSTACK_SECRET_KEY) {
+    if (secretKey && !isPlaceholderSecret) {
       try {
         const response = await fetch("https://api.paystack.co/transaction/totals", {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            Authorization: `Bearer ${secretKey}`,
             "Content-Type": "application/json",
           },
         });
@@ -40,7 +48,7 @@ export async function GET() {
         paystackTest = { success: false, error: error.message, data: null };
       }
     } else {
-      paystackTest = { success: false, error: "PAYSTACK_SECRET_KEY not configured", data: null };
+      paystackTest = { success: false, error: isPlaceholderSecret ? "PAYSTACK_SECRET_KEY is placeholder" : "PAYSTACK_SECRET_KEY not configured", data: null };
     }
 
     return NextResponse.json({

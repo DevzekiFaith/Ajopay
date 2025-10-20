@@ -2,34 +2,85 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = getSupabaseServerClient();
     const { data: authData, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !authData?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const userId = authData.user.id;
-
-    const admin = getSupabaseAdminClient();
-
-    // Load transactions
-    const { data: txns, error: txError } = await admin
-      .from("transactions")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (txError) {
-      console.error("Error loading transactions:", txError);
-      return NextResponse.json({ error: txError.message }, { status: 500 });
+    
+    if (authErr || !authData?.user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
     }
 
+    const user = authData.user;
+    const admin = getSupabaseAdminClient();
+    const { searchParams } = new URL(request.url);
+    
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const type = searchParams.get('type');
+    const status = searchParams.get('status');
+
+    // Build query
+    let query = admin
+      .from("transactions")
+      .select("*", { count: 'exact' })
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // Apply filters
+    if (type) {
+      query = query.eq("type", type);
+    }
+    
+    if (status) {
+      query = query.eq("status", status);
+    }
+
+    const { data: transactions, count, error } = await query;
+
+    if (error) {
+      console.error('Error fetching transactions:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch transactions' },
+        { status: 500 }
+      );
+    }
+
+    // Calculate summary statistics
+    const summary = {
+      totalTransactions: count || 0,
+      totalDeposits: transactions?.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount_kobo, 0) || 0,
+      totalWithdrawals: transactions?.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + Math.abs(t.amount_kobo), 0) || 0,
+      totalSent: transactions?.filter(t => t.type === 'send').reduce((sum, t) => sum + Math.abs(t.amount_kobo), 0) || 0,
+      totalReceived: transactions?.filter(t => t.type === 'receive').reduce((sum, t) => sum + t.amount_kobo, 0) || 0,
+      totalCommissions: transactions?.filter(t => t.type === 'commission').reduce((sum, t) => sum + t.amount_kobo, 0) || 0,
+      pendingTransactions: transactions?.filter(t => t.status === 'pending').length || 0,
+      completedTransactions: transactions?.filter(t => t.status === 'completed').length || 0,
+      failedTransactions: transactions?.filter(t => t.status === 'failed').length || 0
+    };
+
     return NextResponse.json({
-      transactions: txns || [],
+      success: true,
+      transactions: transactions || [],
+      summary,
+      pagination: {
+        limit,
+        offset,
+        total: count || 0,
+        hasMore: (count || 0) > offset + limit
+      }
     });
-  } catch (error: any) {
-    console.error("Server error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+
+  } catch (error) {
+    console.error('Transactions API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -46,20 +97,19 @@ export async function POST(request: Request) {
     }
 
     const user = authData.user;
-    const { type, amount, method, walletType, description, status } = await request.json();
+    const { type, amount, description, status = 'completed', metadata } = await request.json();
 
-    if (!type || !amount || amount <= 0) {
+    if (!type || !amount) {
       return NextResponse.json(
-        { error: 'Invalid transaction data' },
+        { error: 'Type and amount are required' },
         { status: 400 }
       );
     }
 
     const admin = getSupabaseAdminClient();
-    const amountKobo = Math.round(amount * 100); // Convert to kobo
-
-    // Create transaction record
+    const amountKobo = Math.round(amount * 100);
     const referenceId = Date.now().toString().slice(-8);
+    
     const { data: transaction, error: transactionError } = await admin
       .from("transactions")
       .insert({
@@ -67,89 +117,33 @@ export async function POST(request: Request) {
         type: type,
         amount_kobo: amountKobo,
         reference: `${type.toUpperCase()}-${referenceId}`,
-        description: description || `${type} via ${method}`,
-        status: status || 'completed',
-        completed_at: (status || 'completed') === 'completed' ? new Date().toISOString() : null,
-        metadata: {
-          method: method,
-          wallet_type: walletType,
-          timestamp: new Date().toISOString()
-        }
+        description: description || `${type} transaction`,
+        status: status,
+        completed_at: status === 'completed' ? new Date().toISOString() : null,
+        metadata: metadata || {}
       })
       .select()
       .single();
 
     if (transactionError) {
       console.error('Error creating transaction:', transactionError);
-      console.error('Transaction data:', {
-        user_id: user.id,
-        type: type,
-        amount_kobo: amountKobo,
-        reference: `${type.toUpperCase()}-${referenceId}`,
-        description: description || `${type} via ${method}`,
-        status: status || 'completed'
-      });
       return NextResponse.json(
-        { error: `Failed to create transaction: ${transactionError.message}` },
+        { error: 'Failed to create transaction' },
         { status: 500 }
       );
     }
 
-    // If it's a deposit, update wallet balance
-    if (type === 'deposit') {
-      // Get current wallet balance
-      const { data: walletData, error: walletError } = await admin
-        .from("wallets")
-        .select("*")
-        .eq("profile_id", user.id)
-        .single();
-
-      if (walletError) {
-        console.error('Error fetching wallet:', walletError);
-        return NextResponse.json(
-          { error: 'Failed to fetch wallet data' },
-          { status: 500 }
-        );
-      }
-
-      // Update wallet balance (add deposit amount)
-      const newBalance = (walletData?.balance_kobo || 0) + amountKobo;
-      const { error: updateError } = await admin
-        .from("wallets")
-        .update({
-          balance_kobo: newBalance
-        })
-        .eq("profile_id", user.id);
-
-      if (updateError) {
-        console.error('Error updating wallet balance:', updateError);
-        return NextResponse.json(
-          { error: 'Failed to update wallet balance' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: `Deposit of ₦${amount} completed successfully!`,
-        transaction: transaction,
-        newBalance: newBalance / 100 // Convert back to naira
-      });
-    }
-
     return NextResponse.json({
       success: true,
-      message: `Transaction completed successfully!`,
-      transaction: transaction
+      transaction,
+      message: 'Transaction created successfully'
     });
 
   } catch (error) {
-    console.error('Transaction API error:', error);
+    console.error('Create transaction API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
-

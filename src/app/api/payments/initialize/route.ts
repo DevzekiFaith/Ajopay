@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 // GET /api/payments/initialize?plan=pro&amount=500
 // POST /api/payments/initialize
@@ -36,6 +37,26 @@ export async function POST(req: NextRequest) {
     
     const { amount_kobo, user_id, email } = body;
     
+    // If user_id is 'current_user', get the actual authenticated user
+    let actualUserId = user_id;
+    let actualEmail = email;
+    
+    if (user_id === 'current_user') {
+      // Get authenticated user from Supabase
+      const supabase = getSupabaseServerClient();
+      const { data: authData, error: authErr } = await supabase.auth.getUser();
+      
+      if (authErr || !authData?.user) {
+        return NextResponse.json(
+          { error: 'Not authenticated' },
+          { status: 401 }
+        );
+      }
+      
+      actualUserId = authData.user.id;
+      actualEmail = authData.user.email || email;
+    }
+    
     // Validation
     if (!amount_kobo || amount_kobo <= 0) {
       console.error("Invalid amount_kobo:", amount_kobo);
@@ -69,13 +90,26 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
+    // Determine callback URL based on payment type
+    const metadata = body.metadata || {};
+    const isWalletDeposit = metadata.type === 'wallet_deposit';
+    
+    let callbackUrl = undefined;
+    if (publicUrl) {
+      if (isWalletDeposit) {
+        callbackUrl = `${publicUrl}/wallet?payment=success&amount=${amount_kobo/100}`;
+      } else {
+        callbackUrl = `${publicUrl}/sign-up?payment=success&redirectTo=/customer`;
+      }
+    }
+
     // Prepare Paystack request
     const paystackPayload = {
-      email: email || `${user_id}@noemail.local`,
+      email: actualEmail || `${actualUserId}@noemail.local`,
       amount: amount_kobo, // paystack expects kobo
       currency: "NGN",
-      metadata: { user_id },
-      callback_url: publicUrl ? `${publicUrl}/sign-up?payment=success&redirectTo=/customer` : undefined,
+      metadata: { user_id: actualUserId, ...metadata },
+      callback_url: callbackUrl,
     };
     
     console.log("Paystack payload:", JSON.stringify(paystackPayload, null, 2));

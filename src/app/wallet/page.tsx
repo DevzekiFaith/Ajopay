@@ -42,6 +42,8 @@ import { WalletModals } from "@/components/wallet/WalletModals";
 import { NotificationBell } from "@/components/Notifications/NotificationBell";
 import { NotificationSystem } from "@/components/Notifications/NotificationSystem";
 import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
+import { RealTimeTransactionHistory } from "@/components/wallet/RealTimeTransactionHistory";
+import { WalletDashboard } from "@/components/wallet/WalletDashboard";
 
 interface WalletData {
   balance_kobo: number;
@@ -56,9 +58,9 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(true);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeWallet, setActiveWallet] = useState<'ngn' | 'crypto'>('ngn');
-  const [cryptoBalance, setCryptoBalance] = useState(0.00234567);
+  const [cryptoBalance, setCryptoBalance] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [btcPrice, setBtcPrice] = useState<number | null>(45000);
+  const [btcPrice, setBtcPrice] = useState<number | null>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -78,10 +80,77 @@ export default function WalletPage() {
   const formatCryptoAmount = (amount: number) => {
     return `${amount.toFixed(8)} BTC`;
   };
+
+  const handleActionClick = (action: string) => {
+    switch (action) {
+      case 'deposit':
+        setShowDepositModal(true);
+        break;
+      case 'withdraw':
+        setShowWithdrawModal(true);
+        break;
+      case 'send':
+        setShowSendModal(true);
+        break;
+      case 'receive':
+        setShowReceiveModal(true);
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
+  };
   
   useEffect(() => {
     loadWalletData();
   }, []);
+
+  // Real-time updates for wallet data
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const supabase = getSupabaseBrowserClient();
+    
+    // Listen to wallet balance changes
+    const walletChannel = supabase
+      .channel('wallet_balance_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'wallets',
+          filter: `profile_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Wallet balance updated:', payload);
+          loadWalletData(); // Reload wallet data
+        }
+      )
+      .subscribe();
+
+    // Listen to transaction changes
+    const transactionChannel = supabase
+      .channel('wallet_transaction_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Transaction change detected:', payload);
+          loadWalletData(); // Reload wallet data
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(walletChannel);
+      supabase.removeChannel(transactionChannel);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     // Listen for notification bell clicks
@@ -104,18 +173,25 @@ export default function WalletPage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
         setUser({ id: authUser.id, email: authUser.email });
-      }
-      
-      // Simulate loading wallet data
-      setTimeout(() => {
+        
+        // Fetch real wallet data using the wallet balance API
+        const response = await fetch('/api/wallet/balance');
+        const data = await response.json();
+
+        if (data.success && data.wallet) {
+          setWalletData(data.wallet);
+        } else {
+          console.error('Error fetching wallet data:', data.error);
+          // Create empty wallet if none exists
         setWalletData({
-          balance_kobo: 2500000, // ₦25,000
-          total_contributed_kobo: 5000000, // ₦50,000
-          total_withdrawn_kobo: 2500000, // ₦25,000
+            balance_kobo: 0,
+            total_contributed_kobo: 0,
+            total_withdrawn_kobo: 0,
           last_activity_at: new Date().toISOString()
         });
+        }
+      }
         setLoading(false);
-      }, 1000);
     } catch (error) {
       console.error('Error loading wallet data:', error);
       setLoading(false);
@@ -153,35 +229,7 @@ export default function WalletPage() {
     }
   ];
 
-  const recentTransactions = [
-    {
-      id: '1',
-      type: 'deposit',
-      amount: 50000,
-      description: 'Daily check-in bonus',
-      time: '2 hours ago',
-      status: 'completed',
-      icon: Star
-    },
-    {
-      id: '2',
-      type: 'send',
-      amount: -15000,
-      description: 'Transfer to John Doe',
-      time: '1 day ago',
-      status: 'completed',
-      icon: Send
-    },
-    {
-      id: '3',
-      type: 'commission',
-      amount: 25000,
-      description: 'Goal completion bonus',
-      time: '2 days ago',
-      status: 'completed',
-      icon: Crown
-    }
-  ];
+  // Remove static transactions - we'll use real-time data instead
 
   return (
     <DashboardShell role="customer">
@@ -447,79 +495,33 @@ export default function WalletPage() {
             </AfricanGlassmorphismCard>
           </motion.div>
 
-          {/* Recent Transactions */}
+
+          {/* Wallet Dashboard */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <AfricanGlassmorphismCard>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-bold text-gray-800 dark:text-white">
-                    Recent Transactions
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-800"
-                  >
-                    <History className="h-4 w-4 mr-2" />
-                    View All
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentTransactions.map((transaction, index) => (
+            {user?.id && (
+              <WalletDashboard 
+                userId={user.id}
+                onActionClick={handleActionClick}
+              />
+            )}
+          </motion.div>
+
+          {/* Real-time Transaction History */}
                     <motion.div
-                      key={transaction.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1 }}
-                      className="flex items-center justify-between p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-2xl ${
-                          transaction.type === 'deposit' || transaction.type === 'commission' 
-                            ? 'bg-green-500/20' 
-                            : 'bg-red-500/20'
-                        }`}>
-                          <transaction.icon className={`h-5 w-5 ${
-                            transaction.type === 'deposit' || transaction.type === 'commission' 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`} />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800 dark:text-white">
-                            {transaction.description}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
-                            {transaction.time}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-bold ${
-                          transaction.amount > 0 
-                            ? 'text-green-600' 
-                            : 'text-red-600'
-                        }`}>
-                          {transaction.amount > 0 ? '+' : ''}{formatAmount(Math.abs(transaction.amount))}
-                        </p>
-                        <Badge 
-                          variant={transaction.status === 'completed' ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {transaction.status}
-                        </Badge>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-            </CardContent>
-            </AfricanGlassmorphismCard>
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            {user?.id && (
+              <RealTimeTransactionHistory 
+                userId={user.id}
+                className="bg-white/20 backdrop-blur-xl border border-white/30"
+              />
+            )}
           </motion.div>
         </div>
 
@@ -534,6 +536,9 @@ export default function WalletPage() {
           showReceiveModal={showReceiveModal}
           setShowReceiveModal={setShowReceiveModal}
           activeWallet={activeWallet}
+          walletBalance={(walletData?.balance_kobo || 0) / 100}
+          onWalletUpdate={loadWalletData}
+          user={user}
         />
         
         {/* Notification System Modal */}

@@ -9,7 +9,7 @@ export async function POST() {
     
     // For now, let's use a demo user ID to make the system work
     // In production, this would come from proper authentication
-    const demoUserId = 'demo-user-12345';
+    const demoUserId = '550e8400-e29b-41d4-a716-446655440000'; // Valid UUID format
     const user = authData?.user || { id: demoUserId, email: 'demo@example.com' };
     
     console.log('Daily check-in API - Using user:', { 

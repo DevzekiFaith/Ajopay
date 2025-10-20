@@ -17,6 +17,11 @@ import {
   Bitcoin
 } from "lucide-react";
 import { toast } from "sonner";
+import { BankSelector } from "./BankSelector";
+import { AccountVerification } from "./AccountVerification";
+import { UserSearch } from "./UserSearch";
+import { FintechSendMoney } from "./FintechSendMoney";
+import { NigerianBank } from "@/lib/banks";
 
 interface WalletModalsProps {
   showDepositModal: boolean;
@@ -28,7 +33,9 @@ interface WalletModalsProps {
   showReceiveModal: boolean;
   setShowReceiveModal: (show: boolean) => void;
   activeWallet: 'ngn' | 'crypto';
+  walletBalance: number;
   onWalletUpdate?: () => void; // Callback to refresh wallet data
+  user?: { id: string; email?: string } | null;
 }
 
 export function WalletModals({
@@ -41,13 +48,24 @@ export function WalletModals({
   showReceiveModal,
   setShowReceiveModal,
   activeWallet,
-  onWalletUpdate
+  walletBalance,
+  onWalletUpdate,
+  user
 }: WalletModalsProps) {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState<any>(null);
   const [description, setDescription] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Bank account details for withdrawals
+  const [accountNumber, setAccountNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [selectedBank, setSelectedBank] = useState<NigerianBank | null>(null);
+  const [verifiedAccountName, setVerifiedAccountName] = useState('');
 
   const depositMethods = [
     {
@@ -109,49 +127,45 @@ export function WalletModals({
       return;
     }
 
+    if (parseFloat(amount) <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      // For demo purposes, we'll simulate a successful deposit
-      // In production, this would integrate with payment providers
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Create a deposit transaction record
-      const response = await fetch('/api/wallet/transactions', {
+      // Use existing Paystack integration for deposits
+      const response = await fetch('/api/payments/initialize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Ensure cookies are included
         body: JSON.stringify({
-          type: 'deposit',
-          amount: parseFloat(amount),
-          method: selectedMethod,
-          walletType: activeWallet,
-          description: `Deposit via ${selectedMethod}`,
-          status: 'completed'
+          amount_kobo: Math.round(parseFloat(amount) * 100), // Convert to kobo
+          user_id: user?.id || 'current_user',
+          email: user?.email || 'user@example.com',
+          metadata: {
+            type: 'wallet_deposit',
+            method: selectedMethod,
+            wallet_type: activeWallet
+          }
         }),
       });
 
-      if (response.ok) {
-        toast.success(`Deposit of ₦${amount} completed successfully!`);
-        setShowDepositModal(false);
-        setAmount('');
-        setSelectedMethod('');
-        
-        // Refresh wallet data
-        if (onWalletUpdate) {
-          onWalletUpdate();
-        } else {
-          // Fallback to page reload if no callback provided
-          window.location.reload();
-        }
-      } else {
-        throw new Error('Failed to record deposit transaction');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initialize payment');
       }
+
+      // Redirect to Paystack payment page
+      window.location.href = data.authorization_url;
+      
     } catch (error: unknown) {
       console.error('Deposit error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to process deposit';
       toast.error(errorMessage);
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -162,22 +176,41 @@ export function WalletModals({
       return;
     }
 
+    // Validate bank account details for bank transfers
+    if (selectedMethod === 'bank_transfer') {
+      if (!accountNumber || !selectedBank) {
+        toast.error('Please fill in account number and select a bank');
+        return;
+      }
+      
+      if (!verifiedAccountName) {
+        toast.error('Please verify your account details before proceeding');
+        return;
+      }
+    }
+
+    // Validate phone number for mobile money
+    if (selectedMethod === 'mobile_money') {
+      if (!phoneNumber) {
+        toast.error('Please enter your phone number');
+        return;
+      }
+    }
+
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/wallet/withdraw', {
+      // Use new withdraw-to-bank API
+      const response = await fetch('/api/wallet/withdraw-to-bank', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Ensure cookies are included
         body: JSON.stringify({
           amount: parseFloat(amount),
-          method: selectedMethod,
-          walletType: activeWallet,
-          accountDetails: {
-            // Add account details based on method
-            method: selectedMethod,
-            timestamp: new Date().toISOString()
-          }
+          bankCode: selectedMethod === 'bank_transfer' ? selectedBank?.code : undefined,
+          accountNumber: selectedMethod === 'bank_transfer' ? accountNumber : undefined,
+          narration: `Withdraw to ${selectedBank?.name || 'bank account'}`
         }),
       });
 
@@ -191,6 +224,12 @@ export function WalletModals({
       setShowWithdrawModal(false);
       setAmount('');
       setSelectedMethod('');
+      setAccountNumber('');
+      setBankName('');
+      setAccountName('');
+      setPhoneNumber('');
+      setSelectedBank(null);
+      setVerifiedAccountName('');
       
       // Refresh wallet data
       if (onWalletUpdate) {
@@ -209,22 +248,68 @@ export function WalletModals({
   };
 
   const handleSend = async () => {
-    if (!amount || !recipient) {
-      toast.error('Please fill in all required fields');
+    // Validate based on wallet type
+    if (activeWallet === 'ngn') {
+      if (!amount || (!selectedRecipient && !recipient)) {
+        toast.error('Please fill in all required fields and select a recipient or enter email manually');
+        return;
+      }
+    } else {
+      if (!amount || !recipient) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+    }
+
+    if (parseFloat(amount) <= 0) {
+      toast.error('Please enter a valid amount');
       return;
     }
 
     setIsProcessing(true);
     try {
-      // Simulate send processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success(`Sent ₦${amount} to ${recipient} successfully!`);
+      const response = await fetch('/api/wallet/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Ensure cookies are included
+        body: JSON.stringify({
+          amount: parseFloat(amount),
+          recipient: activeWallet === 'ngn' ? (selectedRecipient?.email || recipient) : recipient,
+          description: description || `Transfer to ${activeWallet === 'ngn' ? (selectedRecipient?.full_name || selectedRecipient?.email || recipient) : recipient}`,
+          walletType: activeWallet
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send money');
+      }
+
+      const recipientName = activeWallet === 'ngn' 
+        ? (selectedRecipient?.full_name || selectedRecipient?.email || recipient)
+        : recipient;
+
+      toast.success(data.message || `Successfully sent ₦${amount} to ${recipientName}!`);
       setShowSendModal(false);
       setAmount('');
       setRecipient('');
+      setSelectedRecipient(null);
       setDescription('');
-    } catch {
-      toast.error('Failed to send money');
+      
+      // Refresh wallet data
+      if (onWalletUpdate) {
+        onWalletUpdate();
+      } else {
+        // Fallback to page reload if no callback provided
+        window.location.reload();
+      }
+    } catch (error: unknown) {
+      console.error('Send error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send money';
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -394,10 +479,65 @@ export function WalletModals({
                   </div>
                 </div>
 
+                {/* Bank Account Details Form */}
+                {selectedMethod === 'bank_transfer' && (
+                  <div className="space-y-2 sm:space-y-3">
+                    <div>
+                      <Label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Account Number</Label>
+                      <Input
+                        type="text"
+                        value={accountNumber}
+                        onChange={(e) => {
+                          setAccountNumber(e.target.value);
+                          setVerifiedAccountName(''); // Reset verification when account number changes
+                        }}
+                        placeholder="Enter 10-digit account number"
+                        maxLength={10}
+                        className="bg-white/20 border-white/30 focus:border-white/50 h-8 sm:h-9 text-sm"
+                      />
+                    </div>
+                    
+                    <BankSelector
+                      selectedBank={selectedBank}
+                      onBankSelect={(bank) => {
+                        setSelectedBank(bank);
+                        setVerifiedAccountName(''); // Reset verification when bank changes
+                      }}
+                      placeholder="Select your bank"
+                    />
+
+                    <AccountVerification
+                      accountNumber={accountNumber}
+                      selectedBank={selectedBank}
+                      onVerificationComplete={setVerifiedAccountName}
+                    />
+                  </div>
+                )}
+
+                {/* Mobile Money Details */}
+                {selectedMethod === 'mobile_money' && (
+                  <div>
+                    <Label className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Phone Number</Label>
+                    <Input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="Enter phone number"
+                      className="bg-white/20 border-white/30 focus:border-white/50 h-8 sm:h-9 text-sm"
+                    />
+                  </div>
+                )}
+
                 <Button
                   onClick={handleWithdraw}
-                  disabled={isProcessing || !amount || !selectedMethod}
-                  className="w-full h-8 sm:h-9 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs sm:text-sm"
+                  disabled={
+                    isProcessing || 
+                    !amount || 
+                    !selectedMethod || 
+                    (selectedMethod === 'bank_transfer' && (!accountNumber || !selectedBank || !verifiedAccountName)) ||
+                    (selectedMethod === 'mobile_money' && !phoneNumber)
+                  }
+                  className="w-full h-8 sm:h-9 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs sm:text-sm disabled:opacity-50"
                 >
                   {isProcessing ? 'Processing...' : 'Withdraw'}
                 </Button>
@@ -407,78 +547,14 @@ export function WalletModals({
         )}
       </AnimatePresence>
 
-      {/* Send Modal */}
-      <AnimatePresence>
-        {showSendModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white/20 backdrop-blur-2xl rounded-2xl p-4 w-full max-w-sm border border-white/30 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-                  Send {activeWallet === 'ngn' ? 'Naira' : 'Bitcoin'}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowSendModal(false)}
-                  className="bg-white/20 hover:bg-white/30"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-sm text-gray-700 dark:text-gray-300">Amount</Label>
-                  <Input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Enter amount"
-                    className="bg-white/20 border-white/30 focus:border-white/50 h-9"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm text-gray-700 dark:text-gray-300">
-                    {activeWallet === 'ngn' ? 'Recipient Email/Phone' : 'Bitcoin Address'}
-                  </Label>
-                  <Input
-                    type="text"
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                    placeholder={activeWallet === 'ngn' ? 'Enter email or phone' : 'Enter Bitcoin address'}
-                    className="bg-white/20 border-white/30 focus:border-white/50 h-9"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm text-gray-700 dark:text-gray-300">Description (Optional)</Label>
-                  <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Add a note..."
-                    className="bg-white/20 border-white/30 focus:border-white/50"
-                    rows={2}
-                  />
-                </div>
-
-                <Button
-                  onClick={handleSend}
-                  disabled={isProcessing || !amount || !recipient}
-                  className="w-full h-9 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm"
-                >
-                  {isProcessing ? 'Sending...' : 'Send'}
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Send Modal - New Fintech Style */}
+      <FintechSendMoney
+        isOpen={showSendModal}
+        onClose={() => setShowSendModal(false)}
+        onSuccess={onWalletUpdate}
+        walletBalance={walletBalance}
+        activeWallet={activeWallet}
+      />
 
       {/* Receive Modal */}
       <AnimatePresence>

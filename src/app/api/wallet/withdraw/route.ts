@@ -201,6 +201,33 @@ export async function POST(request: Request) {
       console.log(`🔔 Withdrawal notification created for user ${user.id}`);
     }
 
+    // Trigger real-time update for withdrawal
+    try {
+      const { error: broadcastError } = await admin
+        .from("notifications")
+        .insert({
+          user_id: user.id,
+          type: "withdrawal_update",
+          title: "Withdrawal Update",
+          message: `Withdrawal of ₦${amount.toLocaleString()} ${method === 'wallet' ? 'completed' : 'initiated'}`,
+          data: {
+            event: "withdrawal_requested",
+            amount: amount,
+            method: method,
+            status: method === 'wallet' ? 'completed' : 'pending',
+            transaction_id: transaction.id
+          },
+          read: false,
+          created_at: new Date().toISOString()
+        });
+
+      if (broadcastError) {
+        console.error("⚠️ Failed to create withdrawal broadcast:", broadcastError);
+      }
+    } catch (error) {
+      console.error("⚠️ Error creating withdrawal broadcast:", error);
+    }
+
     return NextResponse.json({
       success: true,
       message: `Withdrawal of ₦${amount} initiated successfully! ${processingTime} processing time.`,

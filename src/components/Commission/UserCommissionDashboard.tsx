@@ -116,6 +116,10 @@ export function UserCommissionDashboard() {
       console.log('Commissions API response:', { status: commissionsRes.status, data: commissionsData });
       
       if (commissionsRes.ok) {
+        console.log('Setting commission data:', {
+          commissions: commissionsData.commissions,
+          summary: commissionsData.summary
+        });
         setCommissions(commissionsData.commissions || []);
         setSummary(commissionsData.summary || {
           totalEarned: 0,
@@ -372,7 +376,7 @@ export function UserCommissionDashboard() {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "transactions",
           filter: `user_id=eq.${currentUserId}`,
@@ -380,11 +384,12 @@ export function UserCommissionDashboard() {
         (payload) => {
           console.log('Transaction detected for commission check:', payload);
           // Check if this transaction should generate a commission
-          const transaction = payload.new;
-          if (transaction.type === 'deposit' || transaction.type === 'contribution') {
+          const transaction = payload.new || payload.old;
+          if (transaction && typeof transaction === 'object' && 'type' in transaction && 'amount_kobo' in transaction &&
+              (transaction.type === 'deposit' || transaction.type === 'contribution')) {
             // Trigger commission check
             triggerUpdate('transaction_made', {
-              amount: transaction.amount,
+              amount: (transaction as any).amount_kobo / 100,
               type: transaction.type,
               description: 'New transaction - checking for commissions'
             });
@@ -414,13 +419,13 @@ export function UserCommissionDashboard() {
           // Trigger withdrawal update notification
           if (payload.eventType === 'INSERT') {
             triggerUpdate('withdrawal_requested', {
-              amount: payload.new.total_amount_kobo,
+              amount: payload.new.total_amount_kobo / 100,
               method: payload.new.payout_method,
               status: payload.new.status
             });
           } else if (payload.eventType === 'UPDATE') {
             triggerUpdate('withdrawal_updated', {
-              amount: payload.new.total_amount_kobo,
+              amount: payload.new.total_amount_kobo / 100,
               method: payload.new.payout_method,
               status: payload.new.status,
               previousStatus: payload.old.status
@@ -430,10 +435,30 @@ export function UserCommissionDashboard() {
       )
       .subscribe();
 
+    // Listen to wallet balance changes for commission updates
+    const walletChannel = supabase
+      .channel("commission_wallet_updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "wallets",
+          filter: `profile_id=eq.${currentUserId}`,
+        },
+        (payload) => {
+          console.log('Wallet balance updated for commission check:', payload);
+          // Reload commission data to reflect any balance changes
+          setTimeout(() => loadCommissionData(), 1000);
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(commissionsChannel);
       supabase.removeChannel(transactionsChannel);
       supabase.removeChannel(withdrawalsChannel);
+      supabase.removeChannel(walletChannel);
     };
   }, [currentUserId, supabase, triggerUpdate]);
 
@@ -480,6 +505,10 @@ export function UserCommissionDashboard() {
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-800 dark:text-green-200">
                     {formatAmount(summary.totalEarned)}
                   </p>
+                  {/* Debug info - remove in production */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <p className="text-xs text-gray-500">Debug: {summary.totalEarned} kobo</p>
+                  )}
                 </div>
                 <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-800/30 rounded-full">
                   <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
@@ -502,6 +531,10 @@ export function UserCommissionDashboard() {
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-800 dark:text-blue-200">
                     {formatAmount(summary.totalEarned - summary.totalPaid)}
                   </p>
+                  {/* Debug info - remove in production */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <p className="text-xs text-gray-500">Debug: {summary.totalEarned - summary.totalPaid} kobo</p>
+                  )}
                 </div>
                 <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-800/30 rounded-full">
                   <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
@@ -533,6 +566,10 @@ export function UserCommissionDashboard() {
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-800 dark:text-purple-200">
                     {formatAmount(summary.totalPaid)}
                   </p>
+                  {/* Debug info - remove in production */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <p className="text-xs text-gray-500">Debug: {summary.totalPaid} kobo</p>
+                  )}
                 </div>
                 <div className="p-2 sm:p-3 bg-purple-100 dark:bg-purple-800/30 rounded-full">
                   <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />

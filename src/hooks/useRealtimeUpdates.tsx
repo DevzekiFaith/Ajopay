@@ -307,28 +307,62 @@ export function useRealtimeUpdates(userId?: string) {
       )
       .subscribe();
 
+    // Listen to wallet balance changes
+    const walletChannel = supabase
+      .channel("user_wallet")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "wallets",
+          filter: `profile_id=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('Wallet balance updated:', payload);
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe();
+
     // Listen to transactions for real-time achievement updates
     const transactionsChannel = supabase
       .channel("user_transactions")
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "transactions",
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          const transaction = payload.new;
-          console.log('Transaction detected for real-time updates:', transaction);
+          const transaction = payload.new || payload.old;
+          console.log('Transaction detected for real-time updates:', payload);
           
           // Trigger transaction-based updates
-          if (transaction.type === 'deposit' || transaction.type === 'contribution') {
+          if (transaction && typeof transaction === 'object' && 'type' in transaction && 'amount_kobo' in transaction &&
+              (transaction.type === 'deposit' || transaction.type === 'contribution')) {
             triggerUpdate('transaction_made', {
-              amount: transaction.amount,
+              amount: (transaction as any).amount_kobo / 100,
               type: transaction.type,
-              description: transaction.description
+              description: (transaction as any).description
             });
+          } else if (transaction && typeof transaction === 'object' && 'type' in transaction && transaction.type === 'withdrawal') {
+            if (payload.eventType === 'INSERT') {
+              triggerUpdate('withdrawal_requested', {
+                amount: (transaction as any).amount_kobo / 100,
+                method: (transaction as any).metadata?.method || 'unknown',
+                status: (transaction as any).status
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              triggerUpdate('withdrawal_updated', {
+                amount: (transaction as any).amount_kobo / 100,
+                method: (transaction as any).metadata?.method || 'unknown',
+                status: (transaction as any).status,
+                previousStatus: (payload.old as any)?.status
+              });
+            }
           }
           
           setLastUpdate(new Date());
@@ -342,6 +376,7 @@ export function useRealtimeUpdates(userId?: string) {
       supabase.removeChannel(challengesChannel);
       supabase.removeChannel(circlesChannel);
       supabase.removeChannel(gamificationChannel);
+      supabase.removeChannel(walletChannel);
       supabase.removeChannel(transactionsChannel);
       setIsConnected(false);
     };
