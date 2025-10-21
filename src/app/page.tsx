@@ -613,7 +613,7 @@ export default function Home() {
               {/* Features */}
               <div className="mb-4 sm:mb-6">
                 <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-center text-sm sm:text-base">
-                  What's included
+                  What&apos;s included
                 </h4>
                 <div className="space-y-2">
                   {[

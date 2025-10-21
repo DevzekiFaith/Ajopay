@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       // If wallet doesn't exist, create one
       if (walletError.code === 'PGRST116') {
         console.log('Creating new wallet for user:', user.id);
-        const { data: newWallet, error: createError } = await admin
+        const { error: createError } = await admin
           .from("wallets")
           .insert({
             profile_id: user.id,
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const supabase = getSupabaseServerClient();
     const { data: authData, error: authErr } = await supabase.auth.getUser();

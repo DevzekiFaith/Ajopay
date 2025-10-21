@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { DollarSign, Users, TrendingUp, Calendar, Copy, Check, TestTube, Zap, Trophy, Target } from "lucide-react";
+import { DollarSign, TrendingUp, Calendar, TestTube, Zap, Trophy, Target } from "lucide-react";
 
 export default function CommissionTestPage() {
-  const [isConnected, setConnected] = useState(false);
+  const [isConnected] = useState(false);
   const [testResults, setTestResults] = useState<string[]>([]);
   const supabase = getSupabaseBrowserClient();
 

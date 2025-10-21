@@ -2,40 +2,25 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Eye, 
   EyeOff, 
   TrendingUp, 
-  TrendingDown, 
   Wallet, 
-  RefreshCw,
   Send,
   Download,
   Upload,
-  QrCode,
   Bitcoin,
   Coins,
   Shield,
-  Zap,
-  Star,
-  Globe,
-  Smartphone,
-  Banknote,
   ArrowUpRight,
-  ArrowDownLeft,
-  History,
   Settings,
-  Bell,
-  ChevronRight,
   Sparkles,
   Crown,
   Gem,
   X
 } from "lucide-react";
-import { toast } from "sonner";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import DashboardShell from "@/components/dashboard/Shell";
 import { WalletModals } from "@/components/wallet/WalletModals";
@@ -55,12 +40,12 @@ interface WalletData {
 export default function WalletPage() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [walletData, setWalletData] = useState<WalletData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeWallet, setActiveWallet] = useState<'ngn' | 'crypto'>('ngn');
-  const [cryptoBalance, setCryptoBalance] = useState(0);
+  const [cryptoBalance] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [btcPrice, setBtcPrice] = useState<number | null>(null);
+  const [btcPrice] = useState<number | null>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
