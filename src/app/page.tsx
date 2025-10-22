@@ -4,13 +4,18 @@ import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ErrorBoundary, useErrorHandler } from "@/components/ErrorBoundary";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function Home() {
   const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const [showNewUserMessage, setShowNewUserMessage] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const errorHandler = useErrorHandler();
 
   useEffect(() => {
+    try {
     // Check if this is a new user
     if (searchParams.get('newUser') === 'true') {
       setShowNewUserMessage(true);
@@ -19,8 +24,28 @@ export default function Home() {
       url.searchParams.delete('newUser');
       window.history.replaceState({}, '', url.toString());
     }
-  }, [searchParams]);
+      
+      // Simulate loading for better UX
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } catch (error) {
+      errorHandler(error as Error);
+      setIsLoading(false);
+    }
+  }, [searchParams, errorHandler]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-red-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading AjoPay..." />
+      </div>
+    );
+  }
   return (
+    <ErrorBoundary>
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-orange-50 via-yellow-50 to-red-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* African-inspired background elements */}
       <motion.div
@@ -693,5 +718,6 @@ export default function Home() {
         </motion.div>
       </main>
     </div>
+    </ErrorBoundary>
   );
 }

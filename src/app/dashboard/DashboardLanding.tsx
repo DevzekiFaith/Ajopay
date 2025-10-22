@@ -14,11 +14,13 @@ import { Gamification } from "@/components/Game/Gamification";
 import { PeerChallenges } from "@/components/Peer/PeerChallenges";
 import { SavingsCircles } from "@/components/Circle/SavingsCircle";
 import { UserCommissionDashboard } from "@/components/Commission/UserCommissionDashboard";
-import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart } from "lucide-react";
+import { RealTimeMarketDashboard } from "@/components/Investment/RealTimeMarketDashboard";
+import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart, TrendingUp as TrendingUpIcon, Building } from "lucide-react";
 
 type Role = "customer" | "admin";
 
 export default function DashboardLanding({ defaultRole = "customer" as Role }) {
+  // Advanced Goals tab removed from dashboard features
   const [tab, setTab] = useState<Role>(defaultRole);
 
   const tabs: { key: Role; label: string }[] = useMemo(
@@ -535,12 +537,21 @@ function CustomerSection() {
                 </button>
                 <button
                   onClick={() => setActiveFeatureTab("commissions")}
-                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium lg:rounded-tr-2xl hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "commissions"
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "commissions"
                     ? "text-black bg-white/20"
                     : "text-black/70 hover:text-black"
                     }`}
                 >
                   💰 Earn
+                </button>
+                <button
+                  onClick={() => setActiveFeatureTab("investments")}
+                  className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium border-r border-white/20 hover:bg-white/30 transition-all duration-200 ${activeFeatureTab === "investments"
+                    ? "text-black bg-white/20"
+                    : "text-black/70 hover:text-black"
+                    }`}
+                >
+                  📈 Invest
                 </button>
               </div>
 
@@ -739,6 +750,11 @@ function CustomerSection() {
                 {activeFeatureTab === "commissions" && (
                   <UserCommissionDashboard />
                 )}
+
+                {activeFeatureTab === "investments" && (
+                  <RealTimeMarketDashboard />
+                )}
+
               </div>
             </div>
           </CardContent>

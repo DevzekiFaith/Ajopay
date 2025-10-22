@@ -127,18 +127,18 @@ export function PersonalHealthDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
       >
         <motion.div whileHover={{ y: -5, scale: 1.02 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
           <Card className="relative border-0 bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155] rounded-3xl">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200">Savings Health</CardTitle>
-                <Heart className={`h-6 w-6 ${getHealthColor(metrics.savingsHealth)}`} />
+                <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">Savings Health</CardTitle>
+                <Heart className={`h-5 w-5 sm:h-6 sm:w-6 ${getHealthColor(metrics.savingsHealth)}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">
                 {Math.round(metrics.savingsHealth)}%
               </div>
               <Badge className={getHealthBadge(metrics.savingsHealth)}>
@@ -155,12 +155,12 @@ export function PersonalHealthDashboard() {
           <Card className="relative border-0 bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155] rounded-3xl">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200">Streak</CardTitle>
-                <Zap className="h-6 w-6 text-yellow-500" />
+                <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">Streak</CardTitle>
+                <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">
                 {metrics.streakDays} days
               </div>
               <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">
@@ -177,16 +177,16 @@ export function PersonalHealthDashboard() {
           <Card className="relative border-0 bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155] rounded-3xl">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200">Growth</CardTitle>
+                <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">Growth</CardTitle>
                 {metrics.weeklyGrowth >= 0 ? (
-                  <TrendingUp className="h-6 w-6 text-emerald-500" />
+                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
                 ) : (
-                  <TrendingDown className="h-6 w-6 text-red-500" />
+                  <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
                 )}
               </div>
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold mb-2 ${metrics.weeklyGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              <div className={`text-2xl sm:text-3xl font-bold mb-2 ${metrics.weeklyGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {metrics.weeklyGrowth >= 0 ? '+' : ''}{Math.round(metrics.weeklyGrowth)}%
               </div>
               <Badge className={metrics.weeklyGrowth >= 0 ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30" : "bg-red-500/20 text-red-600 border-red-500/30"}>
@@ -205,18 +205,18 @@ export function PersonalHealthDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
       >
         <motion.div whileHover={{ y: -5, scale: 1.02 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
           <Card className="relative border-0 bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155] rounded-3xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Target className="h-5 w-5 text-blue-500" />
+              <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                 Total Savings
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200">
                 ₦{metrics.totalSavings.toLocaleString()}
               </div>
               <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -229,13 +229,13 @@ export function PersonalHealthDashboard() {
         <motion.div whileHover={{ y: -5, scale: 1.02 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
           <Card className="relative border-0 bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155] rounded-3xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-emerald-500" />
+              <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
                 Daily Average
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200">
                 ₦{Math.round(metrics.dailyAverage).toLocaleString()}
               </div>
               <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -248,13 +248,13 @@ export function PersonalHealthDashboard() {
         <motion.div whileHover={{ y: -5, scale: 1.02 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
           <Card className="relative border-0 bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155] rounded-3xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Activity className="h-5 w-5 text-purple-500" />
+              <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                 Consistency
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200">
                 {Math.round(metrics.contributionConsistency)}%
               </div>
               <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -267,13 +267,13 @@ export function PersonalHealthDashboard() {
         <motion.div whileHover={{ y: -5, scale: 1.02 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
           <Card className="relative border-0 bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] dark:shadow-[20px_20px_60px_#0f172a,-20px_-20px_60px_#334155] rounded-3xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Award className="h-5 w-5 text-yellow-500" />
+              <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Award className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
                 Goal Progress
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200">
                 {Math.round(metrics.goalProgress)}%
               </div>
               <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">

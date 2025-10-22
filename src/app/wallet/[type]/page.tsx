@@ -620,7 +620,11 @@ export default function WalletDetailPage() {
                 ) : (
                   <div className="space-y-3">
                       {transactions.map((transaction) => (
-                        <div key={transaction.id} className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
+                        <div 
+                          key={transaction.id} 
+                          className="flex items-center justify-between p-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors cursor-pointer group"
+                          onClick={() => router.push(`/transaction/${transaction.id}`)}
+                        >
                         <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-full ${
                               transaction.type === 'deposit' || transaction.type === 'commission' 
@@ -635,12 +639,18 @@ export default function WalletDetailPage() {
                             </div>
                           <div>
                               <p className="font-medium">{transaction.description || transaction.type}</p>
+                              <div className="flex flex-col">
                               <p className="text-sm text-muted-foreground">
-                                {format(new Date(transaction.created_at), 'MMM dd, yyyy HH:mm')}
+                                  {format(new Date(transaction.created_at), 'MMM dd, yyyy')}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {format(new Date(transaction.created_at), 'h:mm a')}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        </div>
+                        <div className="text-right flex items-center gap-2">
+                          <div>
                             <p className={`font-semibold ${
                               transaction.type === 'deposit' || transaction.type === 'commission' 
                                 ? 'text-green-600' 
@@ -652,6 +662,8 @@ export default function WalletDetailPage() {
                             <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
                               {transaction.status}
                           </Badge>
+                          </div>
+                          <span className="text-gray-400 group-hover:text-orange-500 transition-colors">→</span>
                         </div>
                       </div>
                     ))}

@@ -54,6 +54,13 @@ export async function POST(req: NextRequest) {
 
       console.log(`💰 Processing successful payment: ₦${amount_naira} for user ${user_id}`);
 
+      // Determine payment type from metadata
+      const paymentType = data.metadata?.type;
+      const isWalletDeposit = paymentType === 'wallet_deposit';
+      const isSubscriptionPayment = amount_kobo === 425000; // ₦4,250 subscription payment
+      
+      console.log(`📋 Payment type: ${paymentType}, isWalletDeposit: ${isWalletDeposit}, isSubscriptionPayment: ${isSubscriptionPayment}`);
+
       // Get user profile for notifications
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -65,7 +72,11 @@ export async function POST(req: NextRequest) {
         console.warn('Profile query failed:', profileError);
       }
 
-      // Insert wallet topup with enhanced metadata
+      // Only process wallet topups for wallet deposits
+      if (isWalletDeposit) {
+        console.log('💳 Processing wallet deposit...');
+        
+        // Insert wallet topup with enhanced metadata
       const { data: topupResult, error: topupError } = await supabase
         .from("wallet_topups")
         .insert({
@@ -124,6 +135,68 @@ export async function POST(req: NextRequest) {
         console.log(`🔔 Notification created for user ${user_id}`);
       }
 
+      // Update wallet balance directly
+      console.log(`🔍 Fetching current wallet for user: ${user_id}`);
+      const { data: currentWallet, error: walletFetchError } = await supabase
+        .from("wallets")
+        .select("balance_kobo, total_contributed_kobo")
+        .eq("profile_id", user_id)
+        .maybeSingle();
+
+      console.log(`📊 Current wallet data:`, { currentWallet, walletFetchError });
+
+      if (walletFetchError) {
+        console.error("⚠️ Failed to fetch current wallet:", walletFetchError);
+      } else {
+        const currentBalance = currentWallet?.balance_kobo || 0;
+        const currentTotalContributed = currentWallet?.total_contributed_kobo || 0;
+        const newBalance = currentBalance + amount_kobo;
+        const newTotalContributed = currentTotalContributed + amount_kobo;
+
+        console.log(`💰 Updating wallet balance: ${currentBalance} → ${newBalance} (adding ${amount_kobo})`);
+        const { error: walletUpdateError } = await supabase
+          .from("wallets")
+          .update({
+            balance_kobo: newBalance,
+            total_contributed_kobo: newTotalContributed,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq("profile_id", user_id);
+
+        console.log(`📝 Wallet update result:`, { walletUpdateError });
+
+        if (walletUpdateError) {
+          console.error("⚠️ Failed to update wallet balance:", walletUpdateError);
+        } else {
+          console.log(`💰 Wallet balance updated: ₦${currentBalance/100} → ₦${newBalance/100}`);
+          
+          // Trigger real-time update via broadcast
+          try {
+            const { error: broadcastError } = await supabase
+              .channel('wallet_updates')
+              .send({
+                type: 'broadcast',
+                event: 'wallet_balance_updated',
+                payload: {
+                  user_id,
+                  new_balance_kobo: newBalance,
+                  old_balance_kobo: currentBalance,
+                  amount_added_kobo: amount_kobo,
+                  timestamp: new Date().toISOString()
+                }
+              });
+            
+            if (broadcastError) {
+              console.error("⚠️ Failed to broadcast wallet update:", broadcastError);
+            } else {
+              console.log("📡 Wallet balance update broadcasted successfully");
+            }
+          } catch (broadcastErr) {
+            console.error("⚠️ Error broadcasting wallet update:", broadcastErr);
+          }
+        }
+      }
+
       // Trigger real-time wallet update via contributions table (existing realtime channel)
       const { error: contributionError } = await supabase
         .from("contributions")
@@ -173,30 +246,6 @@ export async function POST(req: NextRequest) {
         console.log(`💳 Wallet transaction record created for real-time updates`);
       }
 
-      // Convert trial to paid subscription if this is a subscription payment
-      if (amount_naira === 4250) { // King Elite subscription amount
-        try {
-          const { error: convertError } = await supabase
-            .from('user_subscriptions')
-            .update({
-              status: 'active',
-              subscription_started_at: new Date().toISOString(),
-              payment_reference: String(provider_txn_id),
-              amount_paid_kobo: amount_kobo,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user_id)
-            .eq('status', 'trial');
-
-          if (convertError) {
-            console.error('❌ Failed to convert trial to paid:', convertError);
-          } else {
-            console.log('✅ Trial converted to paid subscription for user:', user_id);
-          }
-        } catch (error) {
-          console.error('❌ Error converting trial:', error);
-        }
-      }
 
       // Optional: Auto-mark today's contribution if enabled
       const auto = (profile as any)?.settings?.customer_auto_mark === true;
@@ -243,8 +292,41 @@ export async function POST(req: NextRequest) {
         console.error("⚠️ Failed to send real-time broadcast:", broadcastError);
       }
 
-      // Log successful webhook processing
-      console.log(`🎉 Webhook processed successfully for user ${user_id}: ₦${amount_naira}`);
+        // Log successful webhook processing
+        console.log(`🎉 Wallet deposit processed successfully for user ${user_id}: ₦${amount_naira}`);
+      } else if (isSubscriptionPayment) {
+        console.log('💳 Processing subscription payment...');
+        
+        // Convert trial to paid subscription
+        try {
+          const { error: convertError } = await supabase
+            .from('user_subscriptions')
+            .update({
+              status: 'active',
+              subscription_started_at: new Date().toISOString(),
+              payment_reference: String(provider_txn_id),
+              amount_paid_kobo: amount_kobo,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user_id)
+            .eq('status', 'trial');
+
+          if (convertError) {
+            console.error('❌ Failed to convert trial to paid:', convertError);
+          } else {
+            console.log('✅ Trial converted to paid subscription for user:', user_id);
+          }
+        } catch (error) {
+          console.error('❌ Error converting trial:', error);
+        }
+        
+        console.log(`🎉 Subscription payment processed successfully for user ${user_id}: ₦${amount_naira}`);
+      } else {
+        console.log('💳 Processing other payment type...');
+        
+        // For other payment types, just log the successful payment
+        console.log(`🎉 Payment processed successfully for user ${user_id}: ₦${amount_naira} (type: ${paymentType || 'unknown'})`);
+      }
 
       return NextResponse.json({ 
         ok: true, 

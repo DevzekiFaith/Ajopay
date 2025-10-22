@@ -318,8 +318,8 @@ export default function LiveAnalyticsDashboard({
     <div className="space-y-4">
       {/* Header with live indicator */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Zap className="h-5 w-5 text-yellow-500" />
+        <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+          <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
           AI Smart Insights
         </h3>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -331,8 +331,8 @@ export default function LiveAnalyticsDashboard({
       {/* Smart Recommendations - Main Focus */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Brain className="h-4 w-4 text-blue-500" />
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            <Brain className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
             Personalized Recommendations
           </CardTitle>
         </CardHeader>
@@ -341,10 +341,10 @@ export default function LiveAnalyticsDashboard({
           {analyticsData.consistencyScore < 50 && (
             <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
               <div className="flex items-start gap-3">
-                <div className="text-lg">🎯</div>
+                <div className="text-base sm:text-lg">🎯</div>
                 <div>
-                  <p className="font-medium text-yellow-800 dark:text-yellow-200">Improve Consistency</p>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  <p className="font-medium text-sm sm:text-base text-yellow-800 dark:text-yellow-200">Improve Consistency</p>
+                  <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
                     Set a daily reminder at 8 PM to save ₦{Math.max(200, Math.round(analyticsData.avgContribution / 100))}
                   </p>
                 </div>
@@ -355,10 +355,10 @@ export default function LiveAnalyticsDashboard({
           {analyticsData.streak > 7 && (
             <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
               <div className="flex items-start gap-3">
-                <div className="text-lg">🔥</div>
+                <div className="text-base sm:text-lg">🔥</div>
                 <div>
-                  <p className="font-medium text-green-800 dark:text-green-200">Streak Champion!</p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
+                  <p className="font-medium text-sm sm:text-base text-green-800 dark:text-green-200">Streak Champion!</p>
+                  <p className="text-xs sm:text-sm text-green-700 dark:text-green-300">
                     {analyticsData.streak} days strong! Try increasing your daily amount by 20%
                   </p>
                 </div>
@@ -369,10 +369,10 @@ export default function LiveAnalyticsDashboard({
           {analyticsData.engagementScore > 80 && (
             <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="flex items-start gap-3">
-                <div className="text-lg">⭐</div>
+                <div className="text-base sm:text-lg">⭐</div>
                 <div>
-                  <p className="font-medium text-blue-800 dark:text-blue-200">Ready for Bigger Goals</p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="font-medium text-sm sm:text-base text-blue-800 dark:text-blue-200">Ready for Bigger Goals</p>
+                  <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
                     You're saving consistently! Set a ₦50,000 goal for next month
                   </p>
                 </div>
@@ -383,10 +383,10 @@ export default function LiveAnalyticsDashboard({
           {analyticsData.walletNaira > 10000 && (
             <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
               <div className="flex items-start gap-3">
-                <div className="text-lg">💰</div>
+                <div className="text-base sm:text-lg">💰</div>
                 <div>
-                  <p className="font-medium text-purple-800 dark:text-purple-200">Savings Milestone</p>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">
+                  <p className="font-medium text-sm sm:text-base text-purple-800 dark:text-purple-200">Savings Milestone</p>
+                  <p className="text-xs sm:text-sm text-purple-700 dark:text-purple-300">
                     You've saved {formatNaira(walletNaira * 100)}! Consider investing or setting a bigger target
                   </p>
                 </div>

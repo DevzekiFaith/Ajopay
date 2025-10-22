@@ -42,12 +42,14 @@ import {
 // Removed unused imports: SavingsGoals, Gamification, PeerChallenges, SavingsCircles
 import { PersonalHealthDashboard } from "@/components/Monitoring/PersonalHealthDashboard";
 import LiveAnalyticsDashboard from "@/components/AI/LiveAnalyticsDashboard";
-import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff, BarChart3 } from "lucide-react";
+import { RealTimeMarketDashboard } from "@/components/Investment/RealTimeMarketDashboard";
+import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff, BarChart3, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AfricanPatterns, AfricanGlassmorphismCard } from "@/components/wallet/AfricanPatterns";
 import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
 
 export default function CustomerPage() {
+  // Advanced Goals tab removed - only AI Insights and Investments remain
   const USER_SETTINGS_BUCKET = process.env.NEXT_PUBLIC_USER_SETTINGS_BUCKET || 'user-settings';
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [amount, setAmount] = useState(200);
@@ -318,6 +320,9 @@ export default function CustomerPage() {
     let contributionsChannel: any = null;
     let settingsChannel: any = null;
     let transactionsChannel: any = null;
+    let walletChannel: any = null;
+    let topupChannel: any = null;
+    let walletBroadcastChannel: any = null;
     let refreshTimeout: NodeJS.Timeout | null = null;
     let walletUpdateTimeout: NodeJS.Timeout | null = null;
     
@@ -419,6 +424,76 @@ export default function CustomerPage() {
         )
         .subscribe();
 
+      // Subscribe to wallet balance changes directly
+      walletChannel = supabase
+        .channel("realtime:wallet:self")
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "wallets", filter: `profile_id=eq.${user.id}` },
+          async (payload: any) => {
+            console.log("Wallet balance updated:", payload);
+            const newBalance = payload?.new?.balance_kobo || 0;
+            const newBalanceNaira = Math.round(newBalance / 100);
+            setWalletNaira(newBalanceNaira);
+            
+            // Show success toast for wallet updates
+            toast.success(`Wallet updated: ₦${newBalanceNaira.toLocaleString()}`);
+            
+            // Pulse wallet UI
+            setWalletPulse(true);
+            setTimeout(() => setWalletPulse(false), 600);
+          }
+        )
+        .subscribe();
+
+      // Subscribe to wallet topups for immediate feedback
+      topupChannel = supabase
+        .channel("realtime:topups:self")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "wallet_topups", filter: `user_id=eq.${user.id}` },
+          async (payload: any) => {
+            console.log("Wallet topup received:", payload);
+            const topup = payload?.new;
+            if (topup?.amount_kobo) {
+              const amountNaira = Math.round(topup.amount_kobo / 100);
+              toast.success(`Wallet funded: ₦${amountNaira.toLocaleString()}! 💰`);
+              
+              // Pulse wallet UI
+              setWalletPulse(true);
+              setTimeout(() => setWalletPulse(false), 600);
+            }
+          }
+        )
+        .subscribe();
+
+      // Subscribe to wallet balance updates via broadcast
+      walletBroadcastChannel = supabase
+        .channel("realtime:wallet:broadcast")
+        .on(
+          "broadcast",
+          { event: "wallet_balance_updated" },
+          async (payload: any) => {
+            console.log("Wallet balance update received:", payload);
+            if (payload.payload?.user_id === user.id) {
+              const amountAdded = payload.payload.amount_added_kobo;
+              const newBalance = payload.payload.new_balance_kobo;
+              const amountNaira = Math.round(amountAdded / 100);
+              const balanceNaira = Math.round(newBalance / 100);
+              
+              toast.success(`Wallet funded: ₦${amountNaira.toLocaleString()}! New balance: ₦${balanceNaira.toLocaleString()} 💰`);
+              
+              // Update wallet balance immediately
+              setWalletNaira(balanceNaira);
+              
+              // Pulse wallet UI
+              setWalletPulse(true);
+              setTimeout(() => setWalletPulse(false), 600);
+            }
+          }
+        )
+        .subscribe();
+
       // Subscribe to notifications for settings updates (real-time updates)
       settingsChannel = supabase
         .channel("realtime:settings:notifications")
@@ -456,6 +531,9 @@ export default function CustomerPage() {
       if (contributionsChannel) supabase.removeChannel(contributionsChannel);
       if (settingsChannel) supabase.removeChannel(settingsChannel);
       if (transactionsChannel) supabase.removeChannel(transactionsChannel);
+      if (walletChannel) supabase.removeChannel(walletChannel);
+      if (topupChannel) supabase.removeChannel(topupChannel);
+      if (walletBroadcastChannel) supabase.removeChannel(walletBroadcastChannel);
       
       // Clear any pending timeouts
       if (refreshTimeout) clearTimeout(refreshTimeout);
@@ -1083,6 +1161,10 @@ export default function CustomerPage() {
               <BarChart3 className="h-4 w-4 mr-1" />
               AI Insights
             </TabsTrigger>
+            <TabsTrigger value="investments" className="flex-1 sm:flex-none">
+              <TrendingUp className="h-4 w-4 mr-1" />
+              Live Markets
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="history">
             <motion.div whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}>
@@ -1096,9 +1178,29 @@ export default function CustomerPage() {
                   ) : (
                     <ul className="mt-2 space-y-2 text-sm">
                       {history.map((h) => (
-                        <li key={h.id} className="flex justify-between border-b pb-1 border-neutral-800">
-                          <span>{format(new Date(h.contributed_at), "PPP")}</span>
-                          <span>₦{Math.round((h.amount_kobo ?? 0) / 100).toLocaleString()}</span>
+                        <li 
+                          key={h.id} 
+                          className="flex justify-between items-center border-b pb-2 border-neutral-800 hover:bg-white/5 rounded-lg px-2 py-1 cursor-pointer transition-colors group"
+                          onClick={() => {
+                            // Try to find the transaction ID from contributions
+                            // For now, we'll use the contribution ID as a fallback
+                            router.push(`/transaction/${h.id}`);
+                          }}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium group-hover:text-orange-400 transition-colors">
+                              {format(new Date(h.contributed_at), "MMM d, yyyy")}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {format(new Date(h.contributed_at), "h:mm a")}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-green-400">
+                              ₦{Math.round((h.amount_kobo ?? 0) / 100).toLocaleString()}
+                            </span>
+                            <span className="text-gray-400 group-hover:text-orange-400 transition-colors">→</span>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -1316,6 +1418,26 @@ export default function CustomerPage() {
                     prev7Naira={prev7Naira}
                     sparkPoints={sparkPoints}
                   />
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          
+          
+          <TabsContent value="investments">
+            <motion.div 
+              whileHover={{ y: -2 }} 
+              transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.6 }}
+            >
+              <Card className="border border-white/20 dark:border-white/10 bg-white/30 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-[6px_6px_20px_rgba(0,0,0,0.25),_-6px_-6px_20px_rgba(255,255,255,0.05)]">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-green-500" />
+                    Live Market Dashboard
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RealTimeMarketDashboard />
                 </CardContent>
               </Card>
             </motion.div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export function RealTimeTransactionHistory({
   userId, 
   className = "" 
 }: RealTimeTransactionHistoryProps) {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -306,7 +308,8 @@ export function RealTimeTransactionHistory({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.05 }}
-                  className="flex items-center justify-between p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                  className="flex items-center justify-between p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300 cursor-pointer group"
+                  onClick={() => router.push(`/transaction/${transaction.id}`)}
                 >
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-xl ${getTransactionColor(transaction.type, transaction.amount_kobo)}`}>
@@ -328,23 +331,26 @@ export function RealTimeTransactionHistory({
                     </div>
                   </div>
                   
-                  <div className="text-right">
-                    <p className={`font-bold ${
-                      transaction.amount_kobo > 0 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
-                    }`}>
-                      {transaction.amount_kobo > 0 ? '+' : ''}{formatAmount(transaction.amount_kobo)}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {getStatusIcon(transaction.status)}
-                      <Badge 
-                        variant={transaction.status === 'completed' ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {transaction.status}
-                      </Badge>
+                  <div className="text-right flex items-center gap-2">
+                    <div>
+                      <p className={`font-bold ${
+                        transaction.amount_kobo > 0 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {transaction.amount_kobo > 0 ? '+' : ''}{formatAmount(transaction.amount_kobo)}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {getStatusIcon(transaction.status)}
+                        <Badge 
+                          variant={transaction.status === 'completed' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {transaction.status}
+                        </Badge>
+                      </div>
                     </div>
+                    <span className="text-gray-400 group-hover:text-orange-500 transition-colors">→</span>
                   </div>
                 </motion.div>
               ))}

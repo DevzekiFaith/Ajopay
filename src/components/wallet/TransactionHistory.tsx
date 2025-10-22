@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { Search, Filter, Download, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
@@ -31,6 +32,7 @@ interface TransactionHistoryProps {
 }
 
 export function TransactionHistory({ userId, isCrypto = false }: TransactionHistoryProps) {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -250,7 +252,8 @@ export function TransactionHistory({ userId, isCrypto = false }: TransactionHist
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer group"
+              onClick={() => router.push(`/transaction/${tx.id}`)}
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -261,22 +264,30 @@ export function TransactionHistory({ userId, isCrypto = false }: TransactionHist
                     {getStatusBadge(tx.status)}
                     {getTypeBadge(tx.type)}
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {format(new Date(tx.created_at), 'MMM d, yyyy h:mm a')}
-                  </p>
+                  <div className="flex flex-col">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {format(new Date(tx.created_at), 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {format(new Date(tx.created_at), 'h:mm a')}
+                    </p>
+                  </div>
                   {tx.reference && (
                     <p className="text-xs text-gray-400 font-mono">
                       Ref: {tx.reference}
                     </p>
                   )}
                 </div>
-                <div className="text-right">
-                  <p className={`font-medium ${tx.type === 'withdrawal' || tx.type === 'penalty' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                    {tx.type === 'withdrawal' || tx.type === 'penalty' ? '-' : '+'}
-                    {isCrypto 
-                      ? `${(tx.amount_kobo / 100000000).toFixed(8)} BTC` 
-                      : `₦${(tx.amount_kobo / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                  </p>
+                <div className="text-right flex items-center gap-2">
+                  <div>
+                    <p className={`font-medium ${tx.type === 'withdrawal' || tx.type === 'penalty' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                      {tx.type === 'withdrawal' || tx.type === 'penalty' ? '-' : '+'}
+                      {isCrypto 
+                        ? `${(tx.amount_kobo / 100000000).toFixed(8)} BTC` 
+                        : `₦${(tx.amount_kobo / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                    </p>
+                  </div>
+                  <span className="text-gray-400 group-hover:text-orange-500 transition-colors">→</span>
                 </div>
               </div>
             </motion.div>

@@ -107,12 +107,24 @@ export async function GET() {
       const last7Naira = Math.round(last7 / 100);
       const prev7Naira = Math.round(prev7 / 100);
       
-      // Create mock history
-      const mockHistory = mockContributions.map((c, i) => ({
-        id: `mock-${i}`,
-        amount_kobo: c.amount_kobo,
-        contributed_at: c.contributed_at
-      }));
+      // Create mock history with deterministic UUIDs based on contribution data
+      const mockHistory = mockContributions.map((c, i) => {
+        // Create a deterministic UUID based on the contribution data
+        const seed = `${c.contributed_at}-${c.amount_kobo}-${i}`;
+        const hash = seed.split('').reduce((a, b) => {
+          a = ((a << 5) - a) + b.charCodeAt(0);
+          return a & a;
+        }, 0);
+        
+        // Generate a deterministic UUID-like string
+        const uuid = `00000000-0000-4000-8000-${Math.abs(hash).toString(16).padStart(12, '0')}`;
+        
+        return {
+          id: uuid,
+          amount_kobo: c.amount_kobo,
+          contributed_at: c.contributed_at
+        };
+      });
       
       // Create mock spark points
       const days = Array.from({ length: 14 }).map((_, i) => {

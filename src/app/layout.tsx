@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import BackButton from "@/components/BackButton";
 import Script from "next/script";
-import { Toaster } from "sonner";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { ToastProvider } from "@/components/ToastProvider";
 import { MorphModal } from "@/components/ui/morph-modal";
 import { LayoutDashboard, UserRound, BadgePercent, Shield, LogIn } from "lucide-react";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -11,7 +10,9 @@ import { ConditionalNav } from "@/components/ConditionalNav";
 import { Footer } from "@/components/Footer";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import Chatbot from "@/components/AI/Chatbot";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Suspense } from "react";
+import { PageLoadingSpinner } from "@/components/LoadingSpinner";
 
 
 // Using system fonts to avoid Google Fonts loading issues
@@ -116,15 +117,13 @@ export const metadata: Metadata = {
   category: "Finance",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Remove async user authentication to prevent hydration issues
+  // User authentication will be handled client-side in components that need it
   
   return (
     <html lang="en" className={fontClasses}>
@@ -194,11 +193,15 @@ export default async function RootLayout({
       </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ConditionalNav />
-          <BackButton />
-          <main className="font-sans antialiased">
-            {children}
-          </main>
+          <ErrorBoundary>
+            <ConditionalNav />
+            <BackButton />
+            <main className="font-sans antialiased">
+              <Suspense fallback={<PageLoadingSpinner />}>
+                {children}
+              </Suspense>
+            </main>
+          </ErrorBoundary>
           {/* Mobile floating morph modal trigger - show always; contents depend on auth */}
           <div className="sm:hidden fixed bottom-5 right-5 z-40">
             <MorphModal
@@ -211,43 +214,37 @@ export default async function RootLayout({
                 </button>
               }
               title="Quick Actions"
-              description={user ? "Handy shortcuts for mobile" : "Sign in to access the app"}
+              description="Handy shortcuts for mobile"
             >
               <div className="grid gap-2 text-sm">
-                {user ? (
-                  <>
-                    <a href="/dashboard" className="hover:opacity-80 flex items-center gap-2">
-                      <LayoutDashboard className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </a>
-                    <a href="/customer" className="hover:opacity-80 flex items-center gap-2">
-                      <UserRound className="h-4 w-4" />
-                      <span>Customer</span>
-                    </a>
-                    <a href="/agent" className="hover:opacity-80 flex items-center gap-2">
-                      <BadgePercent className="h-4 w-4" />
-                      <span>Agent</span>
-                    </a>
-                    <a href="/admin" className="hover:opacity-80 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      <span>Admin</span>
-                    </a>
-                  </>
-                ) : (
-                  <a href="/sign-in" className="hover:opacity-80 flex items-center gap-2">
-                    <LogIn className="h-4 w-4" />
-                    <span>Sign In</span>
-                  </a>
-                )}
+                <a href="/dashboard" className="hover:opacity-80 flex items-center gap-2">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Dashboard</span>
+                </a>
+                <a href="/customer" className="hover:opacity-80 flex items-center gap-2">
+                  <UserRound className="h-4 w-4" />
+                  <span>Customer</span>
+                </a>
+                <a href="/agent" className="hover:opacity-80 flex items-center gap-2">
+                  <BadgePercent className="h-4 w-4" />
+                  <span>Agent</span>
+                </a>
+                <a href="/admin" className="hover:opacity-80 flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span>Admin</span>
+                </a>
+                <a href="/sign-in" className="hover:opacity-80 flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  <span>Sign In</span>
+                </a>
               </div>
             </MorphModal>
           </div>
           <Footer />
-          <Toaster richColors position="top-right" closeButton />
+          <ToastProvider />
           <SpeedInsights />
           <Analytics />
-          {/* AI Chatbot - only show for authenticated users */}
-          {user && <Chatbot userId={user.id} />}
+          {/* AI Chatbot - will be handled client-side in components that need it */}
         </ThemeProvider>
         {/* Service Worker temporarily disabled to fix caching issues */}
         <Script id="sw-register" strategy="afterInteractive">{

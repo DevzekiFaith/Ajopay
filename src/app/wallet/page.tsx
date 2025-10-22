@@ -29,6 +29,7 @@ import { NotificationSystem } from "@/components/Notifications/NotificationSyste
 import { AfricanPatterns, AfricanGlassmorphismCard, AfricanButton } from "@/components/wallet/AfricanPatterns";
 import { RealTimeTransactionHistory } from "@/components/wallet/RealTimeTransactionHistory";
 import { WalletDashboard } from "@/components/wallet/WalletDashboard";
+import { toast } from "sonner";
 
 interface WalletData {
   balance_kobo: number;
@@ -131,9 +132,55 @@ export default function WalletPage() {
       )
       .subscribe();
 
+    // Listen to wallet topups for immediate feedback
+    const topupChannel = supabase
+      .channel('wallet_topup_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'wallet_topups',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Wallet topup received:', payload);
+          const topup = payload?.new;
+          if (topup?.amount_kobo) {
+            const amountNaira = Math.round(topup.amount_kobo / 100);
+            toast.success(`Wallet funded: ₦${amountNaira.toLocaleString()}! 💰`);
+          }
+          loadWalletData(); // Reload wallet data
+        }
+      )
+      .subscribe();
+
+    // Listen to wallet balance updates via broadcast
+    const walletBroadcastChannel = supabase
+      .channel('wallet_updates')
+      .on(
+        'broadcast',
+        { event: 'wallet_balance_updated' },
+        (payload) => {
+          console.log('Wallet balance update received:', payload);
+          if (payload.payload?.user_id === user.id) {
+            const amountAdded = payload.payload.amount_added_kobo;
+            const newBalance = payload.payload.new_balance_kobo;
+            const amountNaira = Math.round(amountAdded / 100);
+            const balanceNaira = Math.round(newBalance / 100);
+            
+            toast.success(`Wallet funded: ₦${amountNaira.toLocaleString()}! New balance: ₦${balanceNaira.toLocaleString()} 💰`);
+            loadWalletData(); // Reload wallet data
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(walletChannel);
       supabase.removeChannel(transactionChannel);
+      supabase.removeChannel(topupChannel);
+      supabase.removeChannel(walletBroadcastChannel);
     };
   }, [user?.id]);
 

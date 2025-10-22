@@ -9,6 +9,8 @@ import { useTheme } from "next-themes";
 import { NotificationBell } from "@/components/Notifications/NotificationBell";
 import { AjoPaySpinnerCompact } from "@/components/ui/AjoPaySpinner";
 import { TrialStatus } from "@/components/TrialStatus";
+import { useErrorHandler } from "@/components/ErrorBoundary";
+import { safeAsync } from "@/lib/supabase/client";
 
 export function Nav() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -18,16 +20,32 @@ export function Nav() {
   const [isLoading, setIsLoading] = useState(true);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const errorHandler = useErrorHandler();
 
   const signOut = async () => {
     setSigningOut(true);
     try {
       try { if (typeof navigator !== "undefined" && "vibrate" in navigator) (navigator as { vibrate: (pattern: number) => void }).vibrate(8); } catch {}
-      await supabase.auth.signOut();
-      toast.success("Signed out");
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 400);
+      
+      const result = await safeAsync(
+        () => supabase.auth.signOut(),
+        null,
+        'Sign out'
+      );
+
+      if (result.success) {
+        toast.success("Signed out");
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 400);
+      } else {
+        toast.error("Failed to sign out");
+        errorHandler(new Error(result.error || 'Sign out failed'));
+      }
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("Failed to sign out");
+      errorHandler(error as Error);
     } finally {
       setSigningOut(false);
     }
