@@ -93,13 +93,18 @@ export async function POST(req: NextRequest) {
     // Determine callback URL based on payment type
     const metadata = body.metadata || {};
     const isWalletDeposit = metadata.type === 'wallet_deposit';
+    const isSubscriptionPayment = amount_kobo === 425000; // ₦4,250 subscription payment
     
     let callbackUrl = undefined;
     if (publicUrl) {
       if (isWalletDeposit) {
         callbackUrl = `${publicUrl}/wallet?payment=success&amount=${amount_kobo/100}`;
-      } else {
+      } else if (isSubscriptionPayment) {
+        // Subscription payment - redirect to account creation
         callbackUrl = `${publicUrl}/sign-up?payment=success&redirectTo=/customer`;
+      } else {
+        // Other payments go directly to customer page
+        callbackUrl = `${publicUrl}/customer?payment=success`;
       }
     }
 

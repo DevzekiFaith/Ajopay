@@ -129,7 +129,7 @@ export function Nav() {
           </button>
           {!isLoading && user && user.id ? (
             <div className="flex items-center gap-2">
-              <TrialStatus onUpgrade={() => window.location.href = '/api/payments/initialize?plan=king&amount=1200'} />
+              <TrialStatus onUpgrade={() => window.location.href = '/api/payments/initialize?plan=king&amount=4250'} />
               <div className="relative">
                 <NotificationBell 
                   userId={user.id} 
@@ -175,7 +175,7 @@ export function Nav() {
         <div className="sm:hidden flex items-center gap-2">
           {!isLoading && user && user.id ? (
             <div className="flex items-center gap-2">
-              <TrialStatus onUpgrade={() => window.location.href = '/api/payments/initialize?plan=king&amount=1200'} />
+              <TrialStatus onUpgrade={() => window.location.href = '/api/payments/initialize?plan=king&amount=4250'} />
               <div className="relative">
                 <NotificationBell 
                   userId={user.id} 

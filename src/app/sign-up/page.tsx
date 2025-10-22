@@ -137,7 +137,9 @@ export default function SignUpPage() {
         } else if (plan && amount && redirectTo === '/payment') {
           // This is a subscription sign-up, redirect to payment page
           console.log('💳 Subscription sign-up completed, redirecting to payment');
-          router.push(`/payment?plan=${plan}&amount=${amount}&amount_kobo=${parseInt(amount) * 100}`);
+          // Use the new subscription amount of ₦4,250
+          const subscriptionAmount = plan === 'king_elite' ? '4250' : amount;
+          router.push(`/payment?plan=${plan}&amount=${subscriptionAmount}&amount_kobo=${parseInt(subscriptionAmount) * 100}`);
         } else {
           // Regular sign-up, redirect to plan selection
           router.push("/?newUser=true");

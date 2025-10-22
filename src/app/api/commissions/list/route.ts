@@ -188,23 +188,31 @@ export async function GET(request: Request) {
         const goalBonus = simulatedStreak > 7 ? 25000 : 0; // ₦250 for goal completion if active user
         const referralBonus = simulatedStreak > 14 ? 100000 : 0; // ₦1000 for referral if very active
         
-        const sampleCommissions = [
-          {
-            id: 'sample-1',
-            commission_type: 'daily_checkin',
-            amount_kobo: baseAmount + streakBonus,
-            description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
-            status: 'paid',
-            created_at: new Date(Date.now() - 86400000).toISOString() // Yesterday
-          },
-          {
-            id: 'sample-2',
-            commission_type: 'daily_checkin',
-            amount_kobo: baseAmount + streakBonus,
-            description: `Daily check-in bonus (Streak: ${simulatedStreak + 1} days)`,
-            status: 'pending', // Today's check-in is pending/available
-            created_at: new Date().toISOString()
-          }
+      const sampleCommissions = [
+        {
+          id: 'sample-1',
+          commission_type: 'daily_checkin',
+          amount_kobo: baseAmount + streakBonus,
+          description: `Daily check-in bonus (Streak: ${simulatedStreak} days)`,
+          status: 'paid',
+          created_at: new Date(Date.now() - 86400000).toISOString() // Yesterday
+        },
+        {
+          id: 'sample-2',
+          commission_type: 'daily_checkin',
+          amount_kobo: baseAmount + streakBonus,
+          description: `Daily check-in bonus (Streak: ${simulatedStreak + 1} days)`,
+          status: 'paid', // Today's check-in is now paid (user just checked in)
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'demo-checkin-latest',
+          commission_type: 'daily_checkin',
+          amount_kobo: 10000, // ₦100 from the latest check-in
+          description: 'Daily check-in bonus - Day 9',
+          status: 'paid',
+          created_at: new Date().toISOString()
+        }
         ];
 
         // Add goal completion bonus if user is active enough

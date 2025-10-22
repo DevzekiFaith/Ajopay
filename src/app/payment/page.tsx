@@ -21,7 +21,7 @@ export default function PaymentPage() {
   const planDetails = {
     king: { 
       name: "King Elite", 
-      price: "₦1,200", 
+      price: "₦4,250", 
       features: [
         "Unlimited savings goals",
         "Advanced gamification & badges",
@@ -60,7 +60,10 @@ export default function PaymentPage() {
       const userResponse = await fetch('/api/auth/me');
       if (!userResponse.ok) {
         // User not authenticated, redirect to sign-up with payment info for new users
-        const redirectUrl = `/sign-up?plan=${plan}&amount=${amount}&amount_kobo=${amountKobo}&redirectTo=/payment&newUser=true`;
+        // Use the new subscription amount of ₦4,250 for King Elite plan
+        const subscriptionAmount = plan === 'king' ? '4250' : amount;
+        const subscriptionAmountKobo = plan === 'king' ? '425000' : amountKobo;
+        const redirectUrl = `/sign-up?plan=${plan}&amount=${subscriptionAmount}&amount_kobo=${subscriptionAmountKobo}&redirectTo=/payment&newUser=true`;
         router.push(redirectUrl);
         return;
       }

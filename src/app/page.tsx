@@ -606,7 +606,7 @@ export default function Home() {
                   for 4 days
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                  Then ₦1,200 one-time
+                  Then ₦4,250 one-time
                 </div>
               </div>
 

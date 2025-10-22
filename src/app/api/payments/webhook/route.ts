@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Convert trial to paid subscription if this is a subscription payment
-      if (amount_naira === 1200) { // King Elite subscription amount
+      if (amount_naira === 4250) { // King Elite subscription amount
         try {
           const { error: convertError } = await supabase
             .from('user_subscriptions')

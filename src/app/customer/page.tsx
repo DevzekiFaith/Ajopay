@@ -1335,7 +1335,7 @@ export default function CustomerPage() {
         {showTrialRestriction && userId && (
           <TrialRestriction
             userId={userId}
-            onUpgrade={() => window.location.href = '/api/payments/initialize?plan=king&amount=1200'}
+            onUpgrade={() => window.location.href = '/api/payments/initialize?plan=king&amount=4250'}
             onClose={() => setShowTrialRestriction(false)}
           />
         )}

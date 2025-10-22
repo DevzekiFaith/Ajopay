@@ -76,6 +76,48 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
+      .on("broadcast", { event: "commission_earned" }, (payload) => {
+        const event = payload.payload as RealtimeEvent;
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">💰</div>
+            <div>
+              <div className="font-bold">Commission Earned!</div>
+              <div className="text-sm">₦{event.data.amount?.toLocaleString()} - {event.data.description}</div>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+        setLastUpdate(new Date());
+      })
+      .on("broadcast", { event: "daily_checkin" }, (payload) => {
+        const event = payload.payload as RealtimeEvent;
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">✅</div>
+            <div>
+              <div className="font-bold">Daily Check-in Complete!</div>
+              <div className="text-sm">Streak: {event.data.streak} days - ₦{event.data.amount?.toLocaleString()} earned</div>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+        setLastUpdate(new Date());
+      })
+      .on("broadcast", { event: "withdrawal_processed" }, (payload) => {
+        const event = payload.payload as RealtimeEvent;
+        toast.success(
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">💸</div>
+            <div>
+              <div className="font-bold">Withdrawal Processed!</div>
+              <div className="text-sm">₦{event.data.amount?.toLocaleString()} - {event.data.method}</div>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+        setLastUpdate(new Date());
+      })
       .on("broadcast", { event: "level_up" }, (payload) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
@@ -370,6 +412,73 @@ export function useRealtimeUpdates(userId?: string) {
       )
       .subscribe();
 
+    // Listen to commission changes
+    const commissionsChannel = supabase
+      .channel("user_commissions_realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_commissions",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('Commission change detected:', payload);
+          const commission = payload.new || payload.old;
+          
+          if (payload.eventType === 'INSERT' && commission) {
+            // New commission earned
+            triggerUpdate('commission_earned', {
+              amount: (commission as any).amount_kobo / 100,
+              description: (commission as any).description,
+              type: (commission as any).commission_type,
+              status: (commission as any).status
+            });
+          } else if (payload.eventType === 'UPDATE' && commission) {
+            // Commission status updated (e.g., from pending to paid)
+            triggerUpdate('commission_updated', {
+              amount: (commission as any).amount_kobo / 100,
+              description: (commission as any).description,
+              status: (commission as any).status,
+              previousStatus: (payload.old as any)?.status
+            });
+          }
+          
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe();
+
+    // Listen to check-in changes
+    const checkinsChannel = supabase
+      .channel("user_checkins_realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_checkins",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('Check-in change detected:', payload);
+          const checkin = payload.new || payload.old;
+          
+          if (payload.eventType === 'INSERT' && checkin) {
+            // New daily check-in
+            triggerUpdate('daily_checkin', {
+              streak: (checkin as any).streak_count,
+              date: (checkin as any).checkin_date,
+              amount: 50 + Math.min((checkin as any).streak_count * 10, 50) // Calculate expected amount
+            });
+          }
+          
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(userChannel);
       supabase.removeChannel(goalsChannel);
@@ -378,6 +487,8 @@ export function useRealtimeUpdates(userId?: string) {
       supabase.removeChannel(gamificationChannel);
       supabase.removeChannel(walletChannel);
       supabase.removeChannel(transactionsChannel);
+      supabase.removeChannel(commissionsChannel);
+      supabase.removeChannel(checkinsChannel);
       setIsConnected(false);
     };
   }, [userId, supabase]);
