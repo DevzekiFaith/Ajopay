@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
   Dialog, 
@@ -18,9 +17,6 @@ import {
 import { 
   Send, 
   User, 
-  Phone, 
-  Mail, 
-  CreditCard, 
   Shield, 
   CheckCircle, 
   AlertCircle,
@@ -62,7 +58,6 @@ export function FintechSendMoney({
   const [description, setDescription] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState<User | null>(null);
   const [recipientInput, setRecipientInput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Bank transfer mode (via Paystack)

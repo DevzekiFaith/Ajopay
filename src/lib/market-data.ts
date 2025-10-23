@@ -34,7 +34,6 @@ export interface AlphaVantageResponse {
 
 // Alpha Vantage API key from environment variables
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'demo';
-const ALPHA_VANTAGE_BASE_URL = 'https://www.alphavantage.co/query';
 
 // Log API key status on startup
 if (typeof window === 'undefined') { // Server-side only

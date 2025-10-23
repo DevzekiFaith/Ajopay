@@ -4,16 +4,10 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { 
-  TrendingUp, 
-  Target, 
   Calendar, 
-  Wallet, 
   Activity, 
   Zap,
   BarChart3,
-  Clock,
-  DollarSign,
-  Flame,
   Brain
 } from "lucide-react";
 
@@ -38,7 +32,6 @@ export default function LiveAnalyticsDashboard({
 }: LiveAnalyticsProps) {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
@@ -312,7 +305,6 @@ export default function LiveAnalyticsDashboard({
   }
 
   const formatNaira = (amount: number) => `₦${Math.round(amount / 100).toLocaleString()}`;
-  const formatKobo = (amount: number) => `₦${Math.round(amount / 100).toLocaleString()}`;
 
   return (
     <div className="space-y-4">

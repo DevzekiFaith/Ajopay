@@ -86,8 +86,7 @@ export class QueryOptimizer {
   // Efficient counting with approximate results for large datasets
   static async getApproximateCount(
     supabase: any,
-    table: string,
-    conditions?: Record<string, any>
+    table: string
   ) {
     // For tables with 250k+ records, use approximate counting
     const { data, error } = await supabase
@@ -167,7 +166,7 @@ export class BackgroundProcessor {
     return job;
   }
   
-  private static async calculateCommissionSummary(userId: string) {
+  private static async calculateCommissionSummary() {
     // This would be implemented with actual database queries
     // For now, return a placeholder
     return {

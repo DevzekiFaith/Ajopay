@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { getUserSubscriptionStatus, canUserPerformAction } from '@/lib/subscription';
+import { canUserPerformAction } from '@/lib/subscription';
 import type { SubscriptionStatus } from '@/lib/subscription';
 
 export function useSubscription() {

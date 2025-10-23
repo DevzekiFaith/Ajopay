@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,15 +17,7 @@ import {
   TrendingUp, 
   TrendingDown, 
   ArrowUpDown,
-  Globe,
-  Shield,
-  Clock,
-  Calculator,
-  History,
-  Star,
-  AlertCircle,
-  CheckCircle,
-  Zap
+  History
 } from "lucide-react";
 
 interface Currency {
@@ -105,9 +96,9 @@ const supportedCurrencies: Currency[] = [
 ];
 
 export function MultiCurrencySupport() {
-  const [currencies, setCurrencies] = useState<Currency[]>(supportedCurrencies);
+  const [currencies] = useState<Currency[]>(supportedCurrencies);
   const [userWallets, setUserWallets] = useState<CurrencyWallet[]>([]);
-  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
+  const [exchangeRates] = useState<ExchangeRate[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -504,4 +495,5 @@ export function MultiCurrencySupport() {
     </div>
   );
 }
+
 

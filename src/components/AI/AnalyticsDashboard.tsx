@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Target, Activity, Users, DollarSign } from "lucide-react";
+import { TrendingUp, Target, Activity, Users, DollarSign } from "lucide-react";
 import { analytics, UserInsight } from "@/lib/analytics";
 
 interface AnalyticsDashboardProps {

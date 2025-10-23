@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trophy, Star, Flame, Target, Gift, Crown, Zap, Award, TrendingUp } from "lucide-react";
+import { Trophy, Star, Target, Gift, Crown, Zap, Award, TrendingUp } from "lucide-react";
 import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -127,7 +127,6 @@ export function Gamification() {
     rewards: []
   });
   const [userBadges, setUserBadges] = useState<Badge[]>(badges);
-  const [availableBadges, setAvailableBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [celebratingLevel, setCelebratingLevel] = useState<number | null>(null);

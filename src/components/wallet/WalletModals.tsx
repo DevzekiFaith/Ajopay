@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { 
   X, 
   QrCode, 
@@ -19,7 +18,6 @@ import {
 import { toast } from "sonner";
 import { BankSelector } from "./BankSelector";
 import { AccountVerification } from "./AccountVerification";
-import { UserSearch } from "./UserSearch";
 import { FintechSendMoney } from "./FintechSendMoney";
 import { NigerianBank } from "@/lib/banks";
 
@@ -61,8 +59,6 @@ export function WalletModals({
   
   // Bank account details for withdrawals
   const [accountNumber, setAccountNumber] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [accountName, setAccountName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedBank, setSelectedBank] = useState<NigerianBank | null>(null);
   const [verifiedAccountName, setVerifiedAccountName] = useState('');

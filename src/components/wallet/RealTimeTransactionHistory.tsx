@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
-  Filter, 
   Download, 
   RefreshCw,
   ArrowUpRight,
@@ -18,8 +17,6 @@ import {
   Download as DownloadIcon,
   Upload,
   CreditCard,
-  Smartphone,
-  Banknote,
   Clock,
   CheckCircle,
   XCircle,
@@ -141,7 +138,7 @@ export function RealTimeTransactionHistory({
     }
   };
 
-  const getTransactionColor = (type: string, amount: number) => {
+  const getTransactionColor = (type: string) => {
     if (type === 'deposit' || type === 'receive' || type === 'commission') {
       return 'text-green-600 bg-green-500/20';
     } else if (type === 'withdrawal' || type === 'send') {
@@ -312,7 +309,7 @@ export function RealTimeTransactionHistory({
                   onClick={() => router.push(`/transaction/${transaction.id}`)}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-xl ${getTransactionColor(transaction.type, transaction.amount_kobo)}`}>
+                    <div className={`p-3 rounded-xl ${getTransactionColor(transaction.type)}`}>
                       {getTransactionIcon(transaction.type)}
                     </div>
                     <div>

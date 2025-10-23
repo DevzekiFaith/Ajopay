@@ -23,8 +23,9 @@ export default function ExportCsvButton() {
       a.remove();
       URL.revokeObjectURL(url);
       toast.success("CSV downloaded", { id: "export" });
-    } catch (e: any) {
-      toast.error(e.message || "Failed to export CSV", { id: "export" });
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Failed to export CSV";
+      toast.error(errorMessage, { id: "export" });
     }
   };
 

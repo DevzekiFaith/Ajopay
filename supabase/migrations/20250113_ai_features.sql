@@ -97,3 +97,4 @@ GRANT ALL ON smart_notifications TO anon, authenticated;
 
 
 
+

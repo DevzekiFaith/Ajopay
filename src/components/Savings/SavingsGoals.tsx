@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Target, Calendar, Trash2, Edit3, Trophy, Shield, Plane, Smartphone, GraduationCap, Home, Car, Briefcase, DollarSign } from "lucide-react";
+import { Plus, Target, Trash2, Edit3, Trophy, Shield, Plane, Smartphone, GraduationCap, Home, Car, Briefcase, DollarSign } from "lucide-react";
 import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -58,7 +58,7 @@ export function SavingsGoals() {
   });
 
   const supabase = getSupabaseBrowserClient();
-  const { isConnected, lastUpdate, triggerUpdate } = useRealtimeUpdates(currentUserId || undefined);
+  const { lastUpdate, triggerUpdate } = useRealtimeUpdates(currentUserId || undefined);
 
   // Load savings goals from database
   const loadGoals = async () => {
@@ -138,7 +138,7 @@ export function SavingsGoals() {
         category: newGoal.category || 'other'
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("savings_goals")
         .insert(goalData)
         .select()

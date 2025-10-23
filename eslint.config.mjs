@@ -18,6 +18,10 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "test-*.js",
+      "*.test.js",
+      "*.test.ts",
+      "*.test.tsx",
     ],
   },
   {
@@ -31,6 +35,7 @@ const eslintConfig = [
       "react/no-unescaped-entities": "warn",
       "react/jsx-no-duplicate-props": "warn",
       "@typescript-eslint/no-unused-expressions": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
     },
   },
 ];

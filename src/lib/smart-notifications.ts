@@ -54,7 +54,7 @@ class SmartNotificationEngine {
         
         return daysSinceLastSavings > expectedFrequency * 1.5; // 50% longer than usual
       },
-      message: (insights, events) => {
+      message: (insights) => {
         const savingsInsight = insights.find(i => i.insightType === 'savings_pattern');
         const avgAmount = savingsInsight?.insightData.averageAmount || 0;
         return `It's been a while since your last savings! Your average contribution is ₦${avgAmount.toLocaleString()}. Ready to save again? 💰`;
@@ -73,7 +73,6 @@ class SmartNotificationEngine {
         if (goalEvents.length === 0) return false;
         
         const latestGoal = goalEvents[goalEvents.length - 1];
-        const goalAmount = latestGoal.eventData.goalAmount || 0;
         const targetDate = new Date(latestGoal.eventData.targetDate);
         const daysRemaining = (targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
         
@@ -82,7 +81,6 @@ class SmartNotificationEngine {
       message: (insights, events) => {
         const goalEvents = events.filter(e => e.eventType === 'savings_goal_set');
         const latestGoal = goalEvents[goalEvents.length - 1];
-        const goalAmount = latestGoal.eventData.goalAmount || 0;
         const targetDate = new Date(latestGoal.eventData.targetDate);
         const daysRemaining = Math.ceil((targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         
@@ -112,7 +110,7 @@ class SmartNotificationEngine {
         
         return daysSinceLastOpen > expectedFrequency * 3; // 3x longer than usual
       },
-      message: (insights, events) => {
+      message: () => {
         return `We miss you! Your savings journey is waiting. Check your progress and keep building your financial future! 🌟`;
       },
       priority: 'low',
@@ -137,7 +135,7 @@ class SmartNotificationEngine {
         
         return !!reachedMilestone;
       },
-      message: (insights, events) => {
+      message: (insights) => {
         const savingsInsight = insights.find(i => i.insightType === 'savings_pattern');
         const totalSavings = savingsInsight?.insightData.totalSavings || 0;
         return `🎉 Congratulations! You've saved ₦${totalSavings.toLocaleString()}! You're building an amazing financial future!`;

@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Copy, Clock, CheckCircle, XCircle, AlertCircle, TrendingUp, TrendingDown, Wallet, CreditCard, Banknote, Coins } from "lucide-react";
+import { ArrowLeft, Copy, Clock, CheckCircle, XCircle, AlertCircle, TrendingUp, TrendingDown, Wallet, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 
@@ -142,7 +142,7 @@ export default function TransactionDetailPage() {
 
         // Try to fetch from transactions table first
         console.log('🔍 Checking transactions table...');
-        let { data: transactionData, error: transactionError } = await supabase
+        const { data: transactionData, error: transactionError } = await supabase
           .from('transactions')
           .select('*')
           .eq('id', transactionId)

@@ -2,10 +2,10 @@
 
 import * as React from "react"
 import { useTheme } from "next-themes"
-import { Toast, ToastProvider, ToastViewport } from "@/components/ui/toast"
+import { ToastProvider, ToastViewport } from "@/components/ui/toast"
 
 export function Toaster() {
-  const { theme } = useTheme()
+  useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {

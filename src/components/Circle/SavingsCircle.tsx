@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Users, Plus, Calendar, Clock, DollarSign, Crown, UserPlus, Settings, AlertCircle, CheckCircle, TrendingUp } from "lucide-react";
+import { Users, Plus, UserPlus, Settings } from "lucide-react";
 import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -62,66 +62,10 @@ interface Contribution {
   status: 'paid' | 'pending' | 'late';
 }
 
-const mockCircles: SavingsCircle[] = [
-  {
-    id: '1',
-    name: 'Tech Professionals Ajo',
-    description: 'Monthly savings circle for tech workers',
-    type: 'ajo',
-    contributionAmount: 50000,
-    frequency: 'monthly',
-    duration: 12,
-    maxMembers: 12,
-    currentMembers: [
-      {
-        id: '1',
-        name: 'Sarah Johnson',
-        avatar: '',
-        joinedAt: '2024-01-01',
-        contributionHistory: [],
-        totalContributed: 150000,
-        isAdmin: true,
-        payoutReceived: false
-      },
-      {
-        id: '2',
-        name: 'Michael Chen',
-        avatar: '',
-        joinedAt: '2024-01-01',
-        contributionHistory: [],
-        totalContributed: 150000,
-        isAdmin: false,
-        payoutReceived: false
-      }
-    ],
-    createdBy: '1',
-    createdAt: '2024-01-01',
-    startDate: '2024-02-01',
-    currentCycle: 3,
-    totalPool: 1800000,
-    nextPayoutDate: '2024-04-01',
-    nextPayoutRecipient: 'Michael Chen',
-    isActive: true,
-    joinCode: 'TECH2024',
-    rules: [
-      'Monthly contribution of ₦50,000',
-      'Payment due by 1st of each month',
-      'Late payment incurs 5% penalty',
-      'Payout order determined by lottery'
-    ]
-  }
-];
 
-const circleTypes = [
-  { value: 'ajo', label: 'Ajo (Rotating Savings)', description: 'Traditional rotating credit association' },
-  { value: 'esusu', label: 'Esusu (Daily Savings)', description: 'Daily contribution savings group' },
-  { value: 'thrift', label: 'Thrift Society', description: 'Fixed-term group savings' },
-  { value: 'investment', label: 'Investment Club', description: 'Collective investment group' }
-];
 
 export function SavingsCircles() {
   const [circles, setCircles] = useState<SavingsCircle[]>([]);
-  const [activeTab, setActiveTab] = useState('my-circles');
   const [showCreateCircle, setShowCreateCircle] = useState(false);
   const [showJoinCircle, setShowJoinCircle] = useState(false);
   const [loading, setLoading] = useState(true);

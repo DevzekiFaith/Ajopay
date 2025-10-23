@@ -7,10 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Trophy, Star, Flame, Target, Gift, Crown, Zap, Award, TrendingUp, TestTube } from "lucide-react";
+import { Trophy, Star, Target, Zap, Award, TestTube } from "lucide-react";
 
 export default function AchievementTestPage() {
-  const [isConnected, setConnected] = useState(false);
   const [testResults, setTestResults] = useState<string[]>([]);
   const supabase = getSupabaseBrowserClient();
 
