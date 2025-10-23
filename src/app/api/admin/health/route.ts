@@ -44,11 +44,11 @@ export async function GET() {
     let adminClient;
     try {
       adminClient = getSupabaseAdminClient();
-    } catch (error: any) {
+    } catch (error: unknown) {
       return NextResponse.json({ 
         status: "error",
         message: "Admin client initialization failed",
-        error: error.message
+        error: error instanceof Error ? error.message : "Unknown error"
       }, { status: 500 });
     }
 
@@ -78,12 +78,12 @@ export async function GET() {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Admin health check error:", error);
     return NextResponse.json({ 
       status: "error",
       message: "Internal server error",
-      error: error.message
+      error: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 });
   }
 }

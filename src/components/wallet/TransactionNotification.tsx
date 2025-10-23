@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { AjoPaySpinnerCompact } from '@/components/ui/AjoPaySpinner';
 import { getSupabaseBrowserClient, TransactionType, TransactionStatus } from '@/lib/supabase';
 

@@ -43,7 +43,7 @@ import {
 import { PersonalHealthDashboard } from "@/components/Monitoring/PersonalHealthDashboard";
 import LiveAnalyticsDashboard from "@/components/AI/LiveAnalyticsDashboard";
 import { RealTimeMarketDashboard } from "@/components/Investment/RealTimeMarketDashboard";
-import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff, BarChart3, Target } from "lucide-react";
+import { Bitcoin, Coins, Wallet, Crown, Gem, Sparkles, TrendingUp, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AfricanPatterns, AfricanGlassmorphismCard } from "@/components/wallet/AfricanPatterns";
 import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
@@ -72,7 +72,6 @@ export default function CustomerPage() {
   const [profileSettings, setProfileSettings] = useState<Record<string, any> | null>(null);
   const [autoBusy, setAutoBusy] = useState<boolean>(false);
   const [savingSettings, setSavingSettings] = useState<boolean>(false);
-  const [skipConfirm, setSkipConfirm] = useState<boolean>(false);
   const [walletType, setWalletType] = useState<'ngn' | 'crypto'>('ngn');
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -155,9 +154,6 @@ export default function CustomerPage() {
           
           if (settings) {
             setProfileSettings(settings);
-            if (typeof settings.customer_skip_confirm === "boolean") {
-              setSkipConfirm(settings.customer_skip_confirm);
-            }
             if (typeof settings.customer_auto_mark === "boolean") {
               setAutoMark(settings.customer_auto_mark);
             }
@@ -671,10 +667,6 @@ export default function CustomerPage() {
   }, [autoMark, history]);
 
   useEffect(() => {
-    try {
-      const v = localStorage.getItem("cust_skip_confirm");
-      setSkipConfirm(v === "1");
-    } catch { }
   }, []);
 
   const submit = async (overrideAmount?: number) => {

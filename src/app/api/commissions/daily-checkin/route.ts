@@ -343,30 +343,6 @@ export async function POST() {
       amount: `₦${(totalAmount / 100).toLocaleString()}`
     });
 
-    // Use the database function result
-    if (result.success) {
-      const totalAmount = 5000 + Math.min(result.streak * 1000, 5000);
-      return NextResponse.json({
-        success: true,
-        message: `Daily check-in successful! Earned ₦${(totalAmount / 100).toLocaleString()} (${result.streak} day streak)`,
-        commission: {
-          id: result.commission_id,
-          commission_type: 'daily_checkin',
-          amount_kobo: totalAmount,
-          description: `Daily check-in bonus - Day ${result.streak}`,
-          status: 'paid',
-          created_at: new Date().toISOString()
-        },
-        streakDays: result.streak,
-        amount: `₦${(totalAmount / 100).toLocaleString()}`
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        message: result.message,
-        streak: result.streak || 0
-      });
-    }
 
   } catch (error) {
     console.error('Daily check-in API error:', error);

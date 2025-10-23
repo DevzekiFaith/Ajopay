@@ -362,7 +362,7 @@ export function UserCommissionDashboard() {
           table: "commissions",
           filter: `user_id=eq.${currentUserId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Commission change detected:', payload);
           // Reload commission data
           setTimeout(() => loadCommissionData(), 1000);
@@ -381,7 +381,7 @@ export function UserCommissionDashboard() {
           table: "transactions",
           filter: `user_id=eq.${currentUserId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Transaction detected for commission check:', payload);
           // Check if this transaction should generate a commission
           const transaction = payload.new || payload.old;
@@ -411,7 +411,7 @@ export function UserCommissionDashboard() {
           table: "commission_payouts",
           filter: `user_id=eq.${currentUserId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Withdrawal change detected:', payload);
           // Reload commission data to update withdrawal history
           setTimeout(() => loadCommissionData(), 1000);
@@ -446,7 +446,7 @@ export function UserCommissionDashboard() {
           table: "wallets",
           filter: `profile_id=eq.${currentUserId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Wallet balance updated for commission check:', payload);
           // Reload commission data to reflect any balance changes
           setTimeout(() => loadCommissionData(), 1000);

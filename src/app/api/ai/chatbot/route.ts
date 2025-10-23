@@ -84,7 +84,7 @@ ${userContext}Respond to the user's question: "${message}"`;
       model: "gpt-3.5-turbo"
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Chatbot error:", error);
     
     // Fallback response if OpenAI is unavailable

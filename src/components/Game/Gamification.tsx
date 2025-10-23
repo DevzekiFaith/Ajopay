@@ -151,8 +151,8 @@ export function Gamification() {
         .eq("user_id", user.id);
 
       if (contributions) {
-        const totalSaved = contributions.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) / 100;
-        const uniqueDays = new Set(contributions.map(c => c.contributed_at)).size;
+        const totalSaved = contributions.reduce((sum: number, c: any) => sum + (c.amount_kobo || 0), 0) / 100;
+        const uniqueDays = new Set(contributions.map((c: any) => c.contributed_at)).size;
         
         // Calculate level and XP based on total saved
         const level = Math.floor(totalSaved / 1000) + 1;
@@ -161,7 +161,7 @@ export function Gamification() {
 
         // Calculate streak
         const today = new Date().toISOString().slice(0, 10);
-        const dates = contributions.map(c => c.contributed_at).sort().reverse();
+        const dates = contributions.map((c: any) => c.contributed_at).sort().reverse();
         let streak = 0;
         let currentDate = new Date(today);
         
@@ -254,7 +254,7 @@ export function Gamification() {
           table: "transactions",
           filter: `user_id=eq.${currentUserId}`,
         },
-        async (payload) => {
+        async (payload: any) => {
           console.log('New transaction detected for achievements:', payload.new);
           const transaction = payload.new;
           
@@ -273,7 +273,7 @@ export function Gamification() {
           table: "savings_goals",
           filter: `user_id=eq.${currentUserId}`,
         },
-        async (payload) => {
+        async (payload: any) => {
           console.log('New savings goal detected:', payload.new);
           // Check for goal-related achievements
           setTimeout(() => checkAndAwardBadges(), 1000);
@@ -344,12 +344,12 @@ export function Gamification() {
 
       if (!contributions) return;
 
-      const totalSaved = contributions.reduce((sum, c) => sum + (c.amount_kobo / 100), 0);
+      const totalSaved = contributions.reduce((sum: number, c: any) => sum + (c.amount_kobo / 100), 0);
       
       // Calculate streak
       let streak = 0;
       const uniqueDays = new Set<string>();
-      contributions.forEach(c => {
+      contributions.forEach((c: any) => {
         const day = new Date(c.created_at).toDateString();
         uniqueDays.add(day);
       });

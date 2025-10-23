@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { smartNotifications, generateUserNotifications, getPendingNotifications } from "@/lib/smart-notifications";
+import { generateUserNotifications, getPendingNotifications } from "@/lib/smart-notifications";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -80,9 +80,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Smart notifications API error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }
 
@@ -121,9 +121,9 @@ export async function GET(req: NextRequest) {
       count: data?.length || 0 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Smart notifications GET error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }
 

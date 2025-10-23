@@ -20,7 +20,7 @@ export function useRealtimeUpdates(userId?: string) {
     // Subscribe to user-specific updates
     const userChannel = supabase
       .channel(`user_updates_${userId}`)
-      .on("broadcast", { event: "goal_completed" }, (payload) => {
+      .on("broadcast", { event: "goal_completed" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -34,7 +34,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "goal_created" }, (payload) => {
+      .on("broadcast", { event: "goal_created" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -48,21 +48,21 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "goal_progress" }, (payload) => {
+      .on("broadcast", { event: "goal_progress" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
             <div className="text-2xl">📈</div>
             <div>
               <div className="font-bold">Goal Progress!</div>
-              <div className="text-sm">{String(event.data.goalTitle)} - ₦{event.data.newAmount?.toLocaleString()}</div>
+              <div className="text-sm">{String(event.data.goalTitle)} - ₦{typeof event.data.newAmount === 'number' ? event.data.newAmount.toLocaleString() : '0'}</div>
             </div>
           </div>,
           { duration: 3000 }
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "badge_earned" }, (payload) => {
+      .on("broadcast", { event: "badge_earned" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -76,49 +76,49 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "commission_earned" }, (payload) => {
+      .on("broadcast", { event: "commission_earned" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
             <div className="text-2xl">💰</div>
             <div>
               <div className="font-bold">Commission Earned!</div>
-              <div className="text-sm">₦{event.data.amount?.toLocaleString()} - {event.data.description}</div>
+              <div className="text-sm">₦{typeof event.data.amount === 'number' ? event.data.amount.toLocaleString() : '0'} - {String(event.data.description)}</div>
             </div>
           </div>,
           { duration: 5000 }
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "daily_checkin" }, (payload) => {
+      .on("broadcast", { event: "daily_checkin" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
             <div className="text-2xl">✅</div>
             <div>
               <div className="font-bold">Daily Check-in Complete!</div>
-              <div className="text-sm">Streak: {event.data.streak} days - ₦{event.data.amount?.toLocaleString()} earned</div>
+              <div className="text-sm">Streak: {String(event.data.streak)} days - ₦{typeof event.data.amount === 'number' ? event.data.amount.toLocaleString() : '0'} earned</div>
             </div>
           </div>,
           { duration: 5000 }
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "withdrawal_processed" }, (payload) => {
+      .on("broadcast", { event: "withdrawal_processed" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
             <div className="text-2xl">💸</div>
             <div>
               <div className="font-bold">Withdrawal Processed!</div>
-              <div className="text-sm">₦{event.data.amount?.toLocaleString()} - {event.data.method}</div>
+              <div className="text-sm">₦{typeof event.data.amount === 'number' ? event.data.amount.toLocaleString() : '0'} - {String(event.data.method)}</div>
             </div>
           </div>,
           { duration: 5000 }
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "level_up" }, (payload) => {
+      .on("broadcast", { event: "level_up" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "challenge_created" }, (payload) => {
+      .on("broadcast", { event: "challenge_created" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "challenge_joined" }, (payload) => {
+      .on("broadcast", { event: "challenge_joined" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -160,7 +160,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "challenge_completed" }, (payload) => {
+      .on("broadcast", { event: "challenge_completed" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -174,7 +174,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "circle_created" }, (payload) => {
+      .on("broadcast", { event: "circle_created" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -188,7 +188,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "circle_joined" }, (payload) => {
+      .on("broadcast", { event: "circle_joined" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "circle_contribution" }, (payload) => {
+      .on("broadcast", { event: "circle_contribution" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -216,7 +216,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "circle_updated" }, (payload) => {
+      .on("broadcast", { event: "circle_updated" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -230,7 +230,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "transaction_made" }, (payload) => {
+      .on("broadcast", { event: "transaction_made" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -244,7 +244,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "streak_updated" }, (payload) => {
+      .on("broadcast", { event: "streak_updated" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -258,7 +258,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "withdrawal_requested" }, (payload) => {
+      .on("broadcast", { event: "withdrawal_requested" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         toast.success(
           <div className="flex items-center gap-3">
@@ -272,7 +272,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .on("broadcast", { event: "withdrawal_updated" }, (payload) => {
+      .on("broadcast", { event: "withdrawal_updated" }, (payload: any) => {
         const event = payload.payload as RealtimeEvent;
         const status = String(event.data.status);
         const isCompleted = status === 'completed';
@@ -290,7 +290,7 @@ export function useRealtimeUpdates(userId?: string) {
         );
         setLastUpdate(new Date());
       })
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         setIsConnected(status === "SUBSCRIBED");
       });
 
@@ -360,7 +360,7 @@ export function useRealtimeUpdates(userId?: string) {
           table: "wallets",
           filter: `profile_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Wallet balance updated:', payload);
           setLastUpdate(new Date());
         }
@@ -378,7 +378,7 @@ export function useRealtimeUpdates(userId?: string) {
           table: "transactions",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const transaction = payload.new || payload.old;
           console.log('Transaction detected for real-time updates:', payload);
           
@@ -423,13 +423,13 @@ export function useRealtimeUpdates(userId?: string) {
           table: "user_commissions",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Commission change detected:', payload);
           const commission = payload.new || payload.old;
           
           if (payload.eventType === 'INSERT' && commission) {
             // New commission earned
-            triggerUpdate('commission_earned', {
+            triggerUpdate('transaction_made', {
               amount: (commission as any).amount_kobo / 100,
               description: (commission as any).description,
               type: (commission as any).commission_type,
@@ -437,7 +437,7 @@ export function useRealtimeUpdates(userId?: string) {
             });
           } else if (payload.eventType === 'UPDATE' && commission) {
             // Commission status updated (e.g., from pending to paid)
-            triggerUpdate('commission_updated', {
+            triggerUpdate('transaction_made', {
               amount: (commission as any).amount_kobo / 100,
               description: (commission as any).description,
               status: (commission as any).status,
@@ -461,13 +461,13 @@ export function useRealtimeUpdates(userId?: string) {
           table: "user_checkins",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Check-in change detected:', payload);
           const checkin = payload.new || payload.old;
           
           if (payload.eventType === 'INSERT' && checkin) {
             // New daily check-in
-            triggerUpdate('daily_checkin', {
+            triggerUpdate('streak_updated', {
               streak: (checkin as any).streak_count,
               date: (checkin as any).checkin_date,
               amount: 50 + Math.min((checkin as any).streak_count * 10, 50) // Calculate expected amount

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const supabase = getSupabaseServerClient();
     const { data: authData, error: authErr } = await supabase.auth.getUser();
@@ -31,8 +31,8 @@ export async function POST(request: Request) {
       userId: authData.user.id 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in promote user API:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
   }
 }

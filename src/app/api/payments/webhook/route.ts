@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
           
           // Trigger real-time update via broadcast
           try {
-            const { error: broadcastError } = await supabase
+            await supabase
               .channel('wallet_updates')
               .send({
                 type: 'broadcast',
@@ -186,11 +186,7 @@ export async function POST(req: NextRequest) {
                 }
               });
             
-            if (broadcastError) {
-              console.error("⚠️ Failed to broadcast wallet update:", broadcastError);
-            } else {
-              console.log("📡 Wallet balance update broadcasted successfully");
-            }
+            console.log("📡 Wallet balance update broadcasted successfully");
           } catch (broadcastErr) {
             console.error("⚠️ Error broadcasting wallet update:", broadcastErr);
           }
@@ -332,8 +328,7 @@ export async function POST(req: NextRequest) {
         ok: true, 
         message: "Payment processed successfully",
         amount_naira,
-        user_id,
-        topup_id: topupResult.id
+        user_id
       });
     }
 

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { 
@@ -22,13 +22,7 @@ import {
   MapPin,
   Clock,
   Shield,
-  Truck,
-  CreditCard,
-  Users,
-  TrendingUp,
   Package,
-  Camera,
-  Tag,
   DollarSign
 } from "lucide-react";
 
@@ -109,12 +103,6 @@ const productCategories = [
   { value: 'services', label: 'Services', icon: '🔧' }
 ];
 
-const conditionColors = {
-  new: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-  like_new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-  good: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
-  fair: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
-};
 
 export function SocialMarketplace() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -123,7 +111,6 @@ export function SocialMarketplace() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('products');
-  const [selectedItem, setSelectedItem] = useState<Product | Service | null>(null);
   const [showItemDialog, setShowItemDialog] = useState(false);
 
   // Mock data - replace with actual API calls
@@ -302,10 +289,6 @@ export function SocialMarketplace() {
     toast.success(`Initiating purchase of ${item.name}...`);
   };
 
-  const getCategoryIcon = (category: string) => {
-    const cat = productCategories.find(c => c.value === category);
-    return cat?.icon || '📦';
-  };
 
   if (loading) {
     return (

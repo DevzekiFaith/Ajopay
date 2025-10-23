@@ -182,7 +182,7 @@ export default function WalletDetailPage() {
           table: 'wallets',
           filter: `profile_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           loadWalletData(); // Reload wallet data
         }
       )
@@ -199,7 +199,7 @@ export default function WalletDetailPage() {
           table: 'transactions',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           loadWalletData(); // Reload wallet data
         }
       )

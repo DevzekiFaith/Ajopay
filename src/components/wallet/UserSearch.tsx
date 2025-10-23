@@ -10,12 +10,10 @@ import {
   Search, 
   User, 
   Mail, 
-  Phone,
   Check,
   Loader2,
   AlertCircle
 } from "lucide-react";
-import { toast } from "sonner";
 
 interface User {
   id: string;

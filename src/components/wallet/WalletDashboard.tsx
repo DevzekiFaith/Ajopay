@@ -12,7 +12,6 @@ import {
   Download, 
   Upload,
   CreditCard,
-  DollarSign,
   Activity,
   RefreshCw,
   Loader2

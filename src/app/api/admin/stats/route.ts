@@ -86,7 +86,7 @@ export async function GET() {
       allRows = data;
     }
 
-    const totalKobo = (allRows ?? []).reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
+    const totalKobo = (allRows ?? []).reduce((acc: number, r: { amount_kobo?: number }) => acc + (r.amount_kobo ?? 0), 0);
 
     // Build per-user totals (₦)
     const sumByUser: Record<string, number> = {};
@@ -139,7 +139,7 @@ export async function GET() {
       return NextResponse.json({ error: todayErr.message }, { status: 500 });
     }
 
-    const todayKobo = (todayRows ?? []).reduce((acc: number, r: any) => acc + (r.amount_kobo ?? 0), 0);
+    const todayKobo = (todayRows ?? []).reduce((acc: number, r: { amount_kobo?: number }) => acc + (r.amount_kobo ?? 0), 0);
 
     // Recent contributions
     const { data: recent, error: recentErr } = await admin
@@ -168,7 +168,7 @@ export async function GET() {
       return NextResponse.json({ error: last14Err.message }, { status: 500 });
     }
 
-    const rows14 = (last14Rows as any[]) ?? [];
+    const rows14 = (last14Rows as Array<{ amount_kobo?: number; contributed_at?: string }>) ?? [];
     const last7Start = new Date(end);
     last7Start.setDate(end.getDate() - 6);
     const prev7Start = new Date(end);
@@ -226,8 +226,8 @@ export async function GET() {
       recent: recent ?? [],
       today
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Server error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
   }
 }

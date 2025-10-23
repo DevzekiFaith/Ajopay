@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
-import { Search, Filter, Download, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AjoPaySpinnerCompact } from '@/components/ui/AjoPaySpinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -125,7 +125,7 @@ export function TransactionHistory({ userId, isCrypto = false }: TransactionHist
       
       const csvContent = [
         ['Date', 'Type', 'Status', 'Amount', 'Reference', 'Description'],
-        ...(data || []).map(tx => [
+        ...(data || []).map((tx: any) => [
           new Date(tx.created_at).toLocaleString(),
           tx.type,
           tx.status,

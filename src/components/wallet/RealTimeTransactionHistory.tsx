@@ -11,7 +11,6 @@ import {
   Search, 
   Download, 
   RefreshCw,
-  ArrowUpRight,
   ArrowDownLeft,
   Send,
   Download as DownloadIcon,
@@ -103,7 +102,7 @@ export function RealTimeTransactionHistory({
           table: 'transactions',
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Transaction change detected:', payload);
           // Refresh transactions when changes occur
           setTimeout(() => fetchTransactions(), 500);

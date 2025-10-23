@@ -25,8 +25,8 @@ export default function CustomersExportCsvButton({ rows }: { rows: Row[] }) {
       a.remove();
       URL.revokeObjectURL(url);
       toast.success("Customers CSV downloaded", { id: "customers-export" });
-    } catch (e: any) {
-      toast.error(e.message || "Failed to export customers CSV", { id: "customers-export" });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to export customers CSV", { id: "customers-export" });
     }
   };
 

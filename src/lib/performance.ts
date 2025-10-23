@@ -155,7 +155,7 @@ export class BackgroundProcessor {
       return this.jobs.get(jobKey);
     }
     
-    const job = this.calculateCommissionSummary(userId);
+    const job = this.calculateCommissionSummary();
     this.jobs.set(jobKey, job);
     
     // Clean up completed jobs

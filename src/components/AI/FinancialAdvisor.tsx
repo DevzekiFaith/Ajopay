@@ -10,8 +10,6 @@ import {
   TrendingUp, 
   Target, 
   Lightbulb, 
-  DollarSign, 
-  Calendar,
   AlertCircle,
   CheckCircle,
   Sparkles,

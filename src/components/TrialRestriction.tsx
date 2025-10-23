@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Crown, Clock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getUserSubscriptionStatus, formatTrialTimeRemaining } from "@/lib/subscription";
+import { formatTrialTimeRemaining } from "@/lib/subscription";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface TrialRestrictionProps {

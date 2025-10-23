@@ -29,7 +29,7 @@ export const getSupabaseBrowserClient = () => {
     supabaseClient = createBrowserClient(finalUrl, finalKey);
     
     // Add error handling to the client
-    supabaseClient.auth.onAuthStateChange((event, session) => {
+    supabaseClient.auth.onAuthStateChange((event: any, session: any) => {
       if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
         console.log('Auth state changed:', event);
       }

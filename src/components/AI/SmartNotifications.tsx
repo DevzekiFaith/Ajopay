@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bell, Check, X, AlertCircle, Info, CheckCircle } from "lucide-react";
+import { Bell, Check, AlertCircle, Info, CheckCircle } from "lucide-react";
 import { SmartNotification } from "@/lib/smart-notifications";
 
 interface SmartNotificationsProps {

@@ -15,7 +15,7 @@ import { PeerChallenges } from "@/components/Peer/PeerChallenges";
 import { SavingsCircles } from "@/components/Circle/SavingsCircle";
 import { UserCommissionDashboard } from "@/components/Commission/UserCommissionDashboard";
 import { RealTimeMarketDashboard } from "@/components/Investment/RealTimeMarketDashboard";
-import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart, TrendingUp as TrendingUpIcon, Building } from "lucide-react";
+import { Target, Award, Users, CircleDot, ArrowRight, Rocket, TrendingUp, Gamepad2, HandHeart, Building } from "lucide-react";
 
 type Role = "customer" | "admin";
 
@@ -223,7 +223,7 @@ function CustomerSection() {
           .on(
             "postgres_changes",
             { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${uid}` },
-            (payload) => {
+            (payload: any) => {
               const rec: any = payload.new ?? {};
               const nm = rec.full_name || rec.name || metaName || email || "Customer";
               setDisplayName(nm);

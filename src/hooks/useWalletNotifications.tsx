@@ -20,7 +20,7 @@ export function useWalletNotifications(userId?: string) {
     // Subscribe to wallet funding events
     const walletChannel = supabase
       .channel(`wallet_notifications_${userId}`)
-      .on("broadcast", { event: "wallet_funded" }, (payload) => {
+      .on("broadcast", { event: "wallet_funded" }, (payload: any) => {
         const notification = payload.payload as WalletNotification;
         
         // Show success toast with enhanced styling
@@ -66,7 +66,7 @@ export function useWalletNotifications(userId?: string) {
       .on("presence", { event: "sync" }, () => {
         setIsConnected(true);
       })
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         if (status === "SUBSCRIBED") {
           setIsConnected(true);
         } else if (status === "CLOSED") {
@@ -85,7 +85,7 @@ export function useWalletNotifications(userId?: string) {
           table: "wallet_topups",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const topup = payload.new;
           const amount_naira = Math.round(topup.amount_kobo / 100);
           

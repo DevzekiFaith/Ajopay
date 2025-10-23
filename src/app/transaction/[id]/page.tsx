@@ -15,7 +15,7 @@ import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 interface Transaction {
   id: string;
   amount_kobo: number;
-  type: 'deposit' | 'withdrawal' | 'commission' | 'penalty' | 'wallet_topup' | 'group_contribution' | 'send' | 'receive';
+  type: 'deposit' | 'withdrawal' | 'commission' | 'penalty' | 'wallet_topup' | 'group_contribution' | 'send' | 'receive' | 'contribution';
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
   reference: string;
   description?: string;
@@ -142,7 +142,7 @@ export default function TransactionDetailPage() {
 
         // Try to fetch from transactions table first
         console.log('🔍 Checking transactions table...');
-        const { data: transactionData, error: transactionError } = await supabase
+        let { data: transactionData, error: transactionError } = await supabase
           .from('transactions')
           .select('*')
           .eq('id', transactionId)
@@ -192,7 +192,7 @@ export default function TransactionDetailPage() {
                 description: 'Transaction (Wallet DB Unavailable)',
                 created_at: new Date().toISOString(),
                 completed_at: new Date().toISOString(),
-                metadata: { isMockData: true, isDatabaseError: true, originalError: walletError.message },
+                metadata: { isMockData: true, isDatabaseError: true, originalError: walletError instanceof Error ? walletError.message : String(walletError) },
                 user_id: user.id
               };
               setTransaction(fallbackTransaction);
@@ -281,7 +281,7 @@ export default function TransactionDetailPage() {
                     description: 'Transaction (Query Failed)',
                     created_at: new Date().toISOString(),
                     completed_at: new Date().toISOString(),
-                    metadata: { isMockData: true, isDatabaseError: true, originalError: contribError.message },
+                    metadata: { isMockData: true, isDatabaseError: true, originalError: contribError instanceof Error ? contribError.message : String(contribError) },
                     user_id: user.id
                   };
                   setTransaction(fallbackTransaction);
@@ -346,7 +346,7 @@ export default function TransactionDetailPage() {
                   description: 'Transaction (Direct Query Failed)',
                   created_at: new Date().toISOString(),
                   completed_at: new Date().toISOString(),
-                  metadata: { isMockData: true, isDatabaseError: true, originalError: directError.message },
+                  metadata: { isMockData: true, isDatabaseError: true, originalError: directError instanceof Error ? directError.message : String(directError) },
                   user_id: user.id
                 };
                 setTransaction(fallbackTransaction);
@@ -364,7 +364,7 @@ export default function TransactionDetailPage() {
               description: 'Transaction (Wallet Query Failed)',
               created_at: new Date().toISOString(),
               completed_at: new Date().toISOString(),
-              metadata: { isMockData: true, isDatabaseError: true, originalError: walletError.message },
+              metadata: { isMockData: true, isDatabaseError: true, originalError: walletError instanceof Error ? walletError.message : String(walletError) },
               user_id: user.id
             };
             setTransaction(fallbackTransaction);

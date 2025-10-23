@@ -2,17 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Users, Trophy, Plus, Send, Heart, MessageCircle, Share2, Crown, Target, Calendar, UserPlus, DollarSign, Flame, Award } from "lucide-react";
+import { Users, Trophy, Plus, Send, Heart, MessageCircle, Share2, UserPlus } from "lucide-react";
 import { AjoPaySpinner } from "@/components/ui/AjoPaySpinner";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -64,13 +59,6 @@ interface Post {
   };
 }
 
-interface Comment {
-  id: string;
-  userId: string;
-  userName: string;
-  content: string;
-  timestamp: string;
-}
 
 const supabase = getSupabaseBrowserClient();
 
@@ -85,7 +73,6 @@ export function PeerChallenges() {
   const [showShareAchievement, setShowShareAchievement] = useState(false);
   const [friendEmail, setFriendEmail] = useState('');
   const [addFriendMethod, setAddFriendMethod] = useState<'email' | 'referral' | 'share'>('email');
-  const [referralCode, setReferralCode] = useState('');
   const [newPost, setNewPost] = useState('');
   const [achievementTitle, setAchievementTitle] = useState('');
   const [achievementDescription, setAchievementDescription] = useState('');
@@ -125,14 +112,14 @@ export function PeerChallenges() {
 
       if (challengesData) {
         // Filter challenges to only show those the user created or is participating in
-        const userChallenges = challengesData.filter(challenge => 
+        const userChallenges = challengesData.filter((challenge: any) =>       
           challenge.created_by === user.id || 
           (challenge.participants && challenge.participants.includes(user.id))
         );
         
         console.log("Filtered challenges for user:", userChallenges);
         
-        const formattedChallenges = userChallenges.map(challenge => ({
+        const formattedChallenges = userChallenges.map((challenge: any) => ({  
           id: challenge.id,
           title: challenge.title,
           description: challenge.description,
@@ -181,7 +168,7 @@ export function PeerChallenges() {
     console.log("Raw friends data:", friendsData);
     if (friendsData) {
       const formattedFriends = friendsData
-        .map(connection => {
+        .map((connection: any) => {
           // Determine which profile to use based on who is the current user
           const isCurrentUserSender = connection.user_id === user.id;
           const friendProfileRaw = isCurrentUserSender ? connection.friend_profile : connection.user_profile;
@@ -205,7 +192,7 @@ export function PeerChallenges() {
             isOnline: false
           };
         })
-        .filter(friend => friend !== null); // Remove null entries
+        .filter((friend: any) => friend !== null); // Remove null entries      
       
       console.log("Formatted friends:", formattedFriends);
       setFriends(formattedFriends);
@@ -234,8 +221,8 @@ export function PeerChallenges() {
 
     if (pendingData) {
       const formattedPending = pendingData
-        .filter(connection => connection.profiles)
-        .map(connection => {
+        .filter((connection: any) => connection.profiles)
+        .map((connection: any) => {
           const profile = Array.isArray(connection.profiles)
             ? connection.profiles[0]
             : connection.profiles;
@@ -260,7 +247,7 @@ export function PeerChallenges() {
         .limit(20);
 
       if (postsData) {
-        const formattedPosts = postsData.map(post => ({
+        const formattedPosts = postsData.map((post: any) => ({
           id: post.id,
           userId: post.user_id,
           userName: post.user_name || 'Unknown User',
@@ -302,7 +289,7 @@ export function PeerChallenges() {
         schema: 'public',
         table: 'user_connections',
         filter: `or(user_id.eq.${currentUserId},friend_id.eq.${currentUserId})`
-      }, (payload) => {
+      }, (payload: any) => {
         console.log('Connection change:', payload);
         loadData(); // Reload data when connections change
       })
@@ -315,7 +302,7 @@ export function PeerChallenges() {
         event: '*',
         schema: 'public',
         table: 'peer_challenges'
-      }, (payload) => {
+      }, (payload: any) => {
         console.log('Challenge change:', payload);
         loadData(); // Reload data when challenges change
       })
@@ -328,7 +315,7 @@ export function PeerChallenges() {
         event: 'INSERT',
         schema: 'public',
         table: 'peer_activity'
-      }, (payload) => {
+      }, (payload: any) => {
         console.log('New activity:', payload);
         loadData(); // Reload data when new activity is posted
       })
@@ -656,14 +643,6 @@ export function PeerChallenges() {
     }
   };
 
-  const generateReferralLink = async () => {
-    if (currentUserId) {
-      const referralLink = `${window.location.origin}/sign-up?ref=${currentUserId}`;
-      const result = await generateShortUrl(referralLink);
-      navigator.clipboard.writeText(result.shortUrl);
-      toast.success(`Short link copied! (via ${result.service}) 🔗`);
-    }
-  };
 
 
   const shareToSocial = async (platform: 'whatsapp' | 'twitter' | 'facebook') => {
@@ -706,73 +685,7 @@ Sign up here: ${shortLink}
     }
   };
 
-  const updateChallengeProgress = async (challengeId: string, progress: number) => {
-    if (!currentUserId) return;
 
-    try {
-      const challenge = challenges.find(c => c.id === challengeId);
-      if (!challenge) return;
-
-      const updatedProgress = {
-        ...challenge.progress,
-        [currentUserId]: progress
-      };
-
-      const { error } = await supabase
-        .from("peer_challenges")
-        .update({ progress: updatedProgress })
-        .eq("id", challengeId);
-
-      if (error) throw error;
-
-      // Check if challenge is completed
-      if (progress >= challenge.target) {
-        triggerUpdate('challenge_completed', {
-          challengeTitle: challenge.title,
-          challengeId
-        });
-      }
-
-      toast.success("Progress updated! 📈");
-      loadData();
-    } catch (error) {
-      console.error("Error updating progress:", error);
-      toast.error("Failed to update progress");
-    }
-  };
-
-  const createPost = async () => {
-    if (!newPost.trim() || !currentUserId) return;
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const postData = {
-        user_id: currentUserId,
-        user_name: user.user_metadata?.full_name || 'Unknown User',
-        user_avatar: user.user_metadata?.avatar_url || '',
-        content: newPost.trim(),
-        type: 'general',
-        created_at: new Date().toISOString(),
-        likes: 0,
-        comments: 0
-      };
-
-      const { error } = await supabase
-        .from("peer_activity")
-        .insert(postData);
-
-      if (error) throw error;
-
-      toast.success("Post shared! 📝");
-      setNewPost('');
-      loadData(); // Reload to show the new post
-    } catch (error) {
-      console.error("Error creating post:", error);
-      toast.error("Failed to share post");
-    }
-  };
 
   const shareAchievement = async () => {
     if (!currentUserId || !achievementTitle.trim() || !achievementDescription.trim()) {
@@ -1842,16 +1755,4 @@ Sign up here: ${shortLink}
   );
 }
 
-const getProgressPercentage = (progress: number, target: number) => {
-  return Math.min((progress / target) * 100, 100);
-};
 
-const formatTimeAgo = (timestamp: string) => {
-  const now = new Date();
-  const time = new Date(timestamp);
-  const diffInHours = Math.floor((now.getTime() - time.getTime()) / (1000 * 60 * 60));
-  
-  if (diffInHours < 1) return 'Just now';
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-  return `${Math.floor(diffInHours / 24)}d ago`;
-};

@@ -68,19 +68,19 @@ export default function LiveAnalyticsDashboard({
 
         // Calculate analytics
         const totalContributions = contributions?.length || 0;
-        const totalAmount = contributions?.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) || 0;
+        const totalAmount = contributions?.reduce((sum: number, c: any) => sum + (c.amount_kobo || 0), 0) || 0;
         const avgContribution = totalContributions > 0 ? totalAmount / totalContributions : 0;
         
         // Calculate weekly activity
         const now = new Date();
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const recentContributions = contributions?.filter(c => 
+        const recentContributions = contributions?.filter((c: any) => 
           new Date(c.contributed_at) >= oneWeekAgo
         ) || [];
         
         // Calculate monthly activity
         const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const monthlyContributions = contributions?.filter(c => 
+        const monthlyContributions = contributions?.filter((c: any) => 
           new Date(c.contributed_at) >= oneMonthAgo
         ) || [];
 
@@ -140,9 +140,9 @@ export default function LiveAnalyticsDashboard({
             table: 'contributions',
             filter: `user_id=eq.${userId}`
           },
-          (payload) => {
+          (payload: any) => {
             console.log('📊 Analytics: Contribution change detected', payload);
-            setLastUpdate(new Date());
+            // setLastUpdate(new Date());
             // Reload analytics data
             loadAnalytics();
           }
@@ -155,9 +155,9 @@ export default function LiveAnalyticsDashboard({
             table: 'transactions',
             filter: `user_id=eq.${userId}`
           },
-          (payload) => {
+          (payload: any) => {
             console.log('📊 Analytics: Transaction change detected', payload);
-            setLastUpdate(new Date());
+            // setLastUpdate(new Date());
             // Reload analytics data
             loadAnalytics();
           }
@@ -166,7 +166,7 @@ export default function LiveAnalyticsDashboard({
 
       // Auto-refresh every 30 seconds
       const interval = setInterval(() => {
-        setLastUpdate(new Date());
+        // setLastUpdate(new Date());
         loadAnalytics();
       }, 30000);
 
@@ -217,19 +217,19 @@ export default function LiveAnalyticsDashboard({
 
       // Calculate analytics
       const totalContributions = contributions?.length || 0;
-      const totalAmount = contributions?.reduce((sum, c) => sum + (c.amount_kobo || 0), 0) || 0;
+      const totalAmount = contributions?.reduce((sum: number, c: any) => sum + (c.amount_kobo || 0), 0) || 0;
       const avgContribution = totalContributions > 0 ? totalAmount / totalContributions : 0;
       
       // Calculate weekly activity
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const recentContributions = contributions?.filter(c => 
+      const recentContributions = contributions?.filter((c: any) =>
         new Date(c.contributed_at) >= oneWeekAgo
       ) || [];
       
       // Calculate monthly activity
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const monthlyContributions = contributions?.filter(c => 
+      const monthlyContributions = contributions?.filter((c: any) =>
         new Date(c.contributed_at) >= oneMonthAgo
       ) || [];
 

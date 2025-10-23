@@ -1,6 +1,5 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   const supabase = getSupabaseBrowserClient();
@@ -117,28 +116,6 @@ export async function GET() {
 
     if (error) throw error;
 
-    interface GroupWithMembers {
-      groups: {
-        id: string;
-        name: string;
-        description: string | null;
-        target_amount_kobo: number | null;
-        frequency: string | null;
-        next_contribution_date: string | null;
-        created_at: string;
-        created_by: string;
-        creator: {
-          username: string;
-          full_name: string | null;
-          avatar_url: string | null;
-        };
-      };
-      members: Array<{
-        id: string;
-        user_id: string;
-        is_admin: boolean;
-      }>;
-    }
 
     // Map the groups data to the expected format
     const formattedGroups = groups.map((group: any) => ({

@@ -69,7 +69,7 @@ class SmartNotificationEngine {
       userId: 'all',
       type: 'goal_progress',
       condition: (insights, events) => {
-        const goalEvents = events.filter(e => e.eventType === 'savings_goal_set');
+        const goalEvents = events.filter((e: any) => e.eventType === 'savings_goal_set');
         if (goalEvents.length === 0) return false;
         
         const latestGoal = goalEvents[goalEvents.length - 1];
@@ -79,12 +79,12 @@ class SmartNotificationEngine {
         return daysRemaining > 0 && daysRemaining <= 7; // 7 days or less remaining
       },
       message: (insights, events) => {
-        const goalEvents = events.filter(e => e.eventType === 'savings_goal_set');
+        const goalEvents = events.filter((e: any) => e.eventType === 'savings_goal_set');
         const latestGoal = goalEvents[goalEvents.length - 1];
         const targetDate = new Date(latestGoal.eventData.targetDate);
         const daysRemaining = Math.ceil((targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         
-        return `Your savings goal of ₦${goalAmount.toLocaleString()} is due in ${daysRemaining} days! Keep up the great work! 🎯`;
+        return `Your savings goal of ₦${latestGoal.eventData.goalAmount?.toLocaleString() || '0'} is due in ${daysRemaining} days! Keep up the great work! 🎯`;
       },
       priority: 'high',
       cooldown: 12, // 12 hours

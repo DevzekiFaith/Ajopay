@@ -62,11 +62,11 @@ export async function POST(req: NextRequest) {
     console.log("Analytics event tracked successfully:", data);
     return NextResponse.json({ success: true, id: data });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Analytics API error:", error);
     return NextResponse.json({ 
-      error: error.message,
-      stack: error.stack 
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined 
     }, { status: 500 });
   }
 }
@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ events: data });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Analytics GET error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

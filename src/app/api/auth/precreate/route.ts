@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     if (error) {
       // If user already exists or signups disabled, we still want to allow OTP flow
-      const msg = (error as any)?.message?.toLowerCase?.() || "";
+      const msg = (error as { message?: string })?.message?.toLowerCase?.() || "";
       if (msg.includes("already registered") || msg.includes("user already exists")) {
         return NextResponse.json({ ok: true, note: "already_exists" });
       }
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, user: data.user });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "unexpected error" }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "unexpected error" }, { status: 500 });
   }
 }

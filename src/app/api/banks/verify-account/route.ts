@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { NIGERIAN_BANKS, getBankByCode } from "@/lib/banks";
+import { getBankByCode } from "@/lib/banks";
 
 interface BankVerificationResponse {
   account_number: string;

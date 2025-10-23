@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, Wallet, CheckCircle, AlertCircle, Plus, TrendingUp, TrendingDown, Send, CreditCard, DollarSign } from "lucide-react";
+import { motion } from "framer-motion";
+import { Bell, Wallet, CheckCircle, AlertCircle, Plus, TrendingUp, TrendingDown, Send, CreditCard, DollarSign } from "lucide-react";
 import { playDepositNotification } from "@/lib/sounds";
 
 interface Notification {
@@ -24,7 +24,6 @@ interface NotificationSystemProps {
 
 export function NotificationSystem({ userId }: NotificationSystemProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = getSupabaseBrowserClient();
 
@@ -51,11 +50,11 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
 
       // Combine and sort notifications
       const allNotifications = [
-        ...(regularNotifications || []).map(n => ({
+        ...(regularNotifications || []).map((n: any) => ({
           ...n,
           read: n.read || false // Ensure read field exists
         })),
-        ...(smartNotifications || []).map(n => ({
+        ...(smartNotifications || []).map((n: any) => ({
           ...n,
           read: false // Smart notifications don't have read field, default to false
         }))
@@ -87,8 +86,6 @@ export function NotificationSystem({ userId }: NotificationSystemProps) {
 
         // Show enhanced toast notification with sound
         if (newNotification.type === "wallet_funded") {
-          const rawAmount = newNotification.data?.amount_naira ?? 0;
-          const amount = typeof rawAmount === "number" ? rawAmount : Number(rawAmount) || 0;
           const amountKobo = typeof newNotification.data?.amount_kobo === 'number' ? newNotification.data.amount_kobo : 0;
           const isLargeDeposit = typeof newNotification.data?.is_large_deposit === 'boolean' ? newNotification.data.is_large_deposit : false;
 

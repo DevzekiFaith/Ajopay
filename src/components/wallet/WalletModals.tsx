@@ -221,8 +221,6 @@ export function WalletModals({
       setAmount('');
       setSelectedMethod('');
       setAccountNumber('');
-      setBankName('');
-      setAccountName('');
       setPhoneNumber('');
       setSelectedBank(null);
       setVerifiedAccountName('');
@@ -243,73 +241,6 @@ export function WalletModals({
     }
   };
 
-  const handleSend = async () => {
-    // Validate based on wallet type
-    if (activeWallet === 'ngn') {
-      if (!amount || (!selectedRecipient && !recipient)) {
-        toast.error('Please fill in all required fields and select a recipient or enter email manually');
-        return;
-      }
-    } else {
-      if (!amount || !recipient) {
-        toast.error('Please fill in all required fields');
-        return;
-      }
-    }
-
-    if (parseFloat(amount) <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      const response = await fetch('/api/wallet/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Ensure cookies are included
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          recipient: activeWallet === 'ngn' ? (selectedRecipient?.email || recipient) : recipient,
-          description: description || `Transfer to ${activeWallet === 'ngn' ? (selectedRecipient?.full_name || selectedRecipient?.email || recipient) : recipient}`,
-          walletType: activeWallet
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send money');
-      }
-
-      const recipientName = activeWallet === 'ngn' 
-        ? (selectedRecipient?.full_name || selectedRecipient?.email || recipient)
-        : recipient;
-
-      toast.success(data.message || `Successfully sent ₦${amount} to ${recipientName}!`);
-      setShowSendModal(false);
-      setAmount('');
-      setRecipient('');
-      setSelectedRecipient(null);
-      setDescription('');
-      
-      // Refresh wallet data
-      if (onWalletUpdate) {
-        onWalletUpdate();
-      } else {
-        // Fallback to page reload if no callback provided
-        window.location.reload();
-      }
-    } catch (error: unknown) {
-      console.error('Send error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send money';
-      toast.error(errorMessage);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);

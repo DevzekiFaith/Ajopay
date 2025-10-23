@@ -110,7 +110,7 @@ export function SavingsCircles() {
 
       if (circlesData) {
         console.log("Raw circles data:", circlesData);
-        const formattedCircles = circlesData.map(circle => ({
+        const formattedCircles = circlesData.map((circle: any) => ({
           id: circle.id,
           name: circle.name,
           description: circle.description || '',

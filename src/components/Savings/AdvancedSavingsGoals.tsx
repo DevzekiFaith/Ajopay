@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,19 +16,9 @@ import { toast } from "sonner";
 import { 
   Target, 
   Plus, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
   Brain,
   Lightbulb,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Sparkles,
-  PiggyBank,
-  Zap,
-  Crown,
-  Star
+  CheckCircle
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { FinancialAdvisor } from "@/components/AI/FinancialAdvisor";
@@ -99,7 +89,6 @@ export function AdvancedSavingsGoals() {
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
   const [activeTab, setActiveTab] = useState('all');
   const supabase = getSupabaseBrowserClient();
 

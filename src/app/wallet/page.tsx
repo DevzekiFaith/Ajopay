@@ -107,7 +107,7 @@ export default function WalletPage() {
           table: 'wallets',
           filter: `profile_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Wallet balance updated:', payload);
           loadWalletData(); // Reload wallet data
         }
@@ -125,7 +125,7 @@ export default function WalletPage() {
           table: 'transactions',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Transaction change detected:', payload);
           loadWalletData(); // Reload wallet data
         }
@@ -143,7 +143,7 @@ export default function WalletPage() {
           table: 'wallet_topups',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Wallet topup received:', payload);
           const topup = payload?.new;
           if (topup?.amount_kobo) {
@@ -161,7 +161,7 @@ export default function WalletPage() {
       .on(
         'broadcast',
         { event: 'wallet_balance_updated' },
-        (payload) => {
+        (payload: any) => {
           console.log('Wallet balance update received:', payload);
           if (payload.payload?.user_id === user.id) {
             const amountAdded = payload.payload.amount_added_kobo;

@@ -9,7 +9,6 @@ import AdminRealtimeRefresher from "./AdminRealtimeRefresher";
 import AdminTotalCard from "./AdminTotalCard";
 import Link from "next/link";
 import Image from "next/image";
-import { Tooltip } from "@/components/ui/tooltip";
 import CustomersExportCsvButton from "./customers/CustomersExportCsvButton";
 import { AdvancedLoadingSpinner, CardSkeleton } from "@/components/ui/loading-spinner";
 import {
@@ -31,7 +30,14 @@ interface AdminStats {
   sparkPoints: string;
   sumByUser: Record<string, number>;
   userLabel: Record<string, { name: string; email: string | null }>;
-  recent: any[];
+  recent: Array<{
+    id: string;
+    user_id: string;
+    amount_kobo: number;
+    method: string;
+    status: string;
+    contributed_at: string;
+  }>;
   today: string;
 }
 

@@ -19,7 +19,6 @@ import {
   User, 
   Shield, 
   CheckCircle, 
-  AlertCircle,
   Loader2,
   ArrowRight,
   Clock,

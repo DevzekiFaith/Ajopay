@@ -182,7 +182,7 @@ export function MultiCurrencySupport() {
   };
 
   const handleExchange = async () => {
-    if (!exchangeForm.amount || exchangeForm.amount <= 0) {
+    if (!exchangeForm.amount || Number(exchangeForm.amount) <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
@@ -344,7 +344,7 @@ export function MultiCurrencySupport() {
                 </div>
               )}
 
-              <Button onClick={handleExchange} className="w-full" disabled={!exchangeForm.amount || exchangeForm.amount <= 0}>
+              <Button onClick={handleExchange} className="w-full" disabled={!exchangeForm.amount || Number(exchangeForm.amount) <= 0}>
                 <ArrowUpDown className="h-4 w-4 mr-2" />
                 Exchange Now
               </Button>

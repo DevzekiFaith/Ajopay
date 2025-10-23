@@ -10,14 +10,12 @@ interface NotificationBellProps {
   userId?: string;
   className?: string;
   size?: "sm" | "md" | "lg";
-  variant?: "default" | "wallet";
 }
 
 export function NotificationBell({ 
   userId, 
   className = "", 
   size = "md",
-  variant = "default" 
 }: NotificationBellProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isPulsing, setIsPulsing] = useState(false);
