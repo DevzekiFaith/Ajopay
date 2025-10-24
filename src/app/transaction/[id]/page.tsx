@@ -142,7 +142,7 @@ export default function TransactionDetailPage() {
 
         // Try to fetch from transactions table first
         console.log('🔍 Checking transactions table...');
-        let { data: transactionData, error: transactionError } = await supabase
+        let { data: transactionData, error: transactionError }: { data: any, error: any } = await supabase
           .from('transactions')
           .select('*')
           .eq('id', transactionId)
