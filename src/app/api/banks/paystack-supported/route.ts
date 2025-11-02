@@ -50,7 +50,7 @@ export async function GET() {
     }
 
     // Format the banks data
-    const supportedBanks = data.data.map((bank: { name: string; code: string; slug: string; longcode: string; gateway: string; pay_with_bank: boolean; active: boolean; is_deleted: boolean; type: string; id: number; createdAt: string; updatedAt: string }) => ({
+    const supportedBanks = data.data.map((bank: { name: string; code: string; slug: string; longcode: string; gateway: string; pay_with_bank: boolean; active: boolean; is_deleted: boolean; type: string; id: number; createdAt: string; updatedAt: string; country?: string; currency?: string }) => ({
       name: bank.name,
       code: bank.code,
       slug: bank.slug,
