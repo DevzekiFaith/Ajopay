@@ -58,6 +58,7 @@ export function FintechSendMoney({
   const [selectedRecipient, setSelectedRecipient] = useState<User | null>(null);
   const [recipientInput, setRecipientInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Bank transfer mode (via Paystack)
   const [transferMethod, setTransferMethod] = useState<'user' | 'bank'>('user');

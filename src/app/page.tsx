@@ -3,11 +3,11 @@
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { ErrorBoundary, useErrorHandler } from "@/components/ErrorBoundary";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
-export default function Home() {
+function HomeContent() {
   const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const [showNewUserMessage, setShowNewUserMessage] = useState(false);
@@ -20,9 +20,11 @@ export default function Home() {
       if (searchParams.get('newUser') === 'true') {
         setShowNewUserMessage(true);
         // Remove the parameter from URL after showing message
-        const url = new URL(window.location.href);
-        url.searchParams.delete('newUser');
-        window.history.replaceState({}, '', url.toString());
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('newUser');
+          window.history.replaceState({}, '', url.toString());
+        }
       }
 
       // Simulate loading for better UX
@@ -719,5 +721,17 @@ export default function Home() {
         </main>
       </div>
     </ErrorBoundary>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-red-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading AjoPay..." />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

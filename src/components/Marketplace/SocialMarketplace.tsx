@@ -112,6 +112,7 @@ export function SocialMarketplace() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('products');
   const [showItemDialog, setShowItemDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Product | Service | null>(null);
 
   // Mock data - replace with actual API calls
   useEffect(() => {

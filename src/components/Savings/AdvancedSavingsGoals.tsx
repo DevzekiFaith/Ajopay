@@ -90,6 +90,7 @@ export function AdvancedSavingsGoals() {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
   const supabase = getSupabaseBrowserClient();
 
   // Form state for creating new goals

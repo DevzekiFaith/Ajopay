@@ -284,7 +284,6 @@ export default function WalletDetailPage() {
                   <NotificationBell 
                     userId={user?.id} 
                     size="sm" 
-                    variant="wallet"
                     className="text-current"
                   />
                 </AfricanButton>

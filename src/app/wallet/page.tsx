@@ -305,7 +305,6 @@ export default function WalletPage() {
                   <NotificationBell 
                     userId={user?.id} 
                     size="md" 
-                    variant="wallet"
                     className="text-gray-700 dark:text-white"
                   />
                 </motion.button>
