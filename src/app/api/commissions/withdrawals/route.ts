@@ -15,7 +15,7 @@ export async function GET() {
     const supabase = getSupabaseServerClient();
     
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     
     // For now, let's use a demo user ID to make the system work
     // In production, this would come from proper authentication

@@ -4,7 +4,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 export async function POST(request: Request) {
   try {
     const supabase = getSupabaseServerClient();
-    const { data: authData, error: authErr } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
     
     // For now, let's use a demo user ID to make the system work
     // In production, this would come from proper authentication
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const supabase = getSupabaseServerClient();
-    const { data: authData, error: authErr } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
     
     // For now, let's use a demo user ID to make the system work
     // In production, this would come from proper authentication

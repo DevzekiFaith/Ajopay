@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     }
 
     // Award commission for goal completion
-    const { data: success, error } = await supabase.rpc('process_goal_completion', {
+    const { data, error } = await supabase.rpc('process_goal_completion', {
       p_user_id: user.id,
       p_goal_id: goalId,
       p_goal_title: goalTitle,

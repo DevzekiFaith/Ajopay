@@ -365,7 +365,7 @@ export default function LiveAnalyticsDashboard({
                 <div>
                   <p className="font-medium text-sm sm:text-base text-blue-800 dark:text-blue-200">Ready for Bigger Goals</p>
                   <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
-                    You're saving consistently! Set a ₦50,000 goal for next month
+                    You&apos;re saving consistently! Set a ₦50,000 goal for next month
                   </p>
                 </div>
               </div>

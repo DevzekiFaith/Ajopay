@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     
     // Try to get real user, but fallback to demo if auth fails
     const supabase = getSupabaseServerClient();
-    const { data: authData, error: authErr } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
     
     const user = authData?.user || { id: demoUserId, email: 'demo@example.com' };
     

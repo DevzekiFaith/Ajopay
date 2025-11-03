@@ -6,7 +6,6 @@ export async function GET(req: NextRequest) {
     // In a real app, you'd check JWT tokens, session cookies, etc.
     
     // Check if there's a user session or token
-    const authHeader = req.headers.get('authorization');
     const cookieHeader = req.headers.get('cookie');
     
     // Mock user for development - replace with real auth logic

@@ -393,7 +393,7 @@ export function FintechSendMoney({
               <Label htmlFor="description">Description (Optional)</Label>
               <Textarea
                 id="description"
-                placeholder="What's this for?"
+                placeholder="What&apos;s this for?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="mt-2"

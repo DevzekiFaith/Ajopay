@@ -26,7 +26,7 @@ export default function Chatbot({ userId, className = "" }: ChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Hi! I'm Ajopay AI Assistant. How can I help you with your savings today?",
+      text: "Hi! I&apos;m Ajopay AI Assistant. How can I help you with your savings today?",
       isUser: false,
       timestamp: new Date(),
     },
@@ -106,7 +106,7 @@ export default function Chatbot({ userId, className = "" }: ChatbotProps) {
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: data.response || data.fallback || "I'm sorry, I couldn't process your request. Please try again.",
+        text: data.response || data.fallback || "I&apos;m sorry, I couldn&apos;t process your request. Please try again.",
         isUser: false,
         timestamp: new Date(),
         audioUrl: data.audioUrl,
@@ -117,7 +117,7 @@ export default function Chatbot({ userId, className = "" }: ChatbotProps) {
       console.error("Chatbot error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I'm currently unavailable. Please contact support at support@ajopay.com for assistance.",
+        text: "I&apos;m currently unavailable. Please contact support at support@ajopay.com for assistance.",
         isUser: false,
         timestamp: new Date(),
       };

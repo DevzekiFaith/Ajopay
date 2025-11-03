@@ -312,7 +312,7 @@ export function PersonalHealthDashboard() {
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   {metrics.savingsHealth >= 80 
-                    ? "Excellent savings habits! You're on track for financial success." 
+                    ? "Excellent savings habits! You&apos;re on track for financial success." 
                     : metrics.savingsHealth >= 60 
                     ? "Good progress! Keep up the consistent contributions." 
                     : "Consider increasing your daily contributions to improve your savings health."}

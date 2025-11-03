@@ -86,7 +86,7 @@ export default function AdminPage() {
         const error = await res.json();
         alert('Failed to promote: ' + error.error);
       }
-    } catch (error) {
+    } catch {
       alert('Error promoting to admin');
     } finally {
       setPromoting(false);
